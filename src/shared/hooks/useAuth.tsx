@@ -32,6 +32,8 @@ export type Permiso =
   | 'configuracion:tenant:editar'
   | 'bitacora:ver'
   | 'bitacora:exportar'
+  | 'archivo:sostenedor:ver'
+  | 'sie:ver'
   | 'tenants:gestionar'
   | 'dashboard:analitica:ver'
   | 'monitorizacion:ver'
@@ -92,6 +94,7 @@ const MATRIZ_PERMISOS: Record<RolUsuario, Permiso[]> = {
     'usuarios:gestionar', 'usuarios:roles:gestionar',
     'configuracion:editar', 'configuracion:tenant:editar',
     'bitacora:ver', 'bitacora:exportar',
+    'archivo:sostenedor:ver', 'sie:ver',
     'tenants:gestionar', 'dashboard:analitica:ver', 'monitorizacion:ver', 'mantenimiento:ejecutar', 'backend:configurar',
     'system:manage',
   ],
@@ -100,6 +103,7 @@ const MATRIZ_PERMISOS: Record<RolUsuario, Permiso[]> = {
     'usuarios:gestionar', 'usuarios:roles:gestionar',
     'configuracion:editar', 'configuracion:tenant:editar',
     'bitacora:ver', 'bitacora:exportar',
+    'archivo:sostenedor:ver', 'sie:ver',
     'tenants:gestionar', 'dashboard:analitica:ver', 'monitorizacion:ver', 'mantenimiento:ejecutar', 'backend:configurar',
     'system:manage',
   ],
@@ -109,13 +113,13 @@ const MATRIZ_PERMISOS: Record<RolUsuario, Permiso[]> = {
     'reportes:generar', 'reportes:exportar',
     'usuarios:gestionar', 'configuracion:editar',
     'bitacora:ver', 'bitacora:exportar',
+    'sie:ver',
     'dashboard:analitica:ver', 'monitorizacion:ver',
   ],
   INSPECTOR_GENERAL: [
     'expedientes:crear', 'expedientes:leer', 'expedientes:editar', 'expedientes:archivar', 'expedientes:asignar',
     'documentos:subir', 'documentos:eliminar',
     'reportes:generar', 'reportes:exportar',
-    'bitacora:ver', 'bitacora:exportar',
     'dashboard:analitica:ver',
   ],
   CONVIVENCIA_ESCOLAR: [
@@ -163,6 +167,12 @@ function normalizeRole(rawRole: string | null | undefined): RolUsuario {
     case 'ADMINISTRADOR':
     case 'SECRETARIA':
       return role;
+    case 'INSPECTOR':
+      return 'INSPECTOR_GENERAL';
+    case 'CONVIVENCIA':
+      return 'CONVIVENCIA_ESCOLAR';
+    case 'DUPLA':
+      return 'PSICOLOGO';
     case 'ADMIN':
       return 'ADMINISTRADOR';
     default:

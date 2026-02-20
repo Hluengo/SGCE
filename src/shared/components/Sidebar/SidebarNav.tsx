@@ -38,21 +38,23 @@ interface NavItem {
   path: string;
   category: NavCategory;
   description?: string;
+  requiredAnyPermissions?: Array<Parameters<ReturnType<typeof useAuth>['tienePermiso']>[0]>;
+  requiredAllPermissions?: Array<Parameters<ReturnType<typeof useAuth>['tienePermiso']>[0]>;
 }
 
 const expandableItems: ExpandableItem[] = [];
 
 const baseMenuItems: NavItem[] = [
-  { name: 'Dashboard', icon: LayoutDashboard, path: '/', category: 'PRINCIPAL' },
-  { name: 'Reportes Patio', icon: ClipboardList, path: '/patio/lista', category: 'REGISTRO' },
-  { name: 'Bitácora Psicosocial', icon: Heart, path: '/bitacora', category: 'REGISTRO' },
-  { name: 'Expedientes', icon: FileStack, path: '/expedientes', category: 'GESTION' },
-  { name: 'Evidencias', icon: ImageIcon, path: '/evidencias', category: 'GESTION' },
-  { name: 'Gestión Colaborativa (GCC)', icon: Users, path: '/mediacion', category: 'GESTION' },
-  { name: 'Calendario', icon: Calendar, path: '/calendario', category: 'ADMIN' },
-  { name: 'Acompañamiento', icon: HeartHandshake, path: '/apoyo', category: 'ADMIN' },
-  { name: 'Archivo Sostenedor', icon: Library, path: '/archivo', category: 'ADMIN' },
-  { name: 'Auditoría SIE', icon: ShieldAlert, path: '/auditoria', category: 'ADMIN' },
+  { name: 'Dashboard', icon: LayoutDashboard, path: '/', category: 'PRINCIPAL', requiredAnyPermissions: ['expedientes:leer', 'dashboard:analitica:ver'] },
+  { name: 'Reportes Patio', icon: ClipboardList, path: '/patio/lista', category: 'REGISTRO', requiredAnyPermissions: ['reportes:generar', 'reportes:exportar'] },
+  { name: 'Bitácora Psicosocial', icon: Heart, path: '/bitacora', category: 'REGISTRO', requiredAllPermissions: ['bitacora:ver'] },
+  { name: 'Expedientes', icon: FileStack, path: '/expedientes', category: 'GESTION', requiredAllPermissions: ['expedientes:leer'] },
+  { name: 'Evidencias', icon: ImageIcon, path: '/evidencias', category: 'GESTION', requiredAnyPermissions: ['documentos:subir', 'expedientes:leer'] },
+  { name: 'Gestión Colaborativa (GCC)', icon: Users, path: '/mediacion', category: 'GESTION', requiredAllPermissions: ['expedientes:leer'] },
+  { name: 'Calendario', icon: Calendar, path: '/calendario', category: 'ADMIN', requiredAllPermissions: ['expedientes:leer'] },
+  { name: 'Acompañamiento', icon: HeartHandshake, path: '/apoyo', category: 'ADMIN', requiredAllPermissions: ['expedientes:leer'] },
+  { name: 'Archivo Sostenedor', icon: Library, path: '/archivo', category: 'ADMIN', requiredAllPermissions: ['archivo:sostenedor:ver'] },
+  { name: 'Auditoría SIE', icon: ShieldAlert, path: '/auditoria', category: 'ADMIN', requiredAllPermissions: ['sie:ver'] },
 ];
 
 const getCategoryLabel = (category: NavCategory): string => {
@@ -71,7 +73,7 @@ interface SidebarNavProps {
 
 export const SidebarNav: React.FC<SidebarNavProps> = ({ isCollapsed }) => {
   const location = useLocation();
-  const { tieneAlgunPermiso } = useAuth();
+  const { tieneAlgunPermiso, tieneTodosLosPermisos } = useAuth();
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
 
   const toggleExpand = (name: string) => {
@@ -99,7 +101,17 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ isCollapsed }) => {
     });
   }
 
-  const groupedItems = menuItems.reduce<Record<NavCategory, NavItem[]>>((acc, item) => {
+  const visibleMenuItems = menuItems.filter((item) => {
+    if (item.requiredAllPermissions?.length) {
+      return tieneTodosLosPermisos(item.requiredAllPermissions);
+    }
+    if (item.requiredAnyPermissions?.length) {
+      return tieneAlgunPermiso(item.requiredAnyPermissions);
+    }
+    return true;
+  });
+
+  const groupedItems = visibleMenuItems.reduce<Record<NavCategory, NavItem[]>>((acc, item) => {
     if (!acc[item.category]) {
       acc[item.category] = [];
     }
@@ -118,7 +130,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ isCollapsed }) => {
   }, {} as Record<NavCategory, ExpandableItem[]>);
 
   // Evita doble marcado (ej: /admin y /admin/colegios al mismo tiempo)
-  const activePath = menuItems
+  const activePath = visibleMenuItems
     .filter((item) => location.pathname === item.path || location.pathname.startsWith(item.path + '/'))
     .sort((a, b) => b.path.length - a.path.length)[0]?.path;
 

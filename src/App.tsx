@@ -74,14 +74,35 @@ const AppRoutes: React.FC = () => {
           <Route path="expedientes" element={<SuspendedRoute><ExpedientesList /></SuspendedRoute>} />
           <Route path="expedientes/:id" element={<SuspendedRoute><ExpedienteDetalle /></SuspendedRoute>} />
           <Route path="expedientes/:id/editar" element={<SuspendedRoute><ExpedienteDetalle /></SuspendedRoute>} />
-          <Route path="auditoria" element={<SuspendedRoute><DashboardAuditoriaSIE /></SuspendedRoute>} />
+          <Route
+            path="auditoria"
+            element={
+              <RequirePermission allOf={['sie:ver']}>
+                <SuspendedRoute><DashboardAuditoriaSIE /></SuspendedRoute>
+              </RequirePermission>
+            }
+          />
           <Route path="mediacion" element={<SuspendedRoute><CentroMediacionGCC /></SuspendedRoute>} />
 
           <Route path="calendario" element={<SuspendedRoute><CalendarioPlazosLegales /></SuspendedRoute>} />
-          <Route path="bitacora/*" element={<SuspendedRoute><BitacoraPsicosocial /></SuspendedRoute>} />
+          <Route
+            path="bitacora/*"
+            element={
+              <RequirePermission allOf={['bitacora:ver']}>
+                <SuspendedRoute><BitacoraPsicosocial /></SuspendedRoute>
+              </RequirePermission>
+            }
+          />
           <Route path="evidencias" element={<SuspendedRoute><GestionEvidencias /></SuspendedRoute>} />
           <Route path="apoyo" element={<SuspendedRoute><SeguimientoApoyo /></SuspendedRoute>} />
-          <Route path="archivo" element={<SuspendedRoute><ArchivoDocumental /></SuspendedRoute>} />
+          <Route
+            path="archivo"
+            element={
+              <RequirePermission allOf={['archivo:sostenedor:ver']}>
+                <SuspendedRoute><ArchivoDocumental /></SuspendedRoute>
+              </RequirePermission>
+            }
+          />
           <Route path="patio" element={<SuspendedRoute><ReportePatio /></SuspendedRoute>} />
           <Route path="patio/lista" element={<SuspendedRoute><ListaReportesPatio /></SuspendedRoute>} />
           <Route path="intervencion/nueva" element={<SuspendedRoute><NuevaIntervencion /></SuspendedRoute>} />

@@ -99,6 +99,37 @@ export const addBusinessDays = (startDate: Date, days: number): Date => {
 };
 
 /**
+ * Agrega días hábiles considerando un mapa de feriados (YYYY-MM-DD).
+ * Evita roundtrips RPC cuando el calendario ya tiene feriados en memoria.
+ */
+export const addBusinessDaysWithHolidays = (
+  startDate: string | Date,
+  days: number,
+  feriados: Map<string, unknown>
+): Date => {
+  const baseDate = typeof startDate === 'string'
+    ? new Date(startDate)
+    : new Date(startDate.getTime());
+
+  let date = new Date(baseDate.getTime());
+  let count = 0;
+
+  while (count < days) {
+    date.setDate(date.getDate() + 1);
+    const dayOfWeek = date.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const isoDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const isHoliday = feriados.has(isoDate);
+
+    if (!isWeekend && !isHoliday) {
+      count++;
+    }
+  }
+
+  return date;
+};
+
+/**
  * Calcula el plazo legal según la gravedad de la falta
  * Basado en Circular 782
  * 

@@ -1,8 +1,5 @@
 import { useCallback } from 'react';
 import DOMPurify from 'dompurify';
-// html2pdf.js doesn't ship perfect TS types in many projects; ignore if needed
-// @ts-ignore
-import html2pdf from 'html2pdf.js';
 
 type PdfOrientation = 'portrait' | 'landscape';
 
@@ -35,6 +32,13 @@ export function sanitizeHtml(html: string) {
 }
 
 export function usePdfGenerator() {
+  const loadHtml2Pdf = useCallback(async () => {
+    const mod = await import('html2pdf.js');
+    // html2pdf.js doesn't ship perfect TS types in many projects; ignore if needed
+    // @ts-ignore
+    return mod.default;
+  }, []);
+
   const generateHtml = useCallback((html: string) => {
     return sanitizeHtml(html);
   }, []);
@@ -61,6 +65,7 @@ export function usePdfGenerator() {
     };
 
     try {
+      const html2pdf = await loadHtml2Pdf();
       // html2pdf can accept an Element as source. Request a blob output.
       // @ts-ignore
       const blob: Blob = await html2pdf().set(defaultConfig).from(container).outputPdf('blob');
@@ -69,7 +74,7 @@ export function usePdfGenerator() {
       // cleanup DOM
       if (container.parentNode) container.parentNode.removeChild(container);
     }
-  }, [generateHtml]);
+  }, [generateHtml, loadHtml2Pdf]);
 
   return { generateHtml, generatePdfFromHtml } as const;
 }

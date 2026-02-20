@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useConvivencia } from '@/shared/context/ConvivenciaContext';
-import { calcularPlazoConFeriados, BUSINESS_DAYS_EXPULSION, BUSINESS_DAYS_RELEVANTE } from '@/shared/utils/plazos';
+import { addBusinessDaysWithHolidays, BUSINESS_DAYS_EXPULSION, BUSINESS_DAYS_RELEVANTE } from '@/shared/utils/plazos';
 import { cargarFeriados, esFeriado, obtenerDescripcionFeriado, esFinDeSemana, obtenerFeriadosDelMes, type Feriado } from '@/shared/utils/feriadosChile';
 import { 
   Calendar as CalendarIcon, 
@@ -17,13 +17,68 @@ import {
 import { AsyncState } from '@/shared/components/ui';
 
 interface Evento {
-  date: string;
-  type: 'FATAL' | 'DESCARGOS' | 'INTERNO' | 'GCC';
+  date: string; // YYYY-MM-DD
+  type: 'FATAL' | 'DESCARGOS' | 'INTERNO' | 'SIE' | 'RECONSIDERACION' | 'GCC';
   title: string;
   expedienteId: string;
   nna: string;
 }
 type ExpedienteItem = ReturnType<typeof useConvivencia>['expedientes'][number];
+
+type EventTooltipState = {
+  event: Evento;
+  x: number;
+  y: number;
+};
+
+type UrgenciaBucket = {
+  hoy: Evento[];
+  proximas48h: Evento[];
+  vencidas: Evento[];
+};
+
+type PreventiveAlertItem = {
+  key: string;
+  expedienteId: string;
+  nna: string;
+  titulo: string;
+  badge: 'VENCIDO' | 'HOY' | '24H' | '48H';
+  descripcion: string;
+};
+
+const OPEN_STAGES = new Set([
+  'INICIO',
+  'NOTIFICADO',
+  'DESCARGOS',
+  'INVESTIGACION',
+  'RESOLUCION_PENDIENTE',
+  'RECONSIDERACION',
+]);
+
+const toDateKeyLocal = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const dateDiffInDays = (fromDateKey: string, toDateKey: string): number => {
+  const [fy, fm, fd] = fromDateKey.split('-').map(Number);
+  const [ty, tm, td] = toDateKey.split('-').map(Number);
+  const from = new Date(fy, fm - 1, fd);
+  const to = new Date(ty, tm - 1, td);
+  const diffMs = to.getTime() - from.getTime();
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+};
+
+const getEventTone = (type: Evento['type']): string => {
+  if (type === 'FATAL') return 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100';
+  if (type === 'DESCARGOS') return 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100';
+  if (type === 'SIE') return 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200 hover:bg-fuchsia-100';
+  if (type === 'RECONSIDERACION') return 'bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100';
+  if (type === 'GCC') return 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100';
+  return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100';
+};
 
 const CalendarDayCell: React.FC<{
   dayNumber: number;
@@ -33,7 +88,9 @@ const CalendarDayCell: React.FC<{
   expedientes: ExpedienteItem[];
   setExpedienteSeleccionado: ReturnType<typeof useConvivencia>['setExpedienteSeleccionado'];
   feriadosItems: Map<string, Feriado>;
-}> = ({ dayNumber, year, month, eventos, expedientes, setExpedienteSeleccionado, feriadosItems }) => {
+  onHoverEvent: (event: Evento, x: number, y: number) => void;
+  onLeaveEvent: () => void;
+}> = ({ dayNumber, year, month, eventos, expedientes, setExpedienteSeleccionado, feriadosItems, onHoverEvent, onLeaveEvent }) => {
   const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
   const dayEvents = eventos.filter(e => e.date === dateStr);
   const isToday = new Date().toISOString().split('T')[0] === dateStr;
@@ -87,13 +144,11 @@ const CalendarDayCell: React.FC<{
               const exp = expedientes.find(e => e.id === ev.expedienteId);
               if (exp) setExpedienteSeleccionado(exp);
             }}
-            className={`text-xs font-black uppercase p-1.5 rounded-lg border text-left truncate transition-transform active:scale-95 ${
-              ev.type === 'FATAL' ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100' :
-              ev.type === 'DESCARGOS' ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' :
-              ev.type === 'GCC' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' :
-              'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-            }`}
-            title={`${ev.title} - ${ev.nna}`}
+            className={`w-full text-xs font-black uppercase p-1.5 rounded-lg border text-left truncate transition-transform active:scale-95 ${getEventTone(ev.type)}`}
+            aria-label={`${ev.type}: ${ev.title}. Expediente ${ev.expedienteId}. Estudiante ${ev.nna}`}
+            onMouseEnter={(e) => onHoverEvent(ev, e.clientX, e.clientY)}
+            onMouseMove={(e) => onHoverEvent(ev, e.clientX, e.clientY)}
+            onMouseLeave={onLeaveEvent}
           >
             {ev.title} - {ev.nna}
           </button>
@@ -105,7 +160,8 @@ const CalendarDayCell: React.FC<{
 
 const UrgenciasSidebar: React.FC<{
   eventosLoading: boolean;
-  urgenciasHoy: Evento[];
+  urgencias: UrgenciaBucket;
+  preventiveAlerts: PreventiveAlertItem[];
   expedientes: ReturnType<typeof useConvivencia>['expedientes'];
   setExpedienteSeleccionado: ReturnType<typeof useConvivencia>['setExpedienteSeleccionado'];
   monthName: string;
@@ -115,7 +171,8 @@ const UrgenciasSidebar: React.FC<{
   feriadosItems: Map<string, Feriado>;
 }> = ({
   eventosLoading,
-  urgenciasHoy,
+  urgencias,
+  preventiveAlerts,
   expedientes,
   setExpedienteSeleccionado,
   monthName,
@@ -128,7 +185,7 @@ const UrgenciasSidebar: React.FC<{
     <div>
       <h3 className="text-xs md:text-sm font-black text-slate-900 uppercase tracking-widest mb-6 flex items-center">
         <Bell className="w-5 h-5 mr-3 text-red-500 animate-bounce" />
-        Urgencias para Hoy
+        Urgencias de Plazos
       </h3>
 
       <div className="space-y-4">
@@ -136,45 +193,54 @@ const UrgenciasSidebar: React.FC<{
           <AsyncState
             state="loading"
             title="Cargando urgencias"
-            message="Verificando vencimientos para hoy."
+            message="Verificando vencidos, hoy y próximas 48h."
             compact
           />
-        ) : urgenciasHoy.length > 0 ? urgenciasHoy.map((urg) => (
-          <div
-            key={`${urg.expedienteId}-${urg.type}-${urg.title}`}
-            className="bg-white border-2 border-slate-100 p-5 rounded-2xl hover:border-red-200 hover:bg-red-50/10 transition-all cursor-pointer group"
-            onClick={() => {
-              const exp = expedientes.find(e => e.id === urg.expedienteId);
-              if (exp) setExpedienteSeleccionado(exp);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                const exp = expedientes.find(item => item.id === urg.expedienteId);
-                if (exp) setExpedienteSeleccionado(exp);
-              }
-            }}
-            role="button"
-            tabIndex={0}
-          >
-            <div className="flex justify-between items-start mb-3">
-              <span className={`px-2 py-0.5 rounded-lg text-xs font-black uppercase ${urg.type === 'FATAL' ? 'bg-red-600 text-white' : 'bg-amber-100 text-amber-700'}`}>
-                {urg.type}
-              </span>
-              <span className="text-xs font-bold text-slate-400 font-mono">{urg.expedienteId}</span>
-            </div>
-            <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight mb-1 group-hover:text-red-700 transition-colors">{urg.title}</h4>
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">{urg.nna}</p>
-            <div className="mt-4 flex items-center justify-end text-xs font-black text-blue-600 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all">
-              <span>Ir al expediente</span>
-              <ChevronRight className="w-3 h-3 ml-1" />
-            </div>
-          </div>
-        )) : (
+        ) : (urgencias.hoy.length + urgencias.proximas48h.length + urgencias.vencidas.length) > 0 ? (
+          <>
+            {[
+              { key: 'VENCIDAS', items: urgencias.vencidas, tone: 'border-red-300 bg-red-50/30', label: 'Vencidas' },
+              { key: 'HOY', items: urgencias.hoy, tone: 'border-amber-300 bg-amber-50/30', label: 'Vencen Hoy' },
+              { key: '48H', items: urgencias.proximas48h, tone: 'border-blue-300 bg-blue-50/30', label: 'Próx. 48h' },
+            ].map((group) =>
+              group.items.length > 0 ? (
+                <div key={group.key} className="space-y-2">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{group.label}</p>
+                  {group.items.map((urg) => (
+                    <div
+                      key={`${group.key}-${urg.expedienteId}-${urg.type}-${urg.title}`}
+                      className={`border-2 p-4 rounded-2xl transition-all cursor-pointer group ${group.tone}`}
+                      onClick={() => {
+                        const exp = expedientes.find(e => e.id === urg.expedienteId);
+                        if (exp) setExpedienteSeleccionado(exp);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          const exp = expedientes.find(item => item.id === urg.expedienteId);
+                          if (exp) setExpedienteSeleccionado(exp);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="px-2 py-0.5 rounded-lg text-xs font-black uppercase bg-slate-900 text-white">{urg.type}</span>
+                        <span className="text-xs font-bold text-slate-400 font-mono">{urg.expedienteId}</span>
+                      </div>
+                      <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight mb-1">{urg.title}</h4>
+                      <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">{urg.nna}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : null
+            )}
+          </>
+        ) : (
           <AsyncState
             state="empty"
-            title="Sin urgencias para hoy"
-            message="No se registran vencimientos legales para la fecha actual."
+            title="Sin urgencias activas"
+            message="No hay plazos vencidos, de hoy o próximas 48 horas."
             compact
           />
         )}
@@ -237,12 +303,22 @@ const UrgenciasSidebar: React.FC<{
         Alerta Preventiva
       </h4>
       <div className="space-y-4">
-        {expedientes.filter(e => e.gravedad === 'GRAVISIMA_EXPULSION' && e.etapa === 'NOTIFICADO').map(e => (
-          <div key={e.id} className="border-l-2 border-red-500 pl-4 py-1">
-            <p className="text-xs font-black uppercase leading-tight">Faltan 48h para Cierre Descargos</p>
-            <p className="text-xs text-slate-400 font-bold mt-1">NNA: {e.nnaNombre}</p>
-          </div>
-        ))}
+        {preventiveAlerts.length === 0 ? (
+          <p className="text-xs text-slate-300 font-semibold">Sin alertas críticas para las próximas 48h.</p>
+        ) : (
+          preventiveAlerts.map((item) => (
+            <div key={item.key} className="border-l-2 border-red-500 pl-4 py-1">
+              <div className="flex items-center gap-2">
+                <span className="rounded-md bg-red-500/20 px-1.5 py-0.5 text-[10px] font-black uppercase text-red-300">
+                  {item.badge}
+                </span>
+                <p className="text-xs font-black uppercase leading-tight">{item.titulo}</p>
+              </div>
+              <p className="text-xs text-slate-400 font-bold mt-1">NNA: {item.nna}</p>
+              <p className="text-[10px] text-slate-300 mt-1">{item.descripcion}</p>
+            </div>
+          ))
+        )}
       </div>
     </div>
 
@@ -272,6 +348,12 @@ const CalendarioPlazosLegales: React.FC = () => {
     mediaciones: true,
     internos: true
   });
+  const [eventTooltip, setEventTooltip] = useState<EventTooltipState | null>(null);
+
+  const expedientesAbiertos = useMemo(
+    () => expedientes.filter((exp) => OPEN_STAGES.has(exp.etapa)),
+    [expedientes]
+  );
 
   // Cargar feriados de Chile al montar
   useEffect(() => {
@@ -288,14 +370,16 @@ const CalendarioPlazosLegales: React.FC = () => {
   }, [expedientes, filters]);
 
   useEffect(() => {
-    const generarEventos = async () => {
+    const generarEventos = () => {
+      const startMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
       const list: Evento[] = [];
+      const feriados = feriadosState.items;
 
-      for (const exp of expedientes) {
+      for (const exp of expedientesAbiertos) {
         try {
-          // Plazo Fatal (Vencimiento de Proceso) - calculado con feriados
+          // Plazo Fatal (Vencimiento de Proceso) - calculado con feriados locales
           if (filters.expulsion && exp.gravedad === 'GRAVISIMA_EXPULSION') {
-            const plazoFatal = await calcularPlazoConFeriados(exp.fechaInicio, BUSINESS_DAYS_EXPULSION);
+            const plazoFatal = addBusinessDaysWithHolidays(exp.fechaInicio, BUSINESS_DAYS_EXPULSION, feriados);
             list.push({
               date: plazoFatal.toISOString().split('T')[0],
               type: 'FATAL',
@@ -304,7 +388,7 @@ const CalendarioPlazosLegales: React.FC = () => {
               nna: exp.nnaNombre
             });
           } else if (filters.reconsideracion) {
-            const plazoFatal = await calcularPlazoConFeriados(exp.fechaInicio, BUSINESS_DAYS_RELEVANTE);
+            const plazoFatal = addBusinessDaysWithHolidays(exp.fechaInicio, BUSINESS_DAYS_RELEVANTE, feriados);
             list.push({
               date: plazoFatal.toISOString().split('T')[0],
               type: 'FATAL',
@@ -314,9 +398,9 @@ const CalendarioPlazosLegales: React.FC = () => {
             });
           }
 
-          // Hito de Descargos (3 días hábiles después del inicio)
-          if (exp.etapa === 'NOTIFICADO') {
-            const fechaDescargos = await calcularPlazoConFeriados(exp.fechaInicio, 3);
+          // Hito de Descargos (3 días hábiles desde notificación)
+          if (exp.etapa === 'NOTIFICADO' || exp.etapa === 'DESCARGOS') {
+            const fechaDescargos = addBusinessDaysWithHolidays(exp.fechaInicio, 3, feriados);
             list.push({
               date: fechaDescargos.toISOString().split('T')[0],
               type: 'DESCARGOS',
@@ -326,12 +410,48 @@ const CalendarioPlazosLegales: React.FC = () => {
             });
           }
 
-          // GCC - Acuerdo Formativo
-          if (filters.mediaciones && exp.etapa === 'CERRADO_GCC') {
+          // Notificación SIE (5 días hábiles)
+          if (filters.internos && (exp.etapa === 'RESOLUCION_PENDIENTE' || exp.etapa === 'RECONSIDERACION')) {
+            const fechaSie = addBusinessDaysWithHolidays(exp.fechaInicio, 5, feriados);
+            list.push({
+              date: fechaSie.toISOString().split('T')[0],
+              type: 'SIE',
+              title: 'Notificación SIE (5 días)',
+              expedienteId: exp.id,
+              nna: exp.nnaNombre
+            });
+          }
+
+          // Reconsideración (15 días hábiles)
+          if (filters.reconsideracion && (exp.etapa === 'RESOLUCION_PENDIENTE' || exp.etapa === 'RECONSIDERACION')) {
+            const fechaReconsideracion = addBusinessDaysWithHolidays(exp.fechaInicio, 15, feriados);
+            list.push({
+              date: fechaReconsideracion.toISOString().split('T')[0],
+              type: 'RECONSIDERACION',
+              title: 'Vence reconsideración (15 días)',
+              expedienteId: exp.id,
+              nna: exp.nnaNombre
+            });
+          }
+
+          // Hito interno de investigación (7 días hábiles)
+          if (filters.internos && (exp.etapa === 'INICIO' || exp.etapa === 'INVESTIGACION')) {
+            const fechaInterna = addBusinessDaysWithHolidays(exp.fechaInicio, 7, feriados);
+            list.push({
+              date: fechaInterna.toISOString().split('T')[0],
+              type: 'INTERNO',
+              title: 'Revisión interna (7 días)',
+              expedienteId: exp.id,
+              nna: exp.nnaNombre
+            });
+          }
+
+          // Seguimiento GCC en etapas abiertas de resolución
+          if (filters.mediaciones && exp.etapa === 'RESOLUCION_PENDIENTE') {
             list.push({
               date: exp.fechaInicio.split('T')[0],
               type: 'GCC',
-              title: 'Acuerdo Formativo',
+              title: 'Seguimiento GCC',
               expedienteId: exp.id,
               nna: exp.nnaNombre
             });
@@ -350,10 +470,18 @@ const CalendarioPlazosLegales: React.FC = () => {
       }
 
       setEventosState(prev => ({ ...prev, items: list, loading: false }));
+
+      const endMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      const elapsed = Math.round(endMs - startMs);
+      console.info('[CalendarioPlazosLegales] cálculo completado', {
+        expedientes: expedientesAbiertos.length,
+        eventos: list.length,
+        duracionMs: elapsed,
+      });
     };
 
     generarEventos();
-  }, [expedientes, filters]);
+  }, [expedientesAbiertos, filters, feriadosState.items]);
 
   // Lógica de Calendario
   const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -373,11 +501,67 @@ const CalendarioPlazosLegales: React.FC = () => {
   const handlePrevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const handleNextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
 
-  // Urgencias de Hoy
-  const urgenciasHoy = useMemo(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
-    return eventosState.items.filter(e => e.date === todayStr);
+  const urgencias = useMemo<UrgenciaBucket>(() => {
+    const todayStr = toDateKeyLocal(new Date());
+    const hoy: Evento[] = [];
+    const proximas48h: Evento[] = [];
+    const vencidas: Evento[] = [];
+
+    for (const evento of eventosState.items) {
+      const diffDays = dateDiffInDays(todayStr, evento.date);
+      if (diffDays < 0) {
+        vencidas.push(evento);
+      } else if (diffDays === 0) {
+        hoy.push(evento);
+      } else if (diffDays <= 2) {
+        proximas48h.push(evento);
+      }
+    }
+
+    return { hoy, proximas48h, vencidas };
   }, [eventosState.items]);
+
+  const totalUrgencias = urgencias.hoy.length + urgencias.proximas48h.length + urgencias.vencidas.length;
+
+  const preventiveAlerts = useMemo<PreventiveAlertItem[]>(() => {
+    const todayStr = toDateKeyLocal(new Date());
+    const byId = new Map(expedientes.map((exp) => [exp.id, exp]));
+    const candidates = eventosState.items.filter((ev) => ev.type === 'DESCARGOS' || ev.type === 'FATAL');
+    const items: PreventiveAlertItem[] = [];
+
+    for (const ev of candidates) {
+      const exp = byId.get(ev.expedienteId);
+      if (!exp || exp.gravedad !== 'GRAVISIMA_EXPULSION') continue;
+
+      const diffDays = dateDiffInDays(todayStr, ev.date);
+      if (diffDays > 2) continue;
+
+      let badge: PreventiveAlertItem['badge'];
+      if (diffDays < 0) badge = 'VENCIDO';
+      else if (diffDays === 0) badge = 'HOY';
+      else if (diffDays === 1) badge = '24H';
+      else badge = '48H';
+
+      const descripcion =
+        diffDays < 0
+          ? `Plazo vencido hace ${Math.abs(diffDays)} día(s).`
+          : diffDays === 0
+            ? 'Plazo vence hoy.'
+            : `Plazo vence en ${diffDays} día(s).`;
+
+      items.push({
+        key: `${ev.expedienteId}-${ev.type}-${ev.date}`,
+        expedienteId: ev.expedienteId,
+        nna: ev.nna,
+        titulo: ev.title,
+        badge,
+        descripcion,
+      });
+    }
+
+    const priority = { VENCIDO: 0, HOY: 1, '24H': 2, '48H': 3 } as const;
+    return items.sort((a, b) => priority[a.badge] - priority[b.badge]).slice(0, 6);
+  }, [eventosState.items, expedientes]);
 
   return (
     <main className="flex-1 flex flex-col lg:flex-row overflow-hidden bg-slate-50">
@@ -393,6 +577,17 @@ const CalendarioPlazosLegales: React.FC = () => {
               <Clock className="w-4 h-4 mr-2 text-blue-400" />
               Cálculo basado en días hábiles (feriados de Chile desde BD)
             </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-slate-600">
+                Abiertos: {expedientesAbiertos.length}
+              </span>
+              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-slate-600">
+                Eventos: {eventosState.items.length}
+              </span>
+              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-slate-600">
+                Urgencias: {totalUrgencias}
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center bg-white border border-slate-200 rounded-2xl p-1 shadow-sm w-full md:w-auto justify-between">
@@ -414,6 +609,10 @@ const CalendarioPlazosLegales: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 rounded-full bg-amber-500"></div>
                 <span className="text-xs font-black uppercase text-slate-500">Descargos</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-violet-500"></div>
+                <span className="text-xs font-black uppercase text-slate-500">Reconsideración</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 rounded-full bg-blue-500"></div>
@@ -441,6 +640,10 @@ const CalendarioPlazosLegales: React.FC = () => {
               <label className="flex items-center space-x-2 cursor-pointer group">
                 <input type="checkbox" checked={filters.mediaciones} onChange={e => setFilters({...filters, mediaciones: e.target.checked})} className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500" />
                 <span className="text-xs font-black uppercase text-slate-400 group-hover:text-slate-600 transition-colors">Mediaciones</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer group">
+                <input type="checkbox" checked={filters.internos} onChange={e => setFilters({...filters, internos: e.target.checked})} className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500" />
+                <span className="text-xs font-black uppercase text-slate-400 group-hover:text-slate-600 transition-colors">Hitos internos / SIE</span>
               </label>
            </div>
 
@@ -497,6 +700,8 @@ const CalendarioPlazosLegales: React.FC = () => {
                   expedientes={expedientes}
                   setExpedienteSeleccionado={setExpedienteSeleccionado}
                   feriadosItems={feriadosState.items}
+                  onHoverEvent={(event, x, y) => setEventTooltip({ event, x, y })}
+                  onLeaveEvent={() => setEventTooltip(null)}
                 />
               ))}
             </div>
@@ -506,7 +711,8 @@ const CalendarioPlazosLegales: React.FC = () => {
 
       <UrgenciasSidebar
         eventosLoading={eventosState.loading}
-        urgenciasHoy={urgenciasHoy}
+        urgencias={urgencias}
+        preventiveAlerts={preventiveAlerts}
         expedientes={expedientes}
         setExpedienteSeleccionado={setExpedienteSeleccionado}
         monthName={monthName}
@@ -515,6 +721,28 @@ const CalendarioPlazosLegales: React.FC = () => {
         feriadosLoading={feriadosState.loading}
         feriadosItems={feriadosState.items}
       />
+
+      {eventTooltip && (
+        <div
+          className="pointer-events-none fixed z-[120] w-80 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-[0_24px_48px_-16px_rgba(15,23,42,0.45)] backdrop-blur-sm animate-in fade-in zoom-in-95 duration-150"
+          style={{
+            left: Math.min(eventTooltip.x + 14, window.innerWidth - 340),
+            top: Math.max(12, eventTooltip.y - 10),
+          }}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <span className="rounded-full bg-slate-900 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-white">
+              {eventTooltip.event.type}
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              {eventTooltip.event.date}
+            </span>
+          </div>
+          <p className="mt-2 text-sm font-black text-slate-900">{eventTooltip.event.title}</p>
+          <p className="mt-1 text-xs font-semibold text-slate-600">NNA: {eventTooltip.event.nna}</p>
+          <p className="mt-1 text-[11px] font-medium text-slate-500">Expediente: {eventTooltip.event.expedienteId}</p>
+        </div>
+      )}
     </main>
   );
 };
