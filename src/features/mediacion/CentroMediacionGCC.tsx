@@ -114,6 +114,14 @@ const CentroMediacionGCC: React.FC = () => {
     cambiarStatus,
     toggleModal,
     refreshGccMetrics,
+    circular782Context: {
+      aceptaParticipacion: mechanismState.aceptaParticipacion,
+      escenarioProcedencia: mechanismState.escenarioProcedencia,
+      autorizaDivulgacionResultado: mechanismState.autorizaDivulgacionResultado,
+      plazoCompromiso: mechanismState.plazoCompromiso,
+      fechaSeguimiento: mechanismState.fechaSeguimiento,
+      evaluacionResultado: mechanismState.evaluacionResultado,
+    },
   });
   const { panelRouterProps } = useGccPanelProps({
     casoSeleccionado,

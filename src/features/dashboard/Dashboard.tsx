@@ -3,14 +3,13 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useConvivencia } from '@/shared/context/ConvivenciaContext';
 import { useExpedientes } from '@/shared/hooks';
-import { useToast } from '@/shared/components/Toast/ToastProvider';
 import NormativeBadge from '@/shared/components/NormativeBadge';
 import PlazoCounter from '@/shared/components/PlazoCounter';
 import { EstudianteBadge } from '@/shared/components/EstudianteBadge';
 import { AsyncState } from '@/shared/components/ui';
 import type { GravedadFalta } from '@/types';
 import { EstadisticasConvivencia, DistribucionPorCurso } from './EstadisticasConvivencia';
-import { FilePlus, ArrowRight, Files, Search, FilterX, Eye, History, FileText } from 'lucide-react';
+import { ArrowRight, Files, Search, FilterX, Eye, History, FileText } from 'lucide-react';
 import { ExpedienteResumenModal } from '@/features/expedientes/ExpedienteResumenModal';
 import { GccDashboard } from '@/features/mediacion/components';
 
@@ -21,7 +20,7 @@ const isSeguimientoScc = (etapa?: string | null): boolean => {
 
 const formatEtapaLabel = (etapa?: string | null): string => {
   const value = (etapa ?? '').toUpperCase();
-  if (value === 'CERRADO_GCC') return 'PAUSA LEGAL';
+  if (value === 'CERRADO_GCC') return 'CIERRE GCC';
   return (etapa ?? '').replace('_', ' ');
 };
 
@@ -272,20 +271,13 @@ const SeguimientoExpedientesSection: React.FC<{
  * Dashboard principal con estadísticas y distribución por curso
  */
 const Dashboard: React.FC = () => {
-  const { expedientes, setIsWizardOpen } = useConvivencia();
+  const { expedientes } = useConvivencia();
   const { filteredExpedientes, searchTerm, setSearchTerm } = useExpedientes(expedientes);
   const navigate = useNavigate();
   const [courseFilter, setCourseFilter] = useState<string | null>(null);
-  const toast = useToast();
   
   // Estado para modal de resumen
   const [resumenExpedienteId, setResumenExpedienteId] = useState<string | null>(null);
-
-  // Mostrar toast al abrir el wizard
-  const handleOpenWizard = () => {
-    toast?.showToast('info', 'Nuevo Expediente', 'Complete los datos para crear un nuevo expediente disciplinario.');
-    setIsWizardOpen(true);
-  };
 
   // Filtrar por curso si está activo
   const displayedExpedientes = courseFilter
@@ -319,14 +311,6 @@ const Dashboard: React.FC = () => {
           <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Panel de Gestión Normativa</h2>
           <p className="text-slate-500 font-medium text-xs md:text-sm">Control Operativo de Circulares 781 & 782</p>
         </div>
-        <button
-          onClick={handleOpenWizard}
-          aria-label="Crear nuevo expediente"
-          className="flex items-center space-x-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3.5 rounded-2xl font-black shadow-xl shadow-blue-500/20 transition-all active:scale-95 group"
-        >
-          <FilePlus className="w-5 h-5 group-hover:rotate-12 transition-transform" aria-hidden="true" />
-          <span className="text-xs tracking-widest uppercase">Nuevo Expediente</span>
-        </button>
       </header>
 
       {/* Panel General de Expedientes */}

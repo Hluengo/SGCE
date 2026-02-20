@@ -45,22 +45,22 @@ const expandableItems: ExpandableItem[] = [];
 const baseMenuItems: NavItem[] = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/', category: 'PRINCIPAL' },
   { name: 'Reportes Patio', icon: ClipboardList, path: '/patio/lista', category: 'REGISTRO' },
-  { name: 'Bitacora Psicosocial', icon: Heart, path: '/bitacora', category: 'REGISTRO' },
+  { name: 'Bitácora Psicosocial', icon: Heart, path: '/bitacora', category: 'REGISTRO' },
   { name: 'Expedientes', icon: FileStack, path: '/expedientes', category: 'GESTION' },
   { name: 'Evidencias', icon: ImageIcon, path: '/evidencias', category: 'GESTION' },
-  { name: 'Mediacion GCC', icon: Users, path: '/mediacion', category: 'GESTION' },
+  { name: 'Gestión Colaborativa (GCC)', icon: Users, path: '/mediacion', category: 'GESTION' },
   { name: 'Calendario', icon: Calendar, path: '/calendario', category: 'ADMIN' },
-  { name: 'Acompanamiento', icon: HeartHandshake, path: '/apoyo', category: 'ADMIN' },
+  { name: 'Acompañamiento', icon: HeartHandshake, path: '/apoyo', category: 'ADMIN' },
   { name: 'Archivo Sostenedor', icon: Library, path: '/archivo', category: 'ADMIN' },
-  { name: 'Auditoria SIE', icon: ShieldAlert, path: '/auditoria', category: 'ADMIN' },
+  { name: 'Auditoría SIE', icon: ShieldAlert, path: '/auditoria', category: 'ADMIN' },
 ];
 
 const getCategoryLabel = (category: NavCategory): string => {
   const labels: Record<NavCategory, string> = {
     PRINCIPAL: 'Principal',
     REGISTRO: 'Registro e Incidentes',
-    GESTION: 'Gestion Formal',
-    ADMIN: 'Administracion',
+    GESTION: 'Gestión de Convivencia',
+    ADMIN: 'Administración',
   };
   return labels[category];
 };
@@ -88,7 +88,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ isCollapsed }) => {
       icon: Settings,
       path: '/admin',
       category: 'ADMIN',
-      description: 'Gestion central',
+      description: 'Gestión central',
     });
     menuItems.push({
       name: 'Colegios',
@@ -123,7 +123,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ isCollapsed }) => {
     .sort((a, b) => b.path.length - a.path.length)[0]?.path;
 
   return (
-    <nav className="flex-1 overflow-y-auto py-4" aria-label="Navegacion principal">
+    <nav className="flex-1 overflow-y-auto py-4" aria-label="Navegación principal">
       <ul className="space-y-1 px-3">
         {categoryOrder.map((category) => {
           const expandableInCategory = groupedExpandable[category] || [];

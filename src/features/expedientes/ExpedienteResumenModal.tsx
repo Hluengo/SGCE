@@ -3,7 +3,7 @@
  * Muestra un resumen moderno y completo del expediente en un modal
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   X, 
   Clock, 
@@ -220,26 +220,17 @@ export const ExpedienteResumenModal: React.FC<ExpedienteResumenProps> = ({
   const [data, setData] = useState<ResumenData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const requestSeq = useRef(0);
 
-  useEffect(() => {
-    if (isOpen && expedienteId) {
-      void loadResumen();
-    }
-  }, [isOpen, expedienteId]);
-
-  useEffect(() => {
-    if (!isOpen || !expedienteId) return;
-    const timer = window.setInterval(() => {
-      void loadResumen();
-    }, 60000);
-    return () => window.clearInterval(timer);
-  }, [isOpen, expedienteId]);
-
-  const loadResumen = async () => {
+  const loadResumen = useCallback(async (showLoading = true) => {
     if (!expedienteId) return;
-    
-    setIsLoading(true);
+    const requestId = ++requestSeq.current;
+
+    if (showLoading) {
+      setIsLoading(true);
+    }
     setLoadError(null);
+
     try {
       const client = tenantClient ?? safeSupabase();
       if (!client) {
@@ -268,72 +259,71 @@ export const ExpedienteResumenModal: React.FC<ExpedienteResumenProps> = ({
         return;
       }
 
-      // Cargar datos del estudiante
-      let estudianteNombre = 'Sin nombre';
-      let estudianteId: string | null = expData.estudiante_id ?? null;
-      let estudianteRut = '';
-      if (expData.estudiante_id) {
-        const { data: estudianteData } = await client
-          .from('estudiantes')
-          .select('nombre_completo, rut')
-          .eq('id', expData.estudiante_id)
-          .maybeSingle();
-        if (estudianteData) {
-          estudianteNombre = estudianteData.nombre_completo || 'Sin nombre';
-          estudianteRut = estudianteData.rut || '';
-        }
-      }
-
+      const estudianteId: string | null = expData.estudiante_id ?? null;
       const expedienteDbId = expData.id as string;
 
-      // Cargar hitos
-      const { data: hitosData } = await client
-        .from('hitos_expediente')
-        .select('*')
-        .eq('expediente_id', expedienteDbId);
-
-      // Cargar evidencias
-      const { data: evidenciasData } = await client
-        .from('evidencias')
-        .select('id')
-        .eq('expediente_id', expedienteDbId);
-
-      // Cargar medidas (preferir por expediente_id; fallback por estudiante_id)
-      let medidasData: Array<{ id: string }> = [];
-      const medidasByExpediente = await client
-        .from('medidas_apoyo')
-        .select('id')
-        .eq('expediente_id', expedienteDbId);
-      medidasData = medidasByExpediente.error ? [] : (medidasByExpediente.data || []);
-      if (estudianteId) {
-        const medidasByEstudiante = await client
+      // Carga paralela para bajar latencia total del resumen.
+      const [
+        estudianteRes,
+        hitosRes,
+        evidenciasRes,
+        medidasExpRes,
+        medidasEstRes,
+        actualizacionesRes,
+        ultimoLogRes,
+      ] = await Promise.all([
+        estudianteId
+          ? client
+              .from('estudiantes')
+              .select('nombre_completo, rut')
+              .eq('id', estudianteId)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+        client
+          .from('hitos_expediente')
+          .select('*')
+          .eq('expediente_id', expedienteDbId),
+        client
+          .from('evidencias')
+          .select('id')
+          .eq('expediente_id', expedienteDbId),
+        client
           .from('medidas_apoyo')
           .select('id')
-          .eq('estudiante_id', estudianteId);
-        if (!medidasByEstudiante.error) {
-          const map = new Map<string, { id: string }>();
-          for (const m of medidasData) map.set(m.id, m);
-          for (const m of (medidasByEstudiante.data || [])) map.set(m.id, m);
-          medidasData = Array.from(map.values());
-        }
-      }
+          .eq('expediente_id', expedienteDbId),
+        estudianteId
+          ? client
+              .from('medidas_apoyo')
+              .select('id')
+              .eq('estudiante_id', estudianteId)
+          : Promise.resolve({ data: [], error: null }),
+        client
+          .from('logs_auditoria')
+          .select('id', { count: 'exact', head: true })
+          .eq('registro_id', expedienteDbId)
+          .eq('accion', 'UPDATE')
+          .eq('tabla_afectada', 'expedientes'),
+        client
+          .from('logs_auditoria')
+          .select('created_at, accion, detalle')
+          .eq('registro_id', expedienteDbId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
 
-      // Actualizaciones del expediente (KPI principal solicitado)
-      const { count: actualizacionesCount } = await client
-        .from('logs_auditoria')
-        .select('id', { count: 'exact', head: true })
-        .eq('registro_id', expedienteDbId)
-        .eq('accion', 'UPDATE')
-        .eq('tabla_afectada', 'expedientes');
+      const estudianteNombre = estudianteRes.data?.nombre_completo || 'Sin nombre';
+      const estudianteRut = estudianteRes.data?.rut || '';
+      const hitosData = hitosRes.data || [];
+      const evidenciasData = evidenciasRes.data || [];
+      const actualizacionesCount = actualizacionesRes.count || 0;
+      const ultimoLog = ultimoLogRes.data;
+      const medidasMap = new Map<string, { id: string }>();
+      for (const m of medidasExpRes.data || []) medidasMap.set(m.id, m);
+      for (const m of medidasEstRes.data || []) medidasMap.set(m.id, m);
+      const medidasData = Array.from(medidasMap.values());
 
-      // Cargar último movimiento desde logs_auditoria
-      const { data: ultimoLog } = await client
-        .from('logs_auditoria')
-        .select('created_at, accion, detalle')
-        .eq('registro_id', expedienteDbId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      if (requestId !== requestSeq.current) return;
 
       const hitos = hitosData || [];
       const evidencias = evidenciasData || [];
@@ -366,13 +356,30 @@ export const ExpedienteResumenModal: React.FC<ExpedienteResumenProps> = ({
       });
 
     } catch (error) {
+      if (requestId !== requestSeq.current) return;
       console.error('Error cargando resumen:', error);
       setData(null);
       setLoadError(error instanceof Error ? error.message : 'No se pudo cargar el resumen del expediente.');
     } finally {
-      setIsLoading(false);
+      if (showLoading && requestId === requestSeq.current) {
+        setIsLoading(false);
+      }
     }
-  };
+  }, [expedienteId, tenantClient]);
+
+  useEffect(() => {
+    if (isOpen && expedienteId) {
+      void loadResumen(true);
+    }
+  }, [isOpen, expedienteId, loadResumen]);
+
+  useEffect(() => {
+    if (!isOpen || !expedienteId) return;
+    const timer = window.setInterval(() => {
+      void loadResumen(false);
+    }, 60000);
+    return () => window.clearInterval(timer);
+  }, [isOpen, expedienteId, loadResumen]);
 
   if (!isOpen) return null;
 
@@ -418,7 +425,7 @@ export const ExpedienteResumenModal: React.FC<ExpedienteResumenProps> = ({
               title="No se pudo cargar la información del expediente"
               message={loadError ?? 'Intenta nuevamente en unos segundos.'}
               onRetry={() => {
-                void loadResumen();
+                void loadResumen(true);
               }}
               compact
             />

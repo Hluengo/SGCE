@@ -14,6 +14,15 @@ interface ResultadoPayload {
   observaciones: string;
 }
 
+export interface Circular782ContextPayload {
+  aceptaParticipacion?: boolean;
+  escenarioProcedencia?: string;
+  autorizaDivulgacionResultado?: boolean;
+  plazoCompromiso?: string;
+  fechaSeguimiento?: string;
+  evaluacionResultado?: string;
+}
+
 interface MediacionActivaRow {
   id: string;
   tipo_mecanismo: MecanismoGCC | null;
@@ -67,12 +76,13 @@ export function useGccProcessActions() {
       mediacionId: string;
       mecanismoSeleccionado: MecanismoGCC;
       payload: ResultadoPayload;
+      circular782Context?: Circular782ContextPayload;
     }): Promise<EstadoStatus> => {
       if (!supabase || !tenantId || !usuario?.id) {
         throw new Error('No hay mediacion activa para registrar resultado.');
       }
 
-      const { mediacionId, mecanismoSeleccionado, payload } = params;
+      const { mediacionId, mecanismoSeleccionado, payload, circular782Context } = params;
       const estadoProceso = resultadoToEstadoProceso(payload.resultado);
 
       const { error: updError } = await supabase
@@ -96,6 +106,7 @@ export function useGccProcessActions() {
           resultado: payload.resultado,
           acuerdos: payload.acuerdos,
           observaciones: payload.observaciones,
+          circular782: circular782Context ?? null,
         },
         fecha_emision: new Date().toISOString().slice(0, 10),
         observaciones: payload.observaciones,
@@ -135,6 +146,7 @@ export function useGccProcessActions() {
         datos_adicionales: {
           acuerdos: payload.acuerdos.length,
           compromisos: payload.compromisos.length,
+          circular782: circular782Context ?? null,
         },
       });
 
@@ -153,4 +165,3 @@ export function useGccProcessActions() {
     estadoProcesoToStatus,
   };
 }
-

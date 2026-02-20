@@ -5,17 +5,17 @@ import { useTenant } from '@/shared/context/TenantContext';
 import { useAuth } from '@/shared/hooks';
 
 const routeLabels: Record<string, string> = {
-  '/': 'Dashboard Principal',
-  '/expedientes': 'Gestion de Expedientes',
-  '/auditoria': 'Auditoria SIE',
-  '/mediacion': 'Mediacion GCC',
+  '/': 'Panel de Gestión Normativa',
+  '/expedientes': 'Gestión de Expedientes',
+  '/auditoria': 'Auditoría SIE',
+  '/mediacion': 'Gestión Colaborativa de Conflictos (GCC)',
   '/calendario': 'Calendario Normativo',
-  '/bitacora': 'Bitacora Psicosocial',
-  '/evidencias': 'Gestion de Evidencias',
-  '/apoyo': 'Acompanamiento Estudiantil',
+  '/bitacora': 'Bitácora Psicosocial',
+  '/evidencias': 'Gestión de Evidencias',
+  '/apoyo': 'Medidas de Apoyo Psicosocial',
   '/archivo': 'Archivo Sostenedor',
   '/patio': 'Reporte Inicial Patio',
-  '/admin': 'Superadministracion',
+  '/admin': 'Superadministración',
 };
 
 const Header: React.FC = () => {
@@ -34,7 +34,7 @@ const Header: React.FC = () => {
   return (
     <header className="min-h-16 md:h-16 bg-white border-b border-slate-200 px-4 md:px-8 py-3 md:py-0 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm z-10 shrink-0">
       <div className="flex items-center flex-wrap gap-2">
-        <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Modulo:</span>
+        <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Módulo:</span>
         <span className="text-xs font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-lg border border-blue-100 uppercase">
           {getBreadcrumb()}
         </span>
@@ -48,7 +48,7 @@ const Header: React.FC = () => {
 
         {tieneAlgunPermiso(['system:manage', 'tenants:gestionar']) && (
           <Link to="/admin" className="text-xs font-black uppercase tracking-widest bg-cyan-600 text-white px-3 py-2 rounded-lg hover:bg-cyan-700 transition-colors">
-            Panel Admin
+            Panel de Administración
           </Link>
         )}
 
@@ -60,7 +60,7 @@ const Header: React.FC = () => {
           onClick={() => void signOut()}
           className="text-xs font-black uppercase tracking-widest bg-slate-900 text-white px-3 py-2 rounded-lg"
         >
-          Cerrar sesion
+          Cerrar sesión
         </button>
       </div>
     </header>

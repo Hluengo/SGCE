@@ -91,11 +91,10 @@ export function useGccCierre(): UseGccCierreReturn {
           'gcc_procesar_cierre_completo',
           {
             p_mediacion_id: mediacionId,
-            p_establecimiento_id: tenantId,
             p_resultado: payload.resultado,
             p_detalle_resultado: payload.detalleResultado || '',
-            p_compromisos: JSON.stringify(compromisosNuevos),
-            p_acta_contenido: JSON.stringify(payload.actaContenido || {}),
+            p_compromisos: compromisosNuevos,
+            p_acta_contenido: payload.actaContenido || {},
             p_usuario_id: usuario.id
           }
         );

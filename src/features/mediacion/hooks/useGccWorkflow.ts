@@ -4,7 +4,7 @@ import type { Expediente } from '@/types';
 import { useToast } from '@/shared/components/Toast/ToastProvider';
 import { useGccDerivacion } from '@/shared/hooks/useGccDerivacion';
 import type { GccFormState, MecanismoGCC } from '@/shared/hooks/useGccForm';
-import { useGccProcessActions } from './useGccProcessActions';
+import { useGccProcessActions, type Circular782ContextPayload } from './useGccProcessActions';
 import type { DerivacionCompletaPayload, ResultadoCompletoPayload } from '../types';
 import { trackAsyncInteraction } from '@/shared/utils/perfProfiler';
 
@@ -21,6 +21,7 @@ interface UseGccWorkflowParams {
   cambiarStatus: (status: 'PROCESO' | 'LOGRADO' | 'NO_ACUERDO') => void;
   toggleModal: (modal: keyof GccFormState['uiState']) => void;
   refreshGccMetrics: () => Promise<void> | void;
+  circular782Context?: Circular782ContextPayload;
 }
 
 export function useGccWorkflow({
@@ -36,6 +37,7 @@ export function useGccWorkflow({
   cambiarStatus,
   toggleModal,
   refreshGccMetrics,
+  circular782Context,
 }: UseGccWorkflowParams) {
   const toast = useToast();
   const { handleDerivacionCompleta } = useGccDerivacion();
@@ -147,6 +149,7 @@ export function useGccWorkflow({
             mediacionId: selectedMediacionId,
             mecanismoSeleccionado,
             payload,
+            circular782Context,
           });
 
           cambiarStatus(status);
@@ -167,6 +170,7 @@ export function useGccWorkflow({
       cambiarStatus,
       toggleModal,
       refreshGccMetrics,
+      circular782Context,
     ]
   );
 

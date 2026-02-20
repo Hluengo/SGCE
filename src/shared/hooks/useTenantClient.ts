@@ -29,6 +29,7 @@ const TENANT_TABLES = new Set([
   'mediaciones_gcc_v2',
   'participantes_gcc_v2',
   'hitos_gcc_v2',
+  'hitos_expediente',
   'actas_gcc_v2',
   'compromisos_gcc_v2',
   'carpetas_documentales',
