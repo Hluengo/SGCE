@@ -81,6 +81,8 @@ const DEMO_TENANT = '';
 // Timeout de inactividad configurable desde variable de entorno (default: 8 horas)
 const INACTIVITY_TIMEOUT_MS = Number(import.meta.env.VITE_INACTIVITY_TIMEOUT_MS) || 1000 * 60 * 60 * 8;
 const EXPIRY_WARNING_SECONDS = 1000;
+const E2E_MOCK_AUTH_ENABLED = import.meta.env.DEV && import.meta.env.VITE_E2E_MOCK_AUTH === 'true';
+const E2E_MOCK_AUTH_STORAGE_KEY = 'sgce:e2e-auth-user';
 
 const MATRIZ_PERMISOS: Record<RolUsuario, Permiso[]> = {
   SUPERADMIN: [
@@ -199,6 +201,63 @@ function createDemoUsuario(user: User): Usuario {
   };
 }
 
+function createMockSession(user: User): Session {
+  const nowInSeconds = Math.floor(Date.now() / 1000);
+  return {
+    access_token: `e2e-token-${user.id}`,
+    refresh_token: `e2e-refresh-${user.id}`,
+    expires_in: 60 * 60,
+    expires_at: nowInSeconds + (60 * 60),
+    token_type: 'bearer',
+    user,
+  };
+}
+
+function createMockUser(email: string): User {
+  const normalizedEmail = email.trim().toLowerCase();
+  const isAdmin =
+    normalizedEmail.includes('admin') ||
+    normalizedEmail.includes('super');
+
+  return {
+    id: crypto.randomUUID(),
+    app_metadata: {},
+    user_metadata: {
+      nombre: isAdmin ? 'Super' : 'Usuario',
+      apellido: isAdmin ? 'Admin E2E' : 'E2E',
+      role: isAdmin ? 'SUPERADMIN' : 'CONVIVENCIA_ESCOLAR',
+    },
+    aud: 'authenticated',
+    created_at: new Date().toISOString(),
+    email: normalizedEmail,
+    phone: '',
+    role: 'authenticated',
+    updated_at: new Date().toISOString(),
+    identities: [],
+    factors: [],
+  } as User;
+}
+
+function createMockUsuarioFromEmail(email: string): Usuario {
+  const normalizedEmail = email.trim().toLowerCase();
+  const isAdmin =
+    normalizedEmail.includes('admin') ||
+    normalizedEmail.includes('super');
+  const rol: RolUsuario = isAdmin ? 'SUPERADMIN' : 'CONVIVENCIA_ESCOLAR';
+
+  return {
+    id: crypto.randomUUID(),
+    email: normalizedEmail,
+    nombre: isAdmin ? 'Super' : 'Usuario',
+    apellido: isAdmin ? 'Admin E2E' : 'E2E',
+    rol,
+    permisos: MATRIZ_PERMISOS[rol],
+    establecimientoId: DEMO_TENANT,
+    tenantIds: DEMO_TENANT ? [DEMO_TENANT] : [],
+    activo: true,
+  };
+}
+
 function getInitialSessionMetadata(): SessionMetadata {
   return {
     lastActivityAt: Date.now(),
@@ -291,6 +350,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    if (E2E_MOCK_AUTH_ENABLED) {
+      try {
+        const rawUser = localStorage.getItem(E2E_MOCK_AUTH_STORAGE_KEY);
+        if (rawUser) {
+          const parsed = JSON.parse(rawUser) as Usuario;
+          const mockUser = createMockUser(parsed.email);
+          const mockSession = createMockSession(mockUser);
+          setSession(mockSession);
+          setUsuario({
+            ...parsed,
+            permisos: parsed.permisos?.length ? parsed.permisos : MATRIZ_PERMISOS[parsed.rol],
+          });
+          syncSessionMetadata(mockSession);
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn('[Auth] No se pudo restaurar auth mock E2E:', error);
+        }
+      }
+      setIsLoading(false);
+      return;
+    }
+
     if (!supabase) {
       setIsLoading(false);
       return;
@@ -391,6 +473,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session]);
 
   const signIn = async (email: string, password: string): Promise<{ error: Error | null }> => {
+    if (E2E_MOCK_AUTH_ENABLED) {
+      const hasValidPassword = password.length >= 8 && /[A-Z]/.test(password) && /[0-9]/.test(password);
+      if (!hasValidPassword) {
+        return { error: new Error('Credenciales inválidas para entorno E2E') };
+      }
+
+      const mockUser = createMockUser(email);
+      const mockSession = createMockSession(mockUser);
+      const mockUsuario = createMockUsuarioFromEmail(email);
+      setSession(mockSession);
+      setUsuario(mockUsuario);
+      syncSessionMetadata(mockSession);
+      localStorage.setItem(E2E_MOCK_AUTH_STORAGE_KEY, JSON.stringify(mockUsuario));
+      return { error: null };
+    }
+
     if (!supabase) {
       return { error: new Error('Supabase no configurado') };
     }
@@ -438,6 +536,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUsuario(null);
     setIsPasswordRecovery(false);
     setSessionMetadata(getInitialSessionMetadata());
+    localStorage.removeItem(E2E_MOCK_AUTH_STORAGE_KEY);
   };
 
   const updatePassword = async (newPassword: string) => {

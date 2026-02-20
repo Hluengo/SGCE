@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { ensureAuthenticated } from '@/e2e/helpers/auth';
 
 /**
  * E2E Tests - Advanced Scenarios
@@ -7,15 +8,13 @@ import { test, expect, Page } from '@playwright/test';
  */
 
 const gotoMediacion = async (page: Page): Promise<boolean> => {
-  await page.goto('/mediacion');
-  await page.waitForLoadState('networkidle');
-  return !new URL(page.url()).pathname.startsWith('/auth');
+  await ensureAuthenticated(page, '/mediacion');
+  return true;
 };
 
 test.describe('GCC Mediación - Advanced Scenarios', () => {
   test.beforeEach(async ({ page }) => {
-    const hasSession = await gotoMediacion(page);
-    test.skip(!hasSession, 'E2E GCC requiere sesión autenticada para validar flujos avanzados.');
+    await gotoMediacion(page);
   });
 
   test('Scenario: Compromiso con fecha pasada (validación)', async ({ page }) => {
