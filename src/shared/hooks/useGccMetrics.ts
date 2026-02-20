@@ -41,21 +41,40 @@ const daysUntil = (value: string | null): number | null => {
   return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 };
 
-interface UseGccMetricsOptions {
+export interface UseGccMetricsOptions {
   pollingMs?: number;
   autoRefresh?: boolean;
+  enabled?: boolean;
 }
 
-const useGccMetrics = (options: UseGccMetricsOptions = {}) => {
-  const { pollingMs = 30000, autoRefresh = true } = options;
+export interface UseGccMetricsResult {
+  metrics: GccMetrics;
+  hasData: boolean;
+  isLoading: boolean;
+  error?: string | null;
+  refresh: () => Promise<void>;
+  lastUpdatedAt: string | null;
+  secondsSinceUpdate: number | null;
+  freshness: GccFreshness;
+}
+
+export type GccMetricsBaseSource = Pick<
+  UseGccMetricsResult,
+  'metrics' | 'isLoading' | 'refresh' | 'lastUpdatedAt' | 'error'
+>;
+
+const useGccMetrics = (options: UseGccMetricsOptions = {}): UseGccMetricsResult => {
+  const { pollingMs = 30000, autoRefresh = true, enabled = true } = options;
   const { tenantId } = useTenant();
   const [metrics, setMetrics] = useState<GccMetrics>(INITIAL_METRICS);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!supabase || !tenantId || !isUuid(tenantId)) return;
+    if (!enabled || !supabase || !tenantId || !isUuid(tenantId)) return;
     setIsLoading(true);
+    setError(null);
     try {
       const { data, error } = await supabase
         .from('mediaciones_gcc_v2')
@@ -90,28 +109,32 @@ const useGccMetrics = (options: UseGccMetricsOptions = {}) => {
           sinAcuerdoPct: Math.round((sinAcuerdo / totalTerminal) * 100)
         });
         setLastUpdatedAt(new Date().toISOString());
+      } else if (error) {
+        setError('No se pudieron cargar las métricas GCC.');
       }
     } catch (err) {
       console.error('Error refrescando métricas GCC:', err);
+      setError('Ocurrió un error inesperado al cargar métricas GCC.');
     } finally {
       setIsLoading(false);
     }
-  }, [tenantId]);
+  }, [enabled, tenantId]);
 
   useEffect(() => {
+    if (!enabled) return;
     void refresh();
-  }, [refresh]);
+  }, [enabled, refresh]);
 
   useEffect(() => {
-    if (!autoRefresh || !pollingMs) return;
+    if (!enabled || !autoRefresh || !pollingMs) return;
     const timer = window.setInterval(() => {
       void refresh();
     }, pollingMs);
     return () => window.clearInterval(timer);
-  }, [autoRefresh, pollingMs, refresh]);
+  }, [enabled, autoRefresh, pollingMs, refresh]);
 
   useEffect(() => {
-    if (!autoRefresh) return;
+    if (!enabled || !autoRefresh) return;
     const onFocus = () => { void refresh(); };
     const onVisibility = () => {
       if (document.visibilityState === 'visible') {
@@ -124,7 +147,7 @@ const useGccMetrics = (options: UseGccMetricsOptions = {}) => {
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [autoRefresh, refresh]);
+  }, [enabled, autoRefresh, refresh]);
 
   const hasData = useMemo(
     () => metrics.activos > 0 || metrics.vencidos > 0 || metrics.acuerdoTotalPct > 0 || metrics.acuerdoParcialPct > 0 || metrics.sinAcuerdoPct > 0,
@@ -143,7 +166,7 @@ const useGccMetrics = (options: UseGccMetricsOptions = {}) => {
     return 'old';
   }, [secondsSinceUpdate]);
 
-  return { metrics, hasData, isLoading, refresh, lastUpdatedAt, secondsSinceUpdate, freshness };
+  return { metrics, hasData, isLoading, error, refresh, lastUpdatedAt, secondsSinceUpdate, freshness };
 };
 
 export default useGccMetrics;

@@ -103,7 +103,7 @@ const Button: React.FC<ButtonProps> = ({
 
   /** Estilos por tamaño */
   const sizes: Record<ButtonSize, string> = {
-    sm: 'px-3 py-1.5 text-[10px] rounded-lg',
+    sm: 'px-3 py-1.5 text-xs rounded-lg',
     md: 'px-4 py-3 text-xs rounded-xl',
     lg: 'px-6 py-4 text-sm rounded-2xl',
   };
@@ -134,3 +134,4 @@ const Button: React.FC<ButtonProps> = ({
 };
 
 export default Button;
+

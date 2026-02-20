@@ -29,7 +29,7 @@ const createSupabaseClient = (): SupabaseClient | null => {
   });
 
   // Escuchar eventos de autenticación para manejar errores de token
-  client.auth.onAuthStateChange((event, session) => {
+  client.auth.onAuthStateChange((event, _session) => {
     if (event === 'TOKEN_REFRESHED') {
       console.log('🔄 Token refreshed successfully');
     } else if (event === 'SIGNED_OUT') {

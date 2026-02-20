@@ -88,7 +88,7 @@ function getTimestamp(): string {
 /**
  * Formatea el prefijo del log
  */
-function formatPrefix(level: LogLevel, context?: string): string {
+function formatPrefix(context?: string): string {
   const timestamp = getTimestamp();
   const contextStr = context ? ` [${context}]` : '';
   return `${timestamp}${contextStr}`;
@@ -113,7 +113,7 @@ function shouldLog(level: LogLevel): boolean {
  */
 export function debug(context: string, message: string, data?: unknown): void {
   if (!shouldLog('debug')) return;
-  const prefix = formatPrefix('debug', context);
+  const prefix = formatPrefix(context);
   if (data !== undefined) {
     console.debug(`${prefix} ${message}`, filterSensitive(data));
   } else {
@@ -126,7 +126,7 @@ export function debug(context: string, message: string, data?: unknown): void {
  */
 export function info(context: string, message: string, data?: unknown): void {
   if (!shouldLog('info')) return;
-  const prefix = formatPrefix('info', context);
+  const prefix = formatPrefix(context);
   if (data !== undefined) {
     console.info(`${prefix} ${message}`, filterSensitive(data));
   } else {
@@ -139,7 +139,7 @@ export function info(context: string, message: string, data?: unknown): void {
  */
 export function warn(context: string, message: string, data?: unknown): void {
   if (!shouldLog('warn')) return;
-  const prefix = formatPrefix('warn', context);
+  const prefix = formatPrefix(context);
   if (data !== undefined) {
     console.warn(`${prefix} ${message}`, filterSensitive(data));
   } else {
@@ -152,7 +152,7 @@ export function warn(context: string, message: string, data?: unknown): void {
  */
 export function error(context: string, message: string, err?: unknown): void {
   if (!shouldLog('error')) return;
-  const prefix = formatPrefix('error', context);
+  const prefix = formatPrefix(context);
   
   if (err instanceof Error) {
     console.error(`${prefix} ${message}`, {

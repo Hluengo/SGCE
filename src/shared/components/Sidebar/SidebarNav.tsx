@@ -133,7 +133,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ isCollapsed }) => {
             <React.Fragment key={category}>
               {!isCollapsed && (expandableInCategory.length > 0 || itemsInCategory.length > 0) && (
                 <li className="pt-4 pb-2 first:pt-0">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-3">
+                  <span className="text-xs font-black text-slate-500 uppercase tracking-widest px-3">
                     {getCategoryLabel(category)}
                   </span>
                 </li>
@@ -217,7 +217,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ isCollapsed }) => {
                         <div className="flex flex-col">
                           <span className="text-sm font-medium">{item.name}</span>
                           {item.description && (
-                            <span className="text-[10px] text-slate-400 group-hover:text-slate-300">
+                            <span className="text-xs text-slate-400 group-hover:text-slate-300">
                               {item.description}
                             </span>
                           )}
@@ -236,3 +236,4 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ isCollapsed }) => {
 };
 
 export default SidebarNav;
+

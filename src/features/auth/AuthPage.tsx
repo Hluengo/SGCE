@@ -166,17 +166,17 @@ const AuthPage = () => {
               </article>
             </div>
 
-            <ul className="space-y-3 text-sm text-slate-300">
-              <li className="flex gap-3 items-start"><ShieldCheck className="w-4 h-4 mt-0.5 text-cyan-300" />Workflow de 4 niveles: faltas leves, relevantes, expulsión y cancelación.</li>
-              <li className="flex gap-3 items-start"><Building2 className="w-4 h-4 mt-0.5 text-cyan-300" />Gestión Colaborativa de Conflictos (GCC) y mediación obligatoria.</li>
-              <li className="flex gap-3 items-start"><KeyRound className="w-4 h-4 mt-0.5 text-cyan-300" />Registro documental íntegro, derecho a defensa y recursos de reconsideración.</li>
+            <ul className="space-y-4 text-sm text-slate-300">
+              <li className="flex gap-4 items-start"><ShieldCheck className="w-4 h-4 mt-0.5 text-cyan-300" />Workflow de 4 niveles: faltas leves, relevantes, expulsión y cancelación.</li>
+              <li className="flex gap-4 items-start"><Building2 className="w-4 h-4 mt-0.5 text-cyan-300" />Gestión Colaborativa de Conflictos (GCC) y mediación obligatoria.</li>
+              <li className="flex gap-4 items-start"><KeyRound className="w-4 h-4 mt-0.5 text-cyan-300" />Registro documental íntegro, derecho a defensa y recursos de reconsideración.</li>
             </ul>
           </div>
         </section>
 
         <section className="p-6 sm:p-10 lg:p-14 flex items-center justify-center">
           <div className="w-full max-w-md rounded-3xl border border-white/15 bg-slate-900/60 backdrop-blur-xl p-6 sm:p-8 shadow-2xl shadow-black/40">
-            <div className="grid grid-cols-3 gap-2 bg-slate-800/70 p-1.5 rounded-2xl text-[11px] font-black uppercase tracking-wider">
+            <div className="grid grid-cols-3 gap-2 bg-slate-800/70 p-1.5 rounded-2xl text-xs font-black uppercase tracking-wider">
               <button onClick={() => { resetMessages(); setActiveTab('login'); }} className={`py-2 rounded-xl ${activeTab === 'login' ? 'bg-cyan-400 text-slate-900' : 'text-slate-300'}`}>Ingreso</button>
               <button onClick={() => { resetMessages(); setActiveTab('forgot'); }} className={`py-2 rounded-xl ${activeTab === 'forgot' ? 'bg-cyan-400 text-slate-900' : 'text-slate-300'}`}>Recuperar</button>
               <button onClick={() => { resetMessages(); setActiveTab('reset'); }} className={`py-2 rounded-xl ${activeTab === 'reset' ? 'bg-cyan-400 text-slate-900' : 'text-slate-300'}`}>Nueva clave</button>
@@ -186,13 +186,15 @@ const AuthPage = () => {
               {activeTab === 'login' && (
                 <form className="space-y-4" onSubmit={handleLoginSubmit}>
                   <div>
-                    <label className="text-[11px] uppercase tracking-wider font-black text-slate-300">Correo institucional</label>
+                    <label className="text-xs uppercase tracking-wider font-black text-slate-300">Correo institucional
                     <input type="email" {...loginForm.register('email')} className="mt-1 w-full rounded-xl border border-slate-600 bg-slate-950 px-4 py-3 text-sm focus:outline-none focus:border-cyan-300" />
+                    </label>
                     {loginForm.formState.errors.email && <p className="text-xs text-rose-300 mt-1">{loginForm.formState.errors.email.message}</p>}
                   </div>
                   <div>
-                    <label className="text-[11px] uppercase tracking-wider font-black text-slate-300">Contrasena</label>
+                    <label className="text-xs uppercase tracking-wider font-black text-slate-300">Contrasena
                     <input type="password" {...loginForm.register('password')} className="mt-1 w-full rounded-xl border border-slate-600 bg-slate-950 px-4 py-3 text-sm focus:outline-none focus:border-cyan-300" />
+                    </label>
                     {loginForm.formState.errors.password && <p className="text-xs text-rose-300 mt-1">{loginForm.formState.errors.password.message}</p>}
                   </div>
                   <button type="submit" disabled={loginForm.formState.isSubmitting} className="w-full py-3 rounded-xl bg-cyan-400 text-slate-900 text-xs font-black uppercase tracking-widest disabled:opacity-50">
@@ -205,8 +207,9 @@ const AuthPage = () => {
                 <form className="space-y-4" onSubmit={handleForgotSubmit}>
                   <p className="text-xs text-slate-300">Enviaremos un enlace temporal con validez limitada para restablecer tu acceso.</p>
                   <div>
-                    <label className="text-[11px] uppercase tracking-wider font-black text-slate-300">Correo de recuperacion</label>
+                    <label className="text-xs uppercase tracking-wider font-black text-slate-300">Correo de recuperacion
                     <input type="email" {...forgotForm.register('email')} className="mt-1 w-full rounded-xl border border-slate-600 bg-slate-950 px-4 py-3 text-sm focus:outline-none focus:border-cyan-300" />
+                    </label>
                     {forgotForm.formState.errors.email && <p className="text-xs text-rose-300 mt-1">{forgotForm.formState.errors.email.message}</p>}
                   </div>
                   <button type="submit" disabled={forgotForm.formState.isSubmitting} className="w-full py-3 rounded-xl bg-cyan-400 text-slate-900 text-xs font-black uppercase tracking-widest disabled:opacity-50">
@@ -219,13 +222,15 @@ const AuthPage = () => {
                 <form className="space-y-4" onSubmit={handleResetSubmit}>
                   <p className="text-xs text-slate-300">Define una nueva contrasena robusta para proteger tu sesion.</p>
                   <div>
-                    <label className="text-[11px] uppercase tracking-wider font-black text-slate-300">Nueva contrasena</label>
+                    <label className="text-xs uppercase tracking-wider font-black text-slate-300">Nueva contrasena
                     <input type="password" {...resetForm.register('password')} className="mt-1 w-full rounded-xl border border-slate-600 bg-slate-950 px-4 py-3 text-sm focus:outline-none focus:border-cyan-300" />
+                    </label>
                     {resetForm.formState.errors.password && <p className="text-xs text-rose-300 mt-1">{resetForm.formState.errors.password.message}</p>}
                   </div>
                   <div>
-                    <label className="text-[11px] uppercase tracking-wider font-black text-slate-300">Confirmar contrasena</label>
+                    <label className="text-xs uppercase tracking-wider font-black text-slate-300">Confirmar contrasena
                     <input type="password" {...resetForm.register('confirmPassword')} className="mt-1 w-full rounded-xl border border-slate-600 bg-slate-950 px-4 py-3 text-sm focus:outline-none focus:border-cyan-300" />
+                    </label>
                     {resetForm.formState.errors.confirmPassword && <p className="text-xs text-rose-300 mt-1">{resetForm.formState.errors.confirmPassword.message}</p>}
                   </div>
                   <button type="submit" disabled={resetForm.formState.isSubmitting} className="w-full py-3 rounded-xl bg-cyan-400 text-slate-900 text-xs font-black uppercase tracking-widest disabled:opacity-50">
@@ -235,14 +240,14 @@ const AuthPage = () => {
               )}
 
               {globalError && (
-                <div className="rounded-xl border border-rose-400/50 bg-rose-400/10 p-3 text-xs text-rose-100 flex gap-2 items-start">
+                <div className="rounded-xl border border-rose-400/50 bg-rose-400/10 p-4 text-xs text-rose-100 flex gap-2 items-start">
                   <AlertCircle className="w-4 h-4 mt-0.5" />
                   <p>{globalError}</p>
                 </div>
               )}
 
               {globalSuccess && (
-                <div className="rounded-xl border border-emerald-400/50 bg-emerald-400/10 p-3 text-xs text-emerald-100 flex gap-2 items-start">
+                <div className="rounded-xl border border-emerald-400/50 bg-emerald-400/10 p-4 text-xs text-emerald-100 flex gap-2 items-start">
                   <MailCheck className="w-4 h-4 mt-0.5" />
                   <p>{globalSuccess}</p>
                 </div>
@@ -256,3 +261,5 @@ const AuthPage = () => {
 };
 
 export default AuthPage;
+
+

@@ -30,18 +30,30 @@ interface Props {
 
 export const DocumentManager: React.FC<Props> = ({ documentos: initialDocs, onUpload, onDelete, readOnly }) => {
   const { tienePermiso } = useAuth();
-  const [documentos, setDocumentos] = useState<Documento[]>(initialDocs);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterTipo, setFilterTipo] = useState<TipoDocumento | 'todos'>('todos');
-  const [selectedDoc, setSelectedDoc] = useState<Documento | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [changes, setChanges] = useState({
+    added: [] as Documento[],
+    removedIds: [] as string[]
+  });
+  const [uiState, setUiState] = useState({
+    viewMode: 'grid' as 'grid' | 'list',
+    searchTerm: '',
+    filterTipo: 'todos' as TipoDocumento | 'todos',
+    selectedDoc: null as Documento | null,
+    uploading: false
+  });
+  const { viewMode, searchTerm, filterTipo, selectedDoc, uploading } = uiState;
+  const documentos = React.useMemo(() => {
+    const merged = [...initialDocs, ...changes.added];
+    const byId = new Map<string, Documento>();
+    merged.forEach((doc) => byId.set(doc.id, doc));
+    return Array.from(byId.values()).filter((doc) => !changes.removedIds.includes(doc.id));
+  }, [initialDocs, changes]);
 
   const puedeSubir = tienePermiso('documentos:subir') && !readOnly;
   const puedeEliminar = tienePermiso('documentos:eliminar') && !readOnly;
 
   const handleUpload = useCallback(async (file: File) => {
-    setUploading(true);
+    setUiState(prev => ({ ...prev, uploading: true }));
     try {
       const nuevoDoc: Documento = {
         id: crypto.randomUUID(),
@@ -56,16 +68,19 @@ export const DocumentManager: React.FC<Props> = ({ documentos: initialDocs, onUp
         esPublico: false,
         nivelConfidencialidad: 'media'
       };
-      setDocumentos(prev => [...prev, nuevoDoc]);
+      setChanges(prev => ({ ...prev, added: [...prev.added, nuevoDoc] }));
       onUpload?.(nuevoDoc);
     } finally {
-      setUploading(false);
+      setUiState(prev => ({ ...prev, uploading: false }));
     }
   }, [onUpload]);
 
   const handleDelete = useCallback((id: string) => {
     if (!confirm('¿Eliminar?')) return;
-    setDocumentos(prev => prev.filter(d => d.id !== id));
+    setChanges(prev => ({
+      added: prev.added.filter((d) => d.id !== id),
+      removedIds: prev.removedIds.includes(id) ? prev.removedIds : [...prev.removedIds, id]
+    }));
     onDelete?.(id);
   }, [onDelete]);
 
@@ -100,10 +115,10 @@ export const DocumentManager: React.FC<Props> = ({ documentos: initialDocs, onUp
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input type="text" placeholder="Buscar..." value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => setUiState(prev => ({ ...prev, searchTerm: e.target.value }))}
               className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm w-64" />
           </div>
-          <select value={filterTipo} onChange={(e) => setFilterTipo(e.target.value as TipoDocumento | 'todos')}
+          <select value={filterTipo} onChange={(e) => setUiState(prev => ({ ...prev, filterTipo: e.target.value as TipoDocumento | 'todos' }))}
             className="px-3 py-2 border border-slate-200 rounded-lg text-sm">
             <option value="todos">Todos</option>
             {Object.entries(TIPO_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -111,10 +126,10 @@ export const DocumentManager: React.FC<Props> = ({ documentos: initialDocs, onUp
         </div>
         <div className="flex items-center gap-2">
           <div className="flex bg-slate-100 rounded-lg p-1">
-            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white shadow' : ''}`}>
+            <button onClick={() => setUiState(prev => ({ ...prev, viewMode: 'grid' }))} className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white shadow' : ''}`}>
               <Grid className="w-4 h-4" />
             </button>
-            <button onClick={() => setViewMode('list')} className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-white shadow' : ''}`}>
+            <button onClick={() => setUiState(prev => ({ ...prev, viewMode: 'list' }))} className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-white shadow' : ''}`}>
               <List className="w-4 h-4" />
             </button>
           </div>
@@ -146,7 +161,7 @@ export const DocumentManager: React.FC<Props> = ({ documentos: initialDocs, onUp
                     <Icon className={`w-5 h-5 ${info.color}`} />
                   </div>
                   <div className="flex gap-1">
-                    <button onClick={() => setSelectedDoc(doc)} className="p-1 hover:bg-slate-100 rounded"><Eye className="w-4 h-4" /></button>
+                    <button onClick={() => setUiState(prev => ({ ...prev, selectedDoc: doc }))} className="p-1 hover:bg-slate-100 rounded"><Eye className="w-4 h-4" /></button>
                     <button onClick={() => handleDownload(doc)} className="p-1 hover:bg-slate-100 rounded"><Download className="w-4 h-4" /></button>
                     {puedeEliminar && <button onClick={() => handleDelete(doc.id)} className="p-1 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>}
                   </div>
@@ -184,7 +199,7 @@ export const DocumentManager: React.FC<Props> = ({ documentos: initialDocs, onUp
                     <td className="px-4 py-3 text-sm">{formatSize(doc.tamanho || 0)}</td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-1">
-                        <button onClick={() => setSelectedDoc(doc)} className="p-1.5 hover:bg-slate-100 rounded"><Eye className="w-4 h-4" /></button>
+                        <button onClick={() => setUiState(prev => ({ ...prev, selectedDoc: doc }))} className="p-1.5 hover:bg-slate-100 rounded"><Eye className="w-4 h-4" /></button>
                         <button onClick={() => handleDownload(doc)} className="p-1.5 hover:bg-slate-100 rounded"><Download className="w-4 h-4" /></button>
                         {puedeEliminar && <button onClick={() => handleDelete(doc.id)} className="p-1.5 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>}
                       </div>
@@ -199,17 +214,17 @@ export const DocumentManager: React.FC<Props> = ({ documentos: initialDocs, onUp
 
       {selectedDoc && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-screen flex flex-col">
             <div className="flex items-center justify-between p-4 border-b">
               <div><h3 className="font-bold">{selectedDoc.titulo}</h3></div>
               <div className="flex items-center gap-2">
                 <button onClick={() => handleDownload(selectedDoc)} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg"><Download className="w-4 h-4" />Descargar</button>
-                <button onClick={() => setSelectedDoc(null)} className="p-2 hover:bg-slate-100 rounded-lg"><X className="w-5 h-5" /></button>
+                <button onClick={() => setUiState(prev => ({ ...prev, selectedDoc: null }))} className="p-2 hover:bg-slate-100 rounded-lg"><X className="w-5 h-5" /></button>
               </div>
             </div>
             <div className="flex-1 p-4 overflow-auto">
               {selectedDoc.urlArchivo.endsWith('.pdf') ? (
-                <iframe src={selectedDoc.urlArchivo} className="w-full h-full rounded-lg" />
+                <iframe src={selectedDoc.urlArchivo} className="w-full h-full rounded-lg" title={selectedDoc.titulo} />
               ) : selectedDoc.urlArchivo.match(/\.(jpg|jpeg|png)$/i) ? (
                 <img src={selectedDoc.urlArchivo} alt={selectedDoc.titulo} className="max-w-full mx-auto" />
               ) : (
@@ -233,3 +248,4 @@ export const DocumentManager: React.FC<Props> = ({ documentos: initialDocs, onUp
 };
 
 export default DocumentManager;
+

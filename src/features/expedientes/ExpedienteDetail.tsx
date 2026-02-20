@@ -26,6 +26,7 @@ import { calcularDiasRestantes, formatearFecha } from '@/shared/utils/plazos';
 import { useAuth } from '@/shared/hooks';
 import { CaseTimeline } from './CaseTimeline';
 import { useExpedienteHistorial } from '@/shared/hooks/useExpedienteHistorial';
+import { AsyncState } from '@/shared/components/ui';
 
 const ESTADO_LABELS: Record<EtapaProceso, { label: string }> = {
   INICIO: { label: 'Inicio' },
@@ -89,7 +90,7 @@ export const ExpedienteDetail: React.FC<Props> = ({
       <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-6">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-4 mb-2">
               <span className="text-xs font-black uppercase tracking-widest opacity-80">Expediente</span>
               <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/20 border border-white/30">
                 {ESTADO_LABELS[expediente.etapa].label}
@@ -171,19 +172,19 @@ export const ExpedienteDetail: React.FC<Props> = ({
               <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Estudiante</h2>
               <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-4">
                     <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><User className="w-4 h-4" /></div>
                     <div><p className="text-xs text-slate-500 uppercase">Nombre</p><p className="font-semibold">{expediente.alumno.nombreCompleto}</p></div>
                   </div>
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-4">
                     <div className="p-2 bg-slate-200 text-slate-600 rounded-lg"><GraduationCap className="w-4 h-4" /></div>
                     <div><p className="text-xs text-slate-500 uppercase">RUN</p><p className="font-semibold">{expediente.alumno.run}</p></div>
                   </div>
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-4">
                     <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><Building className="w-4 h-4" /></div>
                     <div><p className="text-xs text-slate-500 uppercase">Curso</p><p className="font-semibold">{expediente.alumno.curso}</p></div>
                   </div>
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-4">
                     <div className="p-2 bg-purple-100 text-purple-600 rounded-lg"><Users className="w-4 h-4" /></div>
                     <div><p className="text-xs text-slate-500 uppercase">Nivel</p><p className="font-semibold capitalize">{expediente.alumno.nivel}</p></div>
                   </div>
@@ -197,19 +198,19 @@ export const ExpedienteDetail: React.FC<Props> = ({
                 <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Apoderado</h2>
                 <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-4">
                       <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><User className="w-4 h-4" /></div>
                       <div><p className="text-xs text-slate-500 uppercase">Nombre</p><p className="font-semibold">{expediente.apoderado.nombreCompleto}</p></div>
                     </div>
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-4">
                       <div className="p-2 bg-slate-200 text-slate-600 rounded-lg"><Phone className="w-4 h-4" /></div>
                       <div><p className="text-xs text-slate-500 uppercase">Teléfono</p><p className="font-semibold">{expediente.apoderado.telefono}</p></div>
                     </div>
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-4">
                       <div className="p-2 bg-purple-100 text-purple-600 rounded-lg"><Mail className="w-4 h-4" /></div>
                       <div><p className="text-xs text-slate-500 uppercase">Email</p><p className="font-semibold">{expediente.apoderado.email}</p></div>
                     </div>
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-4">
                       <div className="p-2 bg-orange-100 text-orange-600 rounded-lg"><MapPin className="w-4 h-4" /></div>
                       <div><p className="text-xs text-slate-500 uppercase">Dirección</p><p className="font-semibold">{expediente.apoderado.direccion}</p></div>
                     </div>
@@ -224,19 +225,19 @@ export const ExpedienteDetail: React.FC<Props> = ({
                 <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Hecho #{index + 1}</h2>
                 <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-4">
                       <div className="p-2 bg-red-100 text-red-600 rounded-lg"><Calendar className="w-4 h-4" /></div>
                       <div><p className="text-xs text-slate-500 uppercase">Fecha</p><p className="font-semibold">{formatearFecha(hecho.fechaHecho)}</p></div>
                     </div>
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-4">
                       <div className="p-2 bg-orange-100 text-orange-600 rounded-lg"><MapPin className="w-4 h-4" /></div>
                       <div><p className="text-xs text-slate-500 uppercase">Lugar</p><p className="font-semibold">{hecho.lugar}</p></div>
                     </div>
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-4">
                       <div className="p-2 bg-yellow-100 text-yellow-600 rounded-lg"><AlertTriangle className="w-4 h-4" /></div>
                       <div><p className="text-xs text-slate-500 uppercase">Gravedad</p><p className="font-semibold">{GRAVEDAD_LABELS[hecho.gravedad].label}</p></div>
                     </div>
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-4">
                       <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><Shield className="w-4 h-4" /></div>
                       <div><p className="text-xs text-slate-500 uppercase">Tipo</p><p className="font-semibold">{TIPO_FALTA_LABELS[hecho.tipoFalta].label}</p></div>
                     </div>
@@ -259,7 +260,7 @@ export const ExpedienteDetail: React.FC<Props> = ({
             {expediente.medidas.length > 0 && (
               <section>
                 <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Medidas Disciplinarias</h2>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {expediente.medidas.map((medida, index) => (
                     <div key={medida.id} className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                       <div className="flex items-start justify-between mb-2">
@@ -302,10 +303,12 @@ export const ExpedienteDetail: React.FC<Props> = ({
         {activeTab === 'timeline' && showTimeline && (
           <div className="p-4">
             {isLoadingHistorial ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <span className="ml-3 text-slate-500">Cargando historial...</span>
-              </div>
+              <AsyncState
+                state="loading"
+                title="Cargando historial"
+                message="Recuperando trazabilidad del expediente."
+                compact
+              />
             ) : historial.length > 0 ? (
               <CaseTimeline 
                 items={historial.map(entry => ({
@@ -319,11 +322,12 @@ export const ExpedienteDetail: React.FC<Props> = ({
                 initialLimit={15}
               />
             ) : (
-              <div className="text-center py-12">
-                <Clock className="w-12 h-12 mx-auto text-slate-300 mb-4" />
-                <p className="text-slate-500">No hay registros en el historial del expediente.</p>
-                <p className="text-xs text-slate-400 mt-2">Los cambios se registrarán automáticamente.</p>
-              </div>
+              <AsyncState
+                state="empty"
+                title="Sin registros en historial"
+                message="Los cambios del expediente se registrarán automáticamente."
+                compact
+              />
             )}
           </div>
         )}

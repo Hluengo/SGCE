@@ -62,9 +62,7 @@ export const WizardStudentSelector: React.FC<WizardStudentSelectorProps> = ({
     return filtered;
   }, [estudiantes, selectedCurso, searchEstudiante]);
 
-  const totalEstudiantesCurso = useMemo(() => {
-    return estudiantes.filter((est) => est.curso === selectedCurso).length;
-  }, [estudiantes, selectedCurso]);
+  const totalEstudiantesCurso = estudiantes.filter((est) => est.curso === selectedCurso).length;
 
   const handleClear = () => {
     setSelectedCurso('');
@@ -77,8 +75,8 @@ export const WizardStudentSelector: React.FC<WizardStudentSelectorProps> = ({
   };
 
   return (
-    <div className="space-y-3">
-      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+    <div className="space-y-4">
+      <label className="block text-xs font-black uppercase tracking-widest text-slate-400">
         {title}
       </label>
       <div className="relative">
@@ -106,7 +104,7 @@ export const WizardStudentSelector: React.FC<WizardStudentSelectorProps> = ({
         <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
       </div>
 
-      <div className={`space-y-3 transition-all ${!selectedCurso ? 'opacity-50 pointer-events-none' : ''}`}>
+      <div className={`space-y-4 transition-all ${!selectedCurso ? 'opacity-50 pointer-events-none' : ''}`}>
         {selectedCurso ? (
           <>
             <button
@@ -114,7 +112,7 @@ export const WizardStudentSelector: React.FC<WizardStudentSelectorProps> = ({
               onClick={() => setIsExpanded(!isExpanded)}
               className="w-full p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between hover:bg-blue-100 transition-colors"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <Users className="w-5 h-5 text-blue-600" />
                 <div className="text-left">
                   <p className="text-sm font-bold text-blue-800">
@@ -134,7 +132,7 @@ export const WizardStudentSelector: React.FC<WizardStudentSelectorProps> = ({
 
             {isExpanded && (
               <div className="border border-slate-200 rounded-2xl overflow-hidden animate-in slide-in-from-top-2">
-                <div className="p-3 bg-slate-50 border-b border-slate-200">
+                <div className="p-4 bg-slate-50 border-b border-slate-200">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
@@ -161,7 +159,7 @@ export const WizardStudentSelector: React.FC<WizardStudentSelectorProps> = ({
                     estudiantesDelCurso.map((est) => (
                       <label
                         key={est.id}
-                        className="flex items-center p-3 hover:bg-blue-50 cursor-pointer border-b border-slate-100 last:border-0 transition-colors"
+                        className="flex items-center p-4 hover:bg-blue-50 cursor-pointer border-b border-slate-100 last:border-0 transition-colors"
                       >
                         <input
                           type="radio"
@@ -169,7 +167,7 @@ export const WizardStudentSelector: React.FC<WizardStudentSelectorProps> = ({
                           {...register(fieldName)}
                           className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500 flex-shrink-0"
                         />
-                        <div className="ml-3 flex items-center gap-3 flex-1 min-w-0">
+                        <div className="ml-3 flex items-center gap-4 flex-1 min-w-0">
                           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                             <span className="text-xs font-bold text-blue-600">
                               {est.nombreCompleto.charAt(0)}
@@ -188,7 +186,7 @@ export const WizardStudentSelector: React.FC<WizardStudentSelectorProps> = ({
                   )}
                 </div>
 
-                <div className="p-3 bg-slate-50 border-t border-slate-200">
+                <div className="p-4 bg-slate-50 border-t border-slate-200">
                   <button
                     type="button"
                     onClick={handleClear}
@@ -219,3 +217,4 @@ export const WizardStudentSelector: React.FC<WizardStudentSelectorProps> = ({
 };
 
 export default WizardStudentSelector;
+

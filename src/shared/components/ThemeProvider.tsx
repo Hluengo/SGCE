@@ -1,15 +1,12 @@
 import React, { useEffect } from "react";
 import { useTenant } from "@/shared/context/TenantContext";
-import { useApplyBrandingStyles, useTenantBranding } from "@/shared/hooks";
+import { useTenantBranding } from "@/shared/hooks";
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { establecimiento } = useTenant();
   const { branding } = useTenantBranding();
 
-  // Aplicar estilos de branding
-  useApplyBrandingStyles();
-
-  // Aplicar CSS variables adicionales
+  // Fuente unica para aplicar branding global
   useEffect(() => {
     if (!branding) return;
 
@@ -24,6 +21,19 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     root.style.setProperty('--font-body', branding.tipografia_body);
     root.style.setProperty('--font-heading', branding.tipografia_heading);
 
+    if (branding.nombre_publico) {
+      document.title = branding.nombre_publico;
+    }
+
+    if (branding.favicon_url) {
+      let favicon = document.querySelector("link[rel='icon']") as HTMLLinkElement | null;
+      if (!favicon) {
+        favicon = document.createElement('link');
+        favicon.rel = 'icon';
+        document.head.appendChild(favicon);
+      }
+      favicon.href = branding.favicon_url;
+    }
   }, [branding]);
 
   const style = {

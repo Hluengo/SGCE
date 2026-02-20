@@ -1,0 +1,9 @@
+= : El t‚rmino '=' no se reconoce como nombre de un cmdlet, funci¢n, archivo de script o programa ejecutable. 
+Compruebe si escribi¢ correctamente el nombre o, si incluy¢ una ruta de acceso, compruebe que dicha ruta es correcta e 
+int‚ntelo de nuevo.
+En l¡nea: 1 Car cter: 1
++ = [System.IO.File]::ReadAllText C:\Users\heae2\Downloads\SGCE-main\sr ...
++ ~
+    + CategoryInfo          : ObjectNotFound: (=:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 

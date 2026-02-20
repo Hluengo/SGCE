@@ -20,6 +20,7 @@ import { supabase } from '@/shared/lib/supabaseClient';
 import useAuth from '@/shared/hooks/useAuth';
 import { useTenant } from '@/shared/context/TenantContext';
 import { withRetry } from '@/shared/utils/retry';
+import { AsyncState } from '@/shared/components/ui';
 import { basicStudioValidation, buildConfigStudioChangeset } from './sqlGenerator';
 import type { ConfigStudioState, StudioScope } from './types';
 
@@ -80,7 +81,7 @@ const statusLabel: Record<ChangesetRow['status'], string> = {
 };
 
 const tabClass = (active: boolean) =>
-  `rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest ${active ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`;
+  `rounded-xl px-3 py-2 text-xs font-black uppercase tracking-widest ${active ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`;
 
 const wizardOrder: StudioView[] = ['colegio', 'seguridad', 'infra', 'avanzado', 'historial'];
 
@@ -238,10 +239,7 @@ const toSafeNumber = (value: unknown, fallback: number, min = 0) => {
   return Math.max(min, Math.round(parsed));
 };
 
-const BackendConfigStudio = () => {
-  const { usuario } = useAuth();
-  const { tenantId } = useTenant();
-
+const useBackendConfigStudioState = () => {
   const [view, setView] = useState<StudioView>('colegio');
   const [scope, setScope] = useState<StudioScope>('global');
   const [title, setTitle] = useState('');
@@ -264,6 +262,104 @@ const BackendConfigStudio = () => {
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiSuccess, setAiSuccess] = useState<string | null>(null);
   const [aiAutoValidating, setAiAutoValidating] = useState(false);
+
+  return {
+    view,
+    setView,
+    scope,
+    setScope,
+    title,
+    setTitle,
+    summary,
+    setSummary,
+    state,
+    setState,
+    history,
+    setHistory,
+    selectedChangesetId,
+    setSelectedChangesetId,
+    loadingHistory,
+    setLoadingHistory,
+    savingDraft,
+    setSavingDraft,
+    executing,
+    setExecuting,
+    validationErrors,
+    setValidationErrors,
+    serverValidation,
+    setServerValidation,
+    uiError,
+    setUiError,
+    saveSuccess,
+    setSaveSuccess,
+    showFieldHelp,
+    setShowFieldHelp,
+    showAiCopilot,
+    setShowAiCopilot,
+    aiPrompt,
+    setAiPrompt,
+    aiResponse,
+    setAiResponse,
+    aiLoading,
+    setAiLoading,
+    aiError,
+    setAiError,
+    aiSuccess,
+    setAiSuccess,
+    aiAutoValidating,
+    setAiAutoValidating,
+  };
+};
+
+const useBackendConfigStudioView = () => {
+  const { usuario } = useAuth();
+  const { tenantId } = useTenant();
+  const {
+    view,
+    setView,
+    scope,
+    setScope,
+    title,
+    setTitle,
+    summary,
+    setSummary,
+    state,
+    setState,
+    history,
+    setHistory,
+    selectedChangesetId,
+    setSelectedChangesetId,
+    loadingHistory,
+    setLoadingHistory,
+    savingDraft,
+    setSavingDraft,
+    executing,
+    setExecuting,
+    validationErrors,
+    setValidationErrors,
+    serverValidation,
+    setServerValidation,
+    uiError,
+    setUiError,
+    saveSuccess,
+    setSaveSuccess,
+    showFieldHelp,
+    setShowFieldHelp,
+    showAiCopilot,
+    setShowAiCopilot,
+    aiPrompt,
+    setAiPrompt,
+    aiResponse,
+    setAiResponse,
+    aiLoading,
+    setAiLoading,
+    aiError,
+    setAiError,
+    aiSuccess,
+    setAiSuccess,
+    aiAutoValidating,
+    setAiAutoValidating,
+  } = useBackendConfigStudioState();
 
   const generated = useMemo(() => buildConfigStudioChangeset(scope, scope === 'tenant' ? tenantId : null, state, title, summary), [scope, tenantId, state, title, summary]);
 
@@ -830,55 +926,55 @@ ${context}`,
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setShowAiCopilot((prev) => !prev)}
-            className="px-3 py-2 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100 flex items-center gap-1.5"
+            className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100 flex items-center gap-1.5"
           >
             <Bot className="w-3.5 h-3.5" />
             {showAiCopilot ? 'Ocultar IA' : 'Copiloto IA'}
           </button>
           <button
             onClick={() => setShowFieldHelp((prev) => !prev)}
-            className="px-3 py-2 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100"
+            className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100"
           >
             {showFieldHelp ? 'Ocultar ayuda' : 'Ayuda de campos'}
           </button>
-          <button onClick={() => applyPreset('colegio')} className="px-3 py-2 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100">Plantilla colegio</button>
-          <button onClick={() => applyPreset('seguridad')} className="px-3 py-2 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100">Plantilla seguridad</button>
-          <button onClick={() => applyPreset('infra')} className="px-3 py-2 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100">Plantilla infraestructura</button>
-          <button onClick={() => void runValidation()} className="px-3 py-2 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100">Validar configuración</button>
-          <button onClick={() => void saveChangesetDraft()} disabled={savingDraft} className="px-3 py-2 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-50">
+          <button onClick={() => applyPreset('colegio')} className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100">Plantilla colegio</button>
+          <button onClick={() => applyPreset('seguridad')} className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100">Plantilla seguridad</button>
+          <button onClick={() => applyPreset('infra')} className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100">Plantilla infraestructura</button>
+          <button onClick={() => void runValidation()} className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100">Validar configuración</button>
+          <button onClick={() => void saveChangesetDraft()} disabled={savingDraft} className="px-3 py-2 rounded-xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest disabled:opacity-50">
             {savingDraft ? 'Guardando...' : 'Guardar borrador'}
           </button>
         </div>
       </header>
 
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
-        <p className="font-black uppercase tracking-widest text-[10px] text-slate-600 mb-1">Glosario rápido</p>
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-700">
+        <p className="font-black uppercase tracking-widest text-xs text-slate-600 mb-1">Glosario rápido</p>
         <p><span className="font-semibold">Alcance:</span> define si el cambio aplica a todos los colegios o solo al colegio activo.</p>
         <p><span className="font-semibold">Borrador:</span> propuesta guardada de cambios, aún no aplicada a la base de datos.</p>
         <p><span className="font-semibold">Política RLS:</span> regla de acceso por filas que limita qué datos puede ver/modificar cada usuario.</p>
       </div>
 
       <div className="rounded-2xl border border-slate-200 p-4 bg-slate-50/70">
-        <div className="grid lg:grid-cols-4 gap-3">
-          <label className="text-xs space-y-1">
+        <div className="grid lg:grid-cols-4 gap-4">
+          <div className="text-xs space-y-1">
             <span className="font-black uppercase tracking-wider text-slate-500">Alcance</span>
             <div className="grid grid-cols-2 gap-2">
               <button onClick={() => setScope('global')} className={tabClass(scope === 'global')}>Global (todos)</button>
               <button onClick={() => setScope('tenant')} className={tabClass(scope === 'tenant')}>Por colegio</button>
             </div>
-          </label>
-          <label className="text-xs space-y-1">
+          </div>
+          <div className="text-xs space-y-1">
             <span className="font-black uppercase tracking-wider text-slate-500">Tenant Activo</span>
             <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700">{tenantId ?? 'No seleccionado'}</div>
-          </label>
-          <label className="text-xs space-y-1">
-            <span className="font-black uppercase tracking-wider text-slate-500">Titulo</span>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2" />
-          </label>
-          <label className="text-xs space-y-1">
-            <span className="font-black uppercase tracking-wider text-slate-500">Resumen</span>
-            <input value={summary} onChange={(e) => setSummary(e.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2" />
-          </label>
+          </div>
+          <div className="text-xs space-y-1">
+            <label htmlFor="configstudio-title" className="font-black uppercase tracking-wider text-slate-500">Titulo</label>
+            <input id="configstudio-title" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2" />
+          </div>
+          <div className="text-xs space-y-1">
+            <label htmlFor="configstudio-summary" className="font-black uppercase tracking-wider text-slate-500">Resumen</label>
+            <input id="configstudio-summary" value={summary} onChange={(e) => setSummary(e.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2" />
+          </div>
         </div>
       </div>
 
@@ -889,8 +985,8 @@ ${context}`,
       )}
 
       {showFieldHelp && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 space-y-2 text-xs text-slate-700">
-          <p className="font-black uppercase tracking-widest text-[10px] text-blue-800">
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 space-y-2 text-xs text-slate-700">
+          <p className="font-black uppercase tracking-widest text-xs text-blue-800">
             Ayuda rápida: qué debes completar
           </p>
           <p><span className="font-semibold">Plantilla colegio:</span> nombre de tabla, columnas y política RLS (tabla + nombre + reglas USING/WITH CHECK).</p>
@@ -903,10 +999,10 @@ ${context}`,
       )}
 
       {showAiCopilot && (
-        <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4 space-y-3">
+        <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4 space-y-4">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-violet-700" />
-            <p className="text-[11px] font-black uppercase tracking-widest text-violet-800">
+            <p className="text-xs font-black uppercase tracking-widest text-violet-800">
               Copiloto IA de configuración
             </p>
           </div>
@@ -916,33 +1012,33 @@ ${context}`,
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => void runAiGuidance('Revisa esta plantilla y dime exactamente qué campos faltan completar para dejarla lista.')}
-              className="px-3 py-1.5 rounded-lg border border-violet-300 text-[10px] font-black uppercase tracking-widest text-violet-800 hover:bg-violet-100"
+              className="px-3 py-1.5 rounded-lg border border-violet-300 text-xs font-black uppercase tracking-widest text-violet-800 hover:bg-violet-100"
             >
               Diagnóstico rápido
             </button>
             <button
               onClick={() => void runAiGuidance('Dame un ejemplo completo y válido para esta plantilla, listo para copiar en los campos del formulario.')}
-              className="px-3 py-1.5 rounded-lg border border-violet-300 text-[10px] font-black uppercase tracking-widest text-violet-800 hover:bg-violet-100"
+              className="px-3 py-1.5 rounded-lg border border-violet-300 text-xs font-black uppercase tracking-widest text-violet-800 hover:bg-violet-100"
             >
               Ejemplo listo
             </button>
             <button
               onClick={() => void runAiGuidance('Explícame los términos técnicos de esta vista en palabras simples para un usuario no técnico.')}
-              className="px-3 py-1.5 rounded-lg border border-violet-300 text-[10px] font-black uppercase tracking-widest text-violet-800 hover:bg-violet-100"
+              className="px-3 py-1.5 rounded-lg border border-violet-300 text-xs font-black uppercase tracking-widest text-violet-800 hover:bg-violet-100"
             >
               Traducir términos
             </button>
             <button
               onClick={() => void runAiAutofill()}
               disabled={aiLoading || aiAutoValidating}
-              className="px-3 py-1.5 rounded-lg bg-violet-700 text-white text-[10px] font-black uppercase tracking-widest hover:bg-violet-800 disabled:opacity-50"
+              className="px-3 py-1.5 rounded-lg bg-violet-700 text-white text-xs font-black uppercase tracking-widest hover:bg-violet-800 disabled:opacity-50"
             >
               Autocompletar plantilla
             </button>
             <button
               onClick={() => void runAiAutofillAndValidate()}
               disabled={aiLoading || aiAutoValidating}
-              className="px-3 py-1.5 rounded-lg bg-cyan-700 text-white text-[10px] font-black uppercase tracking-widest hover:bg-cyan-800 disabled:opacity-50"
+              className="px-3 py-1.5 rounded-lg bg-cyan-700 text-white text-xs font-black uppercase tracking-widest hover:bg-cyan-800 disabled:opacity-50"
             >
               {aiAutoValidating ? 'Autocompletando...' : 'Autocompletar + validar'}
             </button>
@@ -958,7 +1054,7 @@ ${context}`,
             <button
               onClick={() => void runAiGuidance()}
               disabled={aiLoading}
-              className="px-3 py-2 rounded-xl bg-violet-700 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-50 flex items-center gap-1.5 h-fit"
+              className="px-3 py-2 rounded-xl bg-violet-700 text-white text-xs font-black uppercase tracking-widest disabled:opacity-50 flex items-center gap-1.5 h-fit"
             >
               {aiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
               Guiar
@@ -971,8 +1067,8 @@ ${context}`,
             <p className="text-xs text-emerald-700 font-semibold">{aiSuccess}</p>
           )}
           {aiResponse && (
-            <article className="rounded-xl border border-violet-200 bg-white p-3">
-              <p className="text-[10px] font-black uppercase tracking-widest text-violet-700 mb-2">
+            <article className="rounded-xl border border-violet-200 bg-white p-4">
+              <p className="text-xs font-black uppercase tracking-widest text-violet-700 mb-2">
                 Respuesta IA
               </p>
               <pre className="text-xs text-slate-700 whitespace-pre-wrap font-sans">{aiResponse}</pre>
@@ -989,41 +1085,41 @@ ${context}`,
         <button onClick={() => setView('historial')} className={tabClass(view === 'historial')}><History className="w-3.5 h-3.5 inline mr-1" />Historial</button>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-3">
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-2">
+      <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <p className="text-xs font-black uppercase tracking-widest text-slate-600 mb-2">
           Qué significa cada campo en esta plantilla ({view})
         </p>
         <div className="grid md:grid-cols-3 gap-2">
           {fieldGuides[view].map((item) => (
             <div key={item.field} className="rounded-lg border border-slate-200 bg-slate-50 p-2">
-              <p className="text-[11px] font-bold text-slate-800">{item.field}</p>
-              <p className="text-[11px] text-slate-600 mt-1">{item.what}</p>
-              <p className="text-[10px] text-slate-500 mt-1"><span className="font-semibold">Formato:</span> {item.format}</p>
-              <p className="text-[10px] text-slate-500"><span className="font-semibold">Ejemplo:</span> {item.example}</p>
+              <p className="text-xs font-bold text-slate-800">{item.field}</p>
+              <p className="text-xs text-slate-600 mt-1">{item.what}</p>
+              <p className="text-xs text-slate-500 mt-1"><span className="font-semibold">Formato:</span> {item.format}</p>
+              <p className="text-xs text-slate-500"><span className="font-semibold">Ejemplo:</span> {item.example}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs text-cyan-900 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+      <div className="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs text-cyan-900 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <div className="w-full space-y-2">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
             <p>
-              <span className="font-black uppercase tracking-widest text-[10px] mr-2">Paso {currentStepIndex + 1}/{wizardOrder.length}</span>
+              <span className="font-black uppercase tracking-widest text-xs mr-2">Paso {currentStepIndex + 1}/{wizardOrder.length}</span>
               {wizardHelp[view]}
             </p>
             <div className="flex gap-2">
               <button
                 onClick={goPrevStep}
                 disabled={!canGoPrev}
-                className="px-3 py-1.5 rounded-lg border border-cyan-300 text-[10px] font-black uppercase tracking-widest disabled:opacity-40"
+                className="px-3 py-1.5 rounded-lg border border-cyan-300 text-xs font-black uppercase tracking-widest disabled:opacity-40"
               >
                 Anterior
               </button>
               <button
                 onClick={goNextStep}
                 disabled={!canGoNext || currentStepIssues.length > 0}
-                className="px-3 py-1.5 rounded-lg bg-cyan-700 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-40"
+                className="px-3 py-1.5 rounded-lg bg-cyan-700 text-white text-xs font-black uppercase tracking-widest disabled:opacity-40"
               >
                 Siguiente
               </button>
@@ -1036,7 +1132,7 @@ ${context}`,
                 style={{ width: `${progressPct}%` }}
               />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-cyan-800 whitespace-nowrap">
+            <span className="text-xs font-black uppercase tracking-widest text-cyan-800 whitespace-nowrap">
               {progressPct}%
             </span>
           </div>
@@ -1044,7 +1140,7 @@ ${context}`,
             {wizardOrder.map((step) => (
               <span
                 key={step}
-                className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                className={`px-2 py-1 rounded-full text-xs font-black uppercase tracking-widest ${
                   stepCompletion[step]
                     ? 'bg-emerald-100 text-emerald-700'
                     : 'bg-amber-100 text-amber-700'
@@ -1055,22 +1151,22 @@ ${context}`,
             ))}
           </div>
           <div className="rounded-lg border border-cyan-200 bg-white/70 p-2">
-            <p className="text-[10px] font-black uppercase tracking-widest text-cyan-800 mb-1">
+            <p className="text-xs font-black uppercase tracking-widest text-cyan-800 mb-1">
               Este paso te pide
             </p>
             <ul className="space-y-1">
               {wizardRequirements[view].map((req) => (
-                <li key={req} className="text-[11px] text-cyan-900">- {req}</li>
+                <li key={req} className="text-xs text-cyan-900">- {req}</li>
               ))}
             </ul>
             {currentStepIssues.length > 0 && (
               <>
-                <p className="text-[10px] font-black uppercase tracking-widest text-rose-700 mt-2 mb-1">
+                <p className="text-xs font-black uppercase tracking-widest text-rose-700 mt-2 mb-1">
                   Falta completar
                 </p>
                 <ul className="space-y-1">
                   {currentStepIssues.map((issue) => (
-                    <li key={issue} className="text-[11px] text-rose-700">- {issue}</li>
+                    <li key={issue} className="text-xs text-rose-700">- {issue}</li>
                   ))}
                 </ul>
               </>
@@ -1080,8 +1176,8 @@ ${context}`,
       </div>
       {view === 'colegio' && (
         <div className="grid xl:grid-cols-2 gap-4">
-          <article className="rounded-2xl border border-slate-200 p-4 space-y-3">
-            <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">Modelo de datos</p>
+          <article className="rounded-2xl border border-slate-200 p-4 space-y-4">
+            <p className="text-xs font-black uppercase tracking-widest text-slate-500">Modelo de datos</p>
             <input value={tableDraft.tableName} onChange={(e) => setState((current) => ({ ...current, tables: [{ ...tableDraft, tableName: e.target.value }] }))} placeholder="Tabla" className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs" />
             <div className="grid grid-cols-2 gap-2 text-xs">
               <label className="flex items-center gap-2"><input type="checkbox" checked={tableDraft.createIfMissing} onChange={(e) => setState((current) => ({ ...current, tables: [{ ...tableDraft, createIfMissing: e.target.checked }] }))} />Crear si no existe</label>
@@ -1099,24 +1195,24 @@ ${context}`,
                   setUiError('JSON invalido en columnas.');
                 }
               }}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-[11px] font-mono"
+              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-mono"
             />
           </article>
 
-          <article className="rounded-2xl border border-slate-200 p-4 space-y-3">
-            <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">RLS tenant</p>
+          <article className="rounded-2xl border border-slate-200 p-4 space-y-4">
+            <p className="text-xs font-black uppercase tracking-widest text-slate-500">RLS tenant</p>
             <input value={policyDraft.tableName} onChange={(e) => setState((current) => ({ ...current, policies: [{ ...policyDraft, tableName: e.target.value }] }))} placeholder="Tabla a proteger (RLS)" className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs" />
             <input value={policyDraft.policyName} onChange={(e) => setState((current) => ({ ...current, policies: [{ ...policyDraft, policyName: e.target.value }] }))} placeholder="Nombre de la política de acceso" className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs" />
-            <textarea value={policyDraft.usingExpr ?? ''} onChange={(e) => setState((current) => ({ ...current, policies: [{ ...policyDraft, usingExpr: e.target.value }] }))} rows={3} className="w-full rounded-xl border border-slate-300 px-3 py-2 text-[11px] font-mono" />
-            <textarea value={policyDraft.withCheckExpr ?? ''} onChange={(e) => setState((current) => ({ ...current, policies: [{ ...policyDraft, withCheckExpr: e.target.value }] }))} rows={3} className="w-full rounded-xl border border-slate-300 px-3 py-2 text-[11px] font-mono" />
+            <textarea value={policyDraft.usingExpr ?? ''} onChange={(e) => setState((current) => ({ ...current, policies: [{ ...policyDraft, usingExpr: e.target.value }] }))} rows={3} className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-mono" />
+            <textarea value={policyDraft.withCheckExpr ?? ''} onChange={(e) => setState((current) => ({ ...current, policies: [{ ...policyDraft, withCheckExpr: e.target.value }] }))} rows={3} className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-mono" />
           </article>
         </div>
       )}
 
       {view === 'seguridad' && (
         <article className="rounded-2xl border border-slate-200 p-4 space-y-4">
-          <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">Auth y API</p>
-          <div className="grid md:grid-cols-3 gap-3 text-xs">
+          <p className="text-xs font-black uppercase tracking-widest text-slate-500">Auth y API</p>
+          <div className="grid md:grid-cols-3 gap-4 text-xs">
             <label className="space-y-1"><span>Min password</span><input type="number" min={8} value={state.auth.passwordMinLength} onChange={(e) => setState((current) => ({ ...current, auth: { ...current.auth, passwordMinLength: Number(e.target.value) || 8 } }))} className="w-full rounded-lg border border-slate-300 px-2 py-1.5" /></label>
             <label className="space-y-1"><span>Timeout sesion</span><input type="number" min={30} value={state.auth.sessionTimeoutMinutes} onChange={(e) => setState((current) => ({ ...current, auth: { ...current.auth, sessionTimeoutMinutes: Number(e.target.value) || 30 } }))} className="w-full rounded-lg border border-slate-300 px-2 py-1.5" /></label>
             <label className="space-y-1"><span>Rate limit/min</span><input type="number" min={10} value={state.api.rateLimitPerMinute} onChange={(e) => setState((current) => ({ ...current, api: { ...current.api, rateLimitPerMinute: Number(e.target.value) || 10 } }))} className="w-full rounded-lg border border-slate-300 px-2 py-1.5" /></label>
@@ -1127,13 +1223,13 @@ ${context}`,
 
       {view === 'infra' && (
         <div className="grid xl:grid-cols-2 gap-4">
-          <article className="rounded-2xl border border-slate-200 p-4 space-y-3">
-          <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">Archivos (Storage)</p>
+          <article className="rounded-2xl border border-slate-200 p-4 space-y-4">
+          <p className="text-xs font-black uppercase tracking-widest text-slate-500">Archivos (Storage)</p>
           <input value={storageDraft.bucketName} onChange={(e) => setState((current) => ({ ...current, storage: [{ ...storageDraft, bucketName: e.target.value }] }))} placeholder="Nombre del contenedor de archivos (bucket)" className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs" />
           <input value={storageDraft.allowedMimeTypes.join(',')} onChange={(e) => setState((current) => ({ ...current, storage: [{ ...storageDraft, allowedMimeTypes: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) }] }))} placeholder="Tipos permitidos: image/png,application/pdf" className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs" />
         </article>
-        <article className="rounded-2xl border border-slate-200 p-4 space-y-3">
-          <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">Funciones Edge</p>
+        <article className="rounded-2xl border border-slate-200 p-4 space-y-4">
+          <p className="text-xs font-black uppercase tracking-widest text-slate-500">Funciones Edge</p>
           <input value={edgeDraft.functionName} onChange={(e) => setState((current) => ({ ...current, edgeFunctions: [{ ...edgeDraft, functionName: e.target.value }] }))} placeholder="Nombre de la función edge" className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs" />
           <input value={edgeDraft.routePath} onChange={(e) => setState((current) => ({ ...current, edgeFunctions: [{ ...edgeDraft, routePath: e.target.value }] }))} placeholder="Ruta HTTP de la función (ej: /api/sync)" className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs" />
         </article>
@@ -1141,59 +1237,90 @@ ${context}`,
       )}
 
       {view === 'avanzado' && (
-        <article className="rounded-2xl border border-slate-200 p-4 space-y-3">
-          <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">Vista previa técnica (SQL)</p>
+        <article className="rounded-2xl border border-slate-200 p-4 space-y-4">
+          <p className="text-xs font-black uppercase tracking-widest text-slate-500">Vista previa técnica (SQL)</p>
           <div className="text-xs text-slate-700 space-y-2">
             <p><span className="font-black">Sentencias SQL:</span> {generated.sql.length}</p>
             <p><span className="font-black">Sentencias de reversa (rollback):</span> {generated.rollbackSql.length}</p>
           </div>
-          <textarea value={generated.sql.join('\n')} readOnly rows={12} className="w-full rounded-xl border border-slate-300 px-3 py-2 text-[11px] font-mono bg-slate-50" />
+          <textarea value={generated.sql.join('\n')} readOnly rows={12} className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-mono bg-slate-50" />
         </article>
       )}
 
       {view === 'historial' && (
-        <div className="rounded-2xl border border-slate-200 p-4 space-y-3">
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
-            <p className="font-black uppercase tracking-widest text-[10px] text-slate-600 mb-1">Estados explicados</p>
+        <div className="rounded-2xl border border-slate-200 p-4 space-y-4">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-700">
+            <p className="font-black uppercase tracking-widest text-xs text-slate-600 mb-1">Estados explicados</p>
             <p><span className="font-semibold">Borrador:</span> configuración guardada, aún no aplicada.</p>
             <p><span className="font-semibold">Validado:</span> SQL revisado por reglas automáticas; listo para aplicar.</p>
             <p><span className="font-semibold">Aplicado:</span> cambios ejecutados en base real.</p>
             <p><span className="font-semibold">Fallido:</span> error al validar o ejecutar; revisar detalle.</p>
             <p><span className="font-semibold">Revertido:</span> se ejecutó rollback para deshacer cambios.</p>
           </div>
+          {uiError && (
+            <AsyncState
+              state="error"
+              title="No se pudo cargar el historial"
+              message={uiError}
+              onRetry={() => {
+                void loadHistory();
+              }}
+              compact
+            />
+          )}
           <div className="flex items-center justify-between">
-            <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">Historial</p>
-            <button onClick={() => void loadHistory()} disabled={loadingHistory} className="px-3 py-1.5 rounded-lg border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100 disabled:opacity-50">
+            <p className="text-xs font-black uppercase tracking-widest text-slate-500">Historial</p>
+            <button onClick={() => void loadHistory()} disabled={loadingHistory} className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100 disabled:opacity-50">
               {loadingHistory ? 'Cargando...' : 'Refrescar'}
             </button>
           </div>
           <div className="overflow-auto border border-slate-100 rounded-xl">
-            <table className="w-full text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase tracking-widest">
-                <tr><th className="p-2 text-left">Selección</th><th className="p-2 text-left">Título</th><th className="p-2 text-left">Alcance</th><th className="p-2 text-left">Estado</th></tr>
-              </thead>
-              <tbody>
-                {history.map((item) => (
-                  <tr key={item.id} className="border-t border-slate-100">
-                    <td className="p-2"><input type="radio" checked={selectedChangesetId === item.id} onChange={() => setSelectedChangesetId(item.id)} /></td>
-                    <td className="p-2"><p className="font-bold text-slate-700">{item.title}</p><p className="text-slate-500">{item.id}</p>{item.error_text && <p className="text-rose-600">{item.error_text}</p>}</td>
-                    <td className="p-2 text-slate-600">{item.scope === 'global' ? 'Global (todos)' : 'Por colegio'}</td>
-                    <td className="p-2"><span className={`px-2 py-1 rounded-full font-black uppercase text-[10px] ${statusBadge[item.status]}`}>{statusLabel[item.status]}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {loadingHistory ? (
+              <div className="p-4">
+                <AsyncState
+                  state="loading"
+                  title="Cargando historial"
+                  message="Recuperando changesets guardados."
+                  compact
+                />
+              </div>
+            ) : history.length === 0 ? (
+              <div className="p-4">
+                <AsyncState
+                  state="empty"
+                  title="Sin changesets en historial"
+                  message="Guarda un borrador para comenzar el versionado técnico."
+                  compact
+                />
+              </div>
+            ) : (
+              <table className="w-full text-xs">
+                <thead className="bg-slate-50 text-slate-500 uppercase tracking-widest">
+                  <tr><th className="p-2 text-left">Selección</th><th className="p-2 text-left">Título</th><th className="p-2 text-left">Alcance</th><th className="p-2 text-left">Estado</th></tr>
+                </thead>
+                <tbody>
+                  {history.map((item) => (
+                    <tr key={item.id} className="border-t border-slate-100">
+                      <td className="p-2"><input type="radio" checked={selectedChangesetId === item.id} onChange={() => setSelectedChangesetId(item.id)} /></td>
+                      <td className="p-2"><p className="font-bold text-slate-700">{item.title}</p><p className="text-slate-500">{item.id}</p>{item.error_text && <p className="text-rose-600">{item.error_text}</p>}</td>
+                      <td className="p-2 text-slate-600">{item.scope === 'global' ? 'Global (todos)' : 'Por colegio'}</td>
+                      <td className="p-2"><span className={`px-2 py-1 rounded-full font-black uppercase text-xs ${statusBadge[item.status]}`}>{statusLabel[item.status]}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => void applySelectedChangeset()} disabled={!selectedChangesetId || executing} className="px-3 py-2 rounded-xl bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-50 flex items-center gap-2"><Play className="w-3.5 h-3.5" />Aplicar</button>
-            <button onClick={() => void revertSelectedChangeset()} disabled={!selectedChangesetId || executing} className="px-3 py-2 rounded-xl bg-amber-600 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-50 flex items-center gap-2"><RotateCcw className="w-3.5 h-3.5" />Revertir</button>
+            <button onClick={() => void applySelectedChangeset()} disabled={!selectedChangesetId || executing} className="px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-black uppercase tracking-widest disabled:opacity-50 flex items-center gap-2"><Play className="w-3.5 h-3.5" />Aplicar</button>
+            <button onClick={() => void revertSelectedChangeset()} disabled={!selectedChangesetId || executing} className="px-3 py-2 rounded-xl bg-amber-600 text-white text-xs font-black uppercase tracking-widest disabled:opacity-50 flex items-center gap-2"><RotateCcw className="w-3.5 h-3.5" />Revertir</button>
           </div>
         </div>
       )}
 
-      {(validationErrors.length > 0 || serverValidation || uiError || generated.impactPreview.warnings.length > 0) && (
+      {(validationErrors.length > 0 || serverValidation || (uiError && view !== 'historial') || generated.impactPreview.warnings.length > 0) && (
         <div className="rounded-2xl border border-slate-200 p-4 space-y-2 text-xs">
-          {uiError && <p className="text-rose-700 font-semibold">{uiError}</p>}
+          {uiError && view !== 'historial' && <p className="text-rose-700 font-semibold">{uiError}</p>}
           {validationErrors.map((error) => <p key={error} className="text-rose-700">{error}</p>)}
           {serverValidation?.errors.map((error) => <p key={error} className="text-rose-700">{error}</p>)}
           {serverValidation?.warnings.map((warning) => <p key={warning} className="text-amber-700">{warning}</p>)}
@@ -1205,4 +1332,7 @@ ${context}`,
   );
 };
 
+const BackendConfigStudio = () => useBackendConfigStudioView();
+
 export default BackendConfigStudio;
+

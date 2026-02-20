@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import usePdfGenerator from '../hooks/usePdfGenerator';
 import baseTemplate from '../templates/baseTemplate';
 

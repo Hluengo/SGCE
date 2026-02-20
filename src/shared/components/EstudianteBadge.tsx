@@ -37,7 +37,7 @@ export const EstudianteBadge: React.FC<EstudianteBadgeProps> = ({
     sm: {
       container: 'text-xs',
       icon: 'w-4 h-4',
-      badge: 'px-1.5 py-0.5 text-[10px]'
+      badge: 'px-1.5 py-0.5 text-xs'
     },
     md: {
       container: 'text-sm',
@@ -110,3 +110,4 @@ export const formatEstudianteDisplay = (
 };
 
 export default EstudianteBadge;
+

@@ -34,20 +34,20 @@ const Header: React.FC = () => {
   return (
     <header className="min-h-16 md:h-16 bg-white border-b border-slate-200 px-4 md:px-8 py-3 md:py-0 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm z-10 shrink-0">
       <div className="flex items-center flex-wrap gap-2">
-        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Modulo:</span>
-        <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-lg border border-blue-100 uppercase">
+        <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Modulo:</span>
+        <span className="text-xs font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-lg border border-blue-100 uppercase">
           {getBreadcrumb()}
         </span>
       </div>
 
       <div className="flex items-center flex-wrap gap-3">
-        <div className="flex items-center text-[10px] text-slate-400 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200 font-bold uppercase tracking-tighter">
+        <div className="flex items-center text-xs text-slate-400 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200 font-bold uppercase tracking-tighter">
           <span className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse" />
           {establecimiento?.nombre ?? 'Tenant no resuelto'}
         </div>
 
         {tieneAlgunPermiso(['system:manage', 'tenants:gestionar']) && (
-          <Link to="/admin" className="text-[10px] font-black uppercase tracking-widest bg-cyan-600 text-white px-3 py-2 rounded-lg hover:bg-cyan-700 transition-colors">
+          <Link to="/admin" className="text-xs font-black uppercase tracking-widest bg-cyan-600 text-white px-3 py-2 rounded-lg hover:bg-cyan-700 transition-colors">
             Panel Admin
           </Link>
         )}
@@ -58,7 +58,7 @@ const Header: React.FC = () => {
 
         <button
           onClick={() => void signOut()}
-          className="text-[10px] font-black uppercase tracking-widest bg-slate-900 text-white px-3 py-2 rounded-lg"
+          className="text-xs font-black uppercase tracking-widest bg-slate-900 text-white px-3 py-2 rounded-lg"
         >
           Cerrar sesion
         </button>
@@ -68,3 +68,4 @@ const Header: React.FC = () => {
 };
 
 export default Header;
+

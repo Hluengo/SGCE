@@ -1,6 +1,7 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Menu, X, ChevronsLeft, ChevronsRight } from 'lucide-react';
-import { SidebarNav, SidebarProfile } from './Sidebar/index';
+import { SidebarNav } from './Sidebar/SidebarNav';
+import { SidebarProfile } from './Sidebar/SidebarProfile';
 import TenantSelector from './TenantSelector';
 import { useTenantBranding } from '@/shared/hooks/useTenantBranding';
 
@@ -76,7 +77,7 @@ const Sidebar: React.FC = () => {
                 <h1 className="text-base font-bold text-white truncate leading-tight">
                   {branding?.nombre_publico || 'Gestión'}
                 </h1>
-                <p className="text-[10px] text-slate-400 truncate">Convivencia Escolar</p>
+                <p className="text-xs text-slate-400 truncate">Convivencia Escolar</p>
               </div>
             )}
           </div>
@@ -107,6 +108,15 @@ const Sidebar: React.FC = () => {
         <div
           className="lg:hidden fixed inset-0 bg-black/50 z-30"
           onClick={toggleMobile}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              toggleMobile();
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label="Cerrar menú lateral"
         />
       )}
     </>
@@ -114,3 +124,4 @@ const Sidebar: React.FC = () => {
 };
 
 export default Sidebar;
+

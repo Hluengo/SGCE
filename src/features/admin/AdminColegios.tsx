@@ -40,6 +40,16 @@ interface Estudiante {
   curso: string;
 }
 
+interface ColegioFormData {
+  nombre: string;
+  rbd: string;
+  direccion: string;
+  telefono: string;
+  email: string;
+  niveles_educativos: string[];
+  activo: boolean;
+}
+
 const NIVELES_DISPONIBLES = ['Parvularia', 'Basica', 'Media', 'Tecnico Profesional', 'Adultos'];
 
 const getErrorMessage = (err: unknown): string => {
@@ -50,9 +60,573 @@ const getErrorMessage = (err: unknown): string => {
   return 'Error desconocido';
 };
 
-const AdminColegios: React.FC = () => {
-  const { tenantId, setTenantId } = useTenant();
+const ColegioFormModal: React.FC<{
+  modalAbierto: 'crear' | 'editar' | 'importar' | null;
+  formData: ColegioFormData;
+  setFormData: React.Dispatch<React.SetStateAction<ColegioFormData>>;
+  setModalAbierto: (value: 'crear' | 'editar' | 'importar' | null) => void;
+  guardando: boolean;
+  handleGuardar: () => Promise<void>;
+}> = ({ modalAbierto, formData, setFormData, setModalAbierto, guardando, handleGuardar }) => {
+  if (!modalAbierto || modalAbierto === 'importar') return null;
 
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-md max-h-5\/6 overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b border-slate-700">
+          <h2 className="text-lg font-semibold text-white">
+            {modalAbierto === 'crear' ? 'Nuevo Colegio' : 'Editar Colegio'}
+          </h2>
+          <button
+            onClick={() => setModalAbierto(null)}
+            className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-4 space-y-4">
+          <div>
+            <label htmlFor="colegio-nombre" className="block text-sm font-medium text-slate-300 mb-1">
+              Nombre *
+            </label>
+            <input
+              id="colegio-nombre"
+              type="text"
+              value={formData.nombre}
+              onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Nombre del establecimiento"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="colegio-rbd" className="block text-sm font-medium text-slate-300 mb-1">
+              RBD
+            </label>
+            <input
+              id="colegio-rbd"
+              type="text"
+              value={formData.rbd}
+              onChange={(e) => setFormData({ ...formData, rbd: e.target.value.toUpperCase() })}
+              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Rol Base de Datos"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="colegio-direccion" className="block text-sm font-medium text-slate-300 mb-1">
+              Direccion
+            </label>
+            <input
+              id="colegio-direccion"
+              type="text"
+              value={formData.direccion}
+              onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Direccion del establecimiento"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="colegio-telefono" className="block text-sm font-medium text-slate-300 mb-1">
+                Telefono
+              </label>
+              <input
+                id="colegio-telefono"
+                type="text"
+                value={formData.telefono}
+                onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="+56 9 XXXX XXXX"
+              />
+            </div>
+            <div>
+              <label htmlFor="colegio-email" className="block text-sm font-medium text-slate-300 mb-1">
+                Email
+              </label>
+              <input
+                id="colegio-email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="email@colegio.cl"
+              />
+            </div>
+          </div>
+
+          <div>
+            <p className="block text-sm font-medium text-slate-300 mb-2">
+              Niveles educativos
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {NIVELES_DISPONIBLES.map((nivel) => {
+                const checked = formData.niveles_educativos.includes(nivel);
+                return (
+                  <label key={nivel} className="flex items-center gap-2 text-sm text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        const next = e.target.checked
+                          ? [...formData.niveles_educativos, nivel]
+                          : formData.niveles_educativos.filter((n) => n !== nivel);
+                        setFormData({ ...formData, niveles_educativos: next });
+                      }}
+                      className="w-4 h-4 rounded border-slate-600 bg-slate-900 text-blue-600 focus:ring-blue-500"
+                    />
+                    {nivel}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="activo"
+              checked={formData.activo}
+              onChange={(e) => setFormData({ ...formData, activo: e.target.checked })}
+              className="w-4 h-4 rounded border-slate-600 bg-slate-900 text-blue-600 focus:ring-blue-500"
+            />
+            <label htmlFor="activo" className="text-sm text-slate-300">
+              Colegio activo
+            </label>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 p-4 border-t border-slate-700">
+          <button
+            onClick={() => setModalAbierto(null)}
+            className="flex-1 px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={() => void handleGuardar()}
+            disabled={guardando}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+          >
+            {guardando ? (
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            {modalAbierto === 'crear' ? 'Crear' : 'Guardar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ImportarEstudiantesModal: React.FC<{
+  isOpen: boolean;
+  colegioSeleccionado: Colegio | null;
+  onClose: () => void;
+}> = ({ isOpen, colegioSeleccionado, onClose }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-2xl max-h-5\/6 overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b border-slate-700">
+          <div>
+            <h2 className="text-lg font-semibold text-white">
+              Importar Estudiantes
+            </h2>
+            <p className="text-sm text-slate-400">
+              {colegioSeleccionado?.nombre}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-4">
+          <ImportarEstudiantes />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ListaEstudiantesModal: React.FC<{
+  isOpen: boolean;
+  colegioSeleccionado: Colegio | null;
+  estudiantes: Estudiante[];
+  onClose: () => void;
+  onDownload: () => void;
+}> = ({ isOpen, colegioSeleccionado, estudiantes, onClose, onDownload }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-2xl max-h-5\/6 overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b border-slate-700">
+          <div>
+            <h2 className="text-lg font-semibold text-white">
+              Estudiantes
+            </h2>
+            <p className="text-sm text-slate-400">
+              {colegioSeleccionado?.nombre} ({estudiantes.length} estudiantes)
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-4">
+          {estudiantes.length > 0 && (
+            <div className="flex justify-end mb-3">
+              <button
+                onClick={onDownload}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Descargar CSV
+              </button>
+            </div>
+          )}
+
+          {estudiantes.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+              <p className="text-slate-400">No hay estudiantes registrados</p>
+            </div>
+          ) : (
+            <div className="border border-slate-700 rounded-lg overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-900/50">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-slate-400 font-medium">RUT</th>
+                    <th className="px-3 py-2 text-left text-slate-400 font-medium">Nombre</th>
+                    <th className="px-3 py-2 text-left text-slate-400 font-medium">Curso</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-700">
+                  {estudiantes.map((est) => (
+                    <tr key={est.id} className="hover:bg-slate-700/30">
+                      <td className="px-3 py-2 text-slate-300 font-mono">{est.rut}</td>
+                      <td className="px-3 py-2 text-white">{est.nombre_completo}</td>
+                      <td className="px-3 py-2 text-slate-300">{est.curso}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AdminColegiosHeader: React.FC<{
+  onCrear: () => void;
+}> = ({ onCrear }) => (
+  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 className="text-2xl font-bold text-white flex items-center gap-4">
+        <Building2 className="w-7 h-7 text-blue-400" />
+        Administracion de Colegios
+      </h1>
+      <p className="text-slate-400 mt-1">
+        Gestiona los establecimientos educacionales
+      </p>
+    </div>
+    <button
+      onClick={onCrear}
+      className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors"
+    >
+      <Plus className="w-4 h-4" />
+      Nuevo Colegio
+    </button>
+  </div>
+);
+
+const AdminColegiosAlerts: React.FC<{
+  error: string | null;
+  success: string | null;
+  onClearError: () => void;
+  onClearSuccess: () => void;
+}> = ({ error, success, onClearError, onClearSuccess }) => (
+  <>
+    {error && (
+      <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-start gap-4">
+        <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-red-400 font-medium">Error</p>
+          <p className="text-sm text-red-300/80">{error}</p>
+        </div>
+        <button onClick={onClearError} className="ml-auto text-red-400 hover:text-red-300">
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+    )}
+
+    {success && (
+      <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg flex items-start gap-4">
+        <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+        <p className="text-green-400">{success}</p>
+        <button onClick={onClearSuccess} className="ml-auto text-green-400 hover:text-green-300">
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+    )}
+  </>
+);
+
+const AdminColegiosFilters: React.FC<{
+  busqueda: string;
+  setBusqueda: (value: string) => void;
+  filtroEstado: 'todos' | 'activos' | 'inactivos';
+  setFiltroEstado: (value: 'todos' | 'activos' | 'inactivos') => void;
+  filtroNivel: string;
+  setFiltroNivel: (value: string) => void;
+}> = ({
+  busqueda,
+  setBusqueda,
+  filtroEstado,
+  setFiltroEstado,
+  filtroNivel,
+  setFiltroNivel
+}) => (
+  <div className="grid gap-4 md:grid-cols-3">
+    <div className="relative md:col-span-2">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+      <input
+        type="text"
+        placeholder="Buscar por nombre, RBD o email..."
+        value={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+        className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      />
+    </div>
+    <div className="grid grid-cols-2 gap-4">
+      <select
+        value={filtroEstado}
+        onChange={(e) => setFiltroEstado(e.target.value as 'todos' | 'activos' | 'inactivos')}
+        className="px-3 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option value="todos">Todos</option>
+        <option value="activos">Activos</option>
+        <option value="inactivos">Inactivos</option>
+      </select>
+      <select
+        value={filtroNivel}
+        onChange={(e) => setFiltroNivel(e.target.value)}
+        className="px-3 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option value="todos">Todos niveles</option>
+        {NIVELES_DISPONIBLES.map((nivel) => (
+          <option key={nivel} value={nivel}>{nivel}</option>
+        ))}
+      </select>
+    </div>
+  </div>
+);
+
+const ColegioCard: React.FC<{
+  colegio: Colegio;
+  tenantId: string | null;
+  eliminando: string | null;
+  onVerEstudiantes: (colegio: Colegio) => void;
+  onImportar: (colegio: Colegio) => void;
+  onCambiar: (colegio: Colegio) => void;
+  onBranding: (colegio: Colegio) => void;
+  onEditar: (colegio: Colegio) => void;
+  onEliminar: (colegio: Colegio) => void;
+}> = ({
+  colegio,
+  tenantId,
+  eliminando,
+  onVerEstudiantes,
+  onImportar,
+  onCambiar,
+  onBranding,
+  onEditar,
+  onEliminar
+}) => (
+  <div
+    className={`
+      bg-slate-800 rounded-xl border p-5 transition-all hover:shadow-lg
+      ${colegio.id === tenantId ? 'border-blue-500 ring-1 ring-blue-500/30' : 'border-slate-700 hover:border-slate-600'}
+    `}
+  >
+    <div className="flex items-start justify-between mb-3">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold text-white truncate">{colegio.nombre}</h3>
+          {colegio.id === tenantId && (
+            <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded-full">
+              Actual
+            </span>
+          )}
+        </div>
+        {colegio.rbd && (
+          <p className="text-sm text-slate-400 mt-0.5">RBD: {colegio.rbd}</p>
+        )}
+      </div>
+      <div
+        className={`
+          w-3 h-3 rounded-full flex-shrink-0
+          ${colegio.activo ? 'bg-green-400' : 'bg-slate-500'}
+        `}
+        title={colegio.activo ? 'Activo' : 'Inactivo'}
+      />
+    </div>
+
+    <div className="space-y-1.5 text-sm text-slate-400 mb-4">
+      {colegio.direccion && <p className="truncate">{colegio.direccion}</p>}
+      {colegio.email && <p className="truncate">{colegio.email}</p>}
+      {colegio.telefono && <p>{colegio.telefono}</p>}
+      {colegio.niveles_educativos && colegio.niveles_educativos.length > 0 && (
+        <p className="text-xs text-blue-300/90">
+          Niveles: {colegio.niveles_educativos.join(', ')}
+        </p>
+      )}
+    </div>
+
+    <div className="flex items-center gap-2 pt-3 border-t border-slate-700">
+      <button
+        onClick={() => onVerEstudiantes(colegio)}
+        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+        title="Ver estudiantes"
+      >
+        <Users className="w-4 h-4" />
+        Estudiantes
+      </button>
+      <button
+        onClick={() => onImportar(colegio)}
+        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-green-400 hover:text-green-300 hover:bg-green-500/10 rounded-lg transition-colors"
+        title="Importar estudiantes"
+      >
+        <Upload className="w-4 h-4" />
+        Importar
+      </button>
+    </div>
+
+    <div className="flex items-center gap-2 mt-2">
+      {colegio.id !== tenantId && (
+        <button
+          onClick={() => onCambiar(colegio)}
+          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors"
+        >
+          <Eye className="w-4 h-4" />
+          Cambiar a este
+        </button>
+      )}
+      <button
+        onClick={() => onBranding(colegio)}
+        className="p-2 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-colors"
+        title="Configurar branding"
+      >
+        <Palette className="w-4 h-4" />
+      </button>
+      <button
+        onClick={() => onEditar(colegio)}
+        className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+        title="Editar"
+      >
+        <Edit2 className="w-4 h-4" />
+      </button>
+      <button
+        onClick={() => onEliminar(colegio)}
+        disabled={eliminando === colegio.id}
+        className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
+        title="Eliminar"
+      >
+        <Trash2 className="w-4 h-4" />
+      </button>
+    </div>
+  </div>
+);
+
+const ColegiosGridSection: React.FC<{
+  isLoading: boolean;
+  colegiosFiltrados: Colegio[];
+  busqueda: string;
+  tenantId: string | null;
+  eliminando: string | null;
+  setBusqueda: (value: string) => void;
+  onVerEstudiantes: (colegio: Colegio) => Promise<void>;
+  onImportar: (colegio: Colegio) => void;
+  onCambiar: (colegio: Colegio) => void;
+  onBranding: (colegio: Colegio) => void;
+  onEditar: (colegio: Colegio) => void;
+  onEliminar: (colegio: Colegio) => Promise<void>;
+}> = ({
+  isLoading,
+  colegiosFiltrados,
+  busqueda,
+  tenantId,
+  eliminando,
+  setBusqueda,
+  onVerEstudiantes,
+  onImportar,
+  onCambiar,
+  onBranding,
+  onEditar,
+  onEliminar
+}) => {
+  if (isLoading) {
+    return (
+      <div className="text-center py-12">
+        <div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto" />
+        <p className="text-slate-400 mt-3">Cargando colegios...</p>
+      </div>
+    );
+  }
+
+  if (colegiosFiltrados.length === 0) {
+    return (
+      <div className="text-center py-12 bg-slate-800/50 rounded-xl border border-slate-700">
+        <Building2 className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+        <p className="text-slate-400">No se encontraron colegios</p>
+        {busqueda && (
+          <button
+            onClick={() => setBusqueda('')}
+            className="mt-2 text-blue-400 hover:text-blue-300 text-sm"
+          >
+            Limpiar busqueda
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {colegiosFiltrados.map((colegio) => (
+        <ColegioCard
+          key={colegio.id}
+          colegio={colegio}
+          tenantId={tenantId}
+          eliminando={eliminando}
+          onVerEstudiantes={(c) => { void onVerEstudiantes(c); }}
+          onImportar={onImportar}
+          onCambiar={onCambiar}
+          onBranding={onBranding}
+          onEditar={onEditar}
+          onEliminar={(c) => { void onEliminar(c); }}
+        />
+      ))}
+    </div>
+  );
+};
+
+const useAdminColegiosState = () => {
   const [colegios, setColegios] = useState<Colegio[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [busqueda, setBusqueda] = useState('');
@@ -77,6 +651,75 @@ const AdminColegios: React.FC = () => {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  return {
+    colegios,
+    setColegios,
+    isLoading,
+    setIsLoading,
+    busqueda,
+    setBusqueda,
+    filtroEstado,
+    setFiltroEstado,
+    filtroNivel,
+    setFiltroNivel,
+    modalAbierto,
+    setModalAbierto,
+    colegioSeleccionado,
+    setColegioSeleccionado,
+    estudiantes,
+    setEstudiantes,
+    mostrarListaEstudiantes,
+    setMostrarListaEstudiantes,
+    eliminando,
+    setEliminando,
+    mostrarBrandingModal,
+    setMostrarBrandingModal,
+    formData,
+    setFormData,
+    guardando,
+    setGuardando,
+    error,
+    setError,
+    success,
+    setSuccess
+  };
+};
+
+const useAdminColegiosController = () => {
+  const { tenantId, setTenantId } = useTenant();
+  const {
+    colegios,
+    setColegios,
+    isLoading,
+    setIsLoading,
+    busqueda,
+    setBusqueda,
+    filtroEstado,
+    setFiltroEstado,
+    filtroNivel,
+    setFiltroNivel,
+    modalAbierto,
+    setModalAbierto,
+    colegioSeleccionado,
+    setColegioSeleccionado,
+    estudiantes,
+    setEstudiantes,
+    mostrarListaEstudiantes,
+    setMostrarListaEstudiantes,
+    eliminando,
+    setEliminando,
+    mostrarBrandingModal,
+    setMostrarBrandingModal,
+    formData,
+    setFormData,
+    guardando,
+    setGuardando,
+    error,
+    setError,
+    success,
+    setSuccess
+  } = useAdminColegiosState();
 
   useEffect(() => {
     void cargarColegios();
@@ -321,444 +964,142 @@ const AdminColegios: React.FC = () => {
     link.click();
   };
 
+  return {
+    tenantId,
+    colegios,
+    isLoading,
+    busqueda,
+    setBusqueda,
+    filtroEstado,
+    setFiltroEstado,
+    filtroNivel,
+    setFiltroNivel,
+    modalAbierto,
+    setModalAbierto,
+    colegioSeleccionado,
+    setColegioSeleccionado,
+    estudiantes,
+    mostrarListaEstudiantes,
+    setMostrarListaEstudiantes,
+    eliminando,
+    mostrarBrandingModal,
+    setMostrarBrandingModal,
+    formData,
+    setFormData,
+    guardando,
+    error,
+    setError,
+    success,
+    setSuccess,
+    colegiosFiltrados,
+    abrirModalCrear,
+    abrirModalEditar,
+    abrirBrandingModal,
+    handleGuardar,
+    handleEliminar,
+    handleCambiarColegio,
+    abrirImportar,
+    handleVerEstudiantes,
+    handleDescargarEstudiantes,
+    cargarColegios
+  };
+};
+
+const AdminColegios: React.FC = () => {
+  const {
+    tenantId,
+    isLoading,
+    busqueda,
+    setBusqueda,
+    filtroEstado,
+    setFiltroEstado,
+    filtroNivel,
+    setFiltroNivel,
+    modalAbierto,
+    setModalAbierto,
+    colegioSeleccionado,
+    setColegioSeleccionado,
+    estudiantes,
+    mostrarListaEstudiantes,
+    setMostrarListaEstudiantes,
+    eliminando,
+    mostrarBrandingModal,
+    setMostrarBrandingModal,
+    formData,
+    setFormData,
+    guardando,
+    error,
+    setError,
+    success,
+    setSuccess,
+    colegiosFiltrados,
+    abrirModalCrear,
+    abrirModalEditar,
+    abrirBrandingModal,
+    handleGuardar,
+    handleEliminar,
+    handleCambiarColegio,
+    abrirImportar,
+    handleVerEstudiantes,
+    handleDescargarEstudiantes,
+    cargarColegios
+  } = useAdminColegiosController();
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-            <Building2 className="w-7 h-7 text-blue-400" />
-            Administracion de Colegios
-          </h1>
-          <p className="text-slate-400 mt-1">
-            Gestiona los establecimientos educacionales
-          </p>
-        </div>
-        <button
-          onClick={abrirModalCrear}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Nuevo Colegio
-        </button>
-      </div>
+      <AdminColegiosHeader onCrear={abrirModalCrear} />
+      <AdminColegiosAlerts
+        error={error}
+        success={success}
+        onClearError={() => setError(null)}
+        onClearSuccess={() => setSuccess(null)}
+      />
+      <AdminColegiosFilters
+        busqueda={busqueda}
+        setBusqueda={setBusqueda}
+        filtroEstado={filtroEstado}
+        setFiltroEstado={setFiltroEstado}
+        filtroNivel={filtroNivel}
+        setFiltroNivel={setFiltroNivel}
+      />
+      <ColegiosGridSection
+        isLoading={isLoading}
+        colegiosFiltrados={colegiosFiltrados}
+        busqueda={busqueda}
+        tenantId={tenantId}
+        eliminando={eliminando}
+        setBusqueda={setBusqueda}
+        onVerEstudiantes={handleVerEstudiantes}
+        onImportar={abrirImportar}
+        onCambiar={handleCambiarColegio}
+        onBranding={abrirBrandingModal}
+        onEditar={abrirModalEditar}
+        onEliminar={handleEliminar}
+      />
 
-      {error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-red-400 font-medium">Error</p>
-            <p className="text-sm text-red-300/80">{error}</p>
-          </div>
-          <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-300">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-      )}
-
-      {success && (
-        <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg flex items-start gap-3">
-          <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-          <p className="text-green-400">{success}</p>
-          <button onClick={() => setSuccess(null)} className="ml-auto text-green-400 hover:text-green-300">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-      )}
-
-      <div className="grid gap-3 md:grid-cols-3">
-        <div className="relative md:col-span-2">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Buscar por nombre, RBD o email..."
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <select
-            value={filtroEstado}
-            onChange={(e) => setFiltroEstado(e.target.value as 'todos' | 'activos' | 'inactivos')}
-            className="px-3 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="todos">Todos</option>
-            <option value="activos">Activos</option>
-            <option value="inactivos">Inactivos</option>
-          </select>
-          <select
-            value={filtroNivel}
-            onChange={(e) => setFiltroNivel(e.target.value)}
-            className="px-3 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="todos">Todos niveles</option>
-            {NIVELES_DISPONIBLES.map((nivel) => (
-              <option key={nivel} value={nivel}>{nivel}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {isLoading ? (
-        <div className="text-center py-12">
-          <div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto" />
-          <p className="text-slate-400 mt-3">Cargando colegios...</p>
-        </div>
-      ) : colegiosFiltrados.length === 0 ? (
-        <div className="text-center py-12 bg-slate-800/50 rounded-xl border border-slate-700">
-          <Building2 className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-          <p className="text-slate-400">No se encontraron colegios</p>
-          {busqueda && (
-            <button
-              onClick={() => setBusqueda('')}
-              className="mt-2 text-blue-400 hover:text-blue-300 text-sm"
-            >
-              Limpiar busqueda
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {colegiosFiltrados.map((colegio) => (
-            <div
-              key={colegio.id}
-              className={`
-                bg-slate-800 rounded-xl border p-5 transition-all hover:shadow-lg
-                ${colegio.id === tenantId ? 'border-blue-500 ring-1 ring-blue-500/30' : 'border-slate-700 hover:border-slate-600'}
-              `}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-white truncate">{colegio.nombre}</h3>
-                    {colegio.id === tenantId && (
-                      <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded-full">
-                        Actual
-                      </span>
-                    )}
-                  </div>
-                  {colegio.rbd && (
-                    <p className="text-sm text-slate-400 mt-0.5">RBD: {colegio.rbd}</p>
-                  )}
-                </div>
-                <div
-                  className={`
-                    w-3 h-3 rounded-full flex-shrink-0
-                    ${colegio.activo ? 'bg-green-400' : 'bg-slate-500'}
-                  `}
-                  title={colegio.activo ? 'Activo' : 'Inactivo'}
-                />
-              </div>
-
-              <div className="space-y-1.5 text-sm text-slate-400 mb-4">
-                {colegio.direccion && <p className="truncate">{colegio.direccion}</p>}
-                {colegio.email && <p className="truncate">{colegio.email}</p>}
-                {colegio.telefono && <p>{colegio.telefono}</p>}
-                {colegio.niveles_educativos && colegio.niveles_educativos.length > 0 && (
-                  <p className="text-xs text-blue-300/90">
-                    Niveles: {colegio.niveles_educativos.join(', ')}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2 pt-3 border-t border-slate-700">
-                <button
-                  onClick={() => void handleVerEstudiantes(colegio)}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
-                  title="Ver estudiantes"
-                >
-                  <Users className="w-4 h-4" />
-                  Estudiantes
-                </button>
-                <button
-                  onClick={() => abrirImportar(colegio)}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-green-400 hover:text-green-300 hover:bg-green-500/10 rounded-lg transition-colors"
-                  title="Importar estudiantes"
-                >
-                  <Upload className="w-4 h-4" />
-                  Importar
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2 mt-2">
-                {colegio.id !== tenantId && (
-                  <button
-                    onClick={() => handleCambiarColegio(colegio)}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors"
-                  >
-                    <Eye className="w-4 h-4" />
-                    Cambiar a este
-                  </button>
-                )}
-                <button
-                  onClick={() => abrirBrandingModal(colegio)}
-                  className="p-2 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-colors"
-                  title="Configurar branding"
-                >
-                  <Palette className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => abrirModalEditar(colegio)}
-                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
-                  title="Editar"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => void handleEliminar(colegio)}
-                  disabled={eliminando === colegio.id}
-                  className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
-                  title="Eliminar"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {modalAbierto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-slate-700">
-              <h2 className="text-lg font-semibold text-white">
-                {modalAbierto === 'crear' ? 'Nuevo Colegio' : 'Editar Colegio'}
-              </h2>
-              <button
-                onClick={() => setModalAbierto(null)}
-                className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
-                  Nombre *
-                </label>
-                <input
-                  type="text"
-                  value={formData.nombre}
-                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Nombre del establecimiento"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
-                  RBD
-                </label>
-                <input
-                  type="text"
-                  value={formData.rbd}
-                  onChange={(e) => setFormData({ ...formData, rbd: e.target.value.toUpperCase() })}
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Rol Base de Datos"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
-                  Direccion
-                </label>
-                <input
-                  type="text"
-                  value={formData.direccion}
-                  onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Direccion del establecimiento"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">
-                    Telefono
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.telefono}
-                    onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="+56 9 XXXX XXXX"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="email@colegio.cl"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Niveles educativos
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {NIVELES_DISPONIBLES.map((nivel) => {
-                    const checked = formData.niveles_educativos.includes(nivel);
-                    return (
-                      <label key={nivel} className="flex items-center gap-2 text-sm text-slate-300">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(e) => {
-                            const next = e.target.checked
-                              ? [...formData.niveles_educativos, nivel]
-                              : formData.niveles_educativos.filter((n) => n !== nivel);
-                            setFormData({ ...formData, niveles_educativos: next });
-                          }}
-                          className="w-4 h-4 rounded border-slate-600 bg-slate-900 text-blue-600 focus:ring-blue-500"
-                        />
-                        {nivel}
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="activo"
-                  checked={formData.activo}
-                  onChange={(e) => setFormData({ ...formData, activo: e.target.checked })}
-                  className="w-4 h-4 rounded border-slate-600 bg-slate-900 text-blue-600 focus:ring-blue-500"
-                />
-                <label htmlFor="activo" className="text-sm text-slate-300">
-                  Colegio activo
-                </label>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 p-4 border-t border-slate-700">
-              <button
-                onClick={() => setModalAbierto(null)}
-                className="flex-1 px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => void handleGuardar()}
-                disabled={guardando}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
-              >
-                {guardando ? (
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
-                {modalAbierto === 'crear' ? 'Crear' : 'Guardar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {modalAbierto === 'importar' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-slate-700">
-              <div>
-                <h2 className="text-lg font-semibold text-white">
-                  Importar Estudiantes
-                </h2>
-                <p className="text-sm text-slate-400">
-                  {colegioSeleccionado?.nombre}
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setModalAbierto(null);
-                  void cargarColegios();
-                }}
-                className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-4">
-              <ImportarEstudiantes />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {mostrarListaEstudiantes && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-slate-700">
-              <div>
-                <h2 className="text-lg font-semibold text-white">
-                  Estudiantes
-                </h2>
-                <p className="text-sm text-slate-400">
-                  {colegioSeleccionado?.nombre} ({estudiantes.length} estudiantes)
-                </p>
-              </div>
-              <button
-                onClick={() => setMostrarListaEstudiantes(false)}
-                className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-4">
-              {estudiantes.length > 0 && (
-                <div className="flex justify-end mb-3">
-                  <button
-                    onClick={handleDescargarEstudiantes}
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors"
-                  >
-                    <Download className="w-4 h-4" />
-                    Descargar CSV
-                  </button>
-                </div>
-              )}
-
-              {estudiantes.length === 0 ? (
-                <div className="text-center py-8">
-                  <Users className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                  <p className="text-slate-400">No hay estudiantes registrados</p>
-                </div>
-              ) : (
-                <div className="border border-slate-700 rounded-lg overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead className="bg-slate-900/50">
-                      <tr>
-                        <th className="px-3 py-2 text-left text-slate-400 font-medium">RUT</th>
-                        <th className="px-3 py-2 text-left text-slate-400 font-medium">Nombre</th>
-                        <th className="px-3 py-2 text-left text-slate-400 font-medium">Curso</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-700">
-                      {estudiantes.map((est) => (
-                        <tr key={est.id} className="hover:bg-slate-700/30">
-                          <td className="px-3 py-2 text-slate-300 font-mono">{est.rut}</td>
-                          <td className="px-3 py-2 text-white">{est.nombre_completo}</td>
-                          <td className="px-3 py-2 text-slate-300">{est.curso}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <ColegioFormModal
+        modalAbierto={modalAbierto}
+        formData={formData}
+        setFormData={setFormData}
+        setModalAbierto={setModalAbierto}
+        guardando={guardando}
+        handleGuardar={handleGuardar}
+      />
+      <ImportarEstudiantesModal
+        isOpen={modalAbierto === 'importar'}
+        colegioSeleccionado={colegioSeleccionado}
+        onClose={() => {
+          setModalAbierto(null);
+          void cargarColegios();
+        }}
+      />
+      <ListaEstudiantesModal
+        isOpen={mostrarListaEstudiantes}
+        colegioSeleccionado={colegioSeleccionado}
+        estudiantes={estudiantes}
+        onClose={() => setMostrarListaEstudiantes(false)}
+        onDownload={handleDescargarEstudiantes}
+      />
 
       {/* Modal de Branding */}
       {mostrarBrandingModal && colegioSeleccionado && (
@@ -776,3 +1117,6 @@ const AdminColegios: React.FC = () => {
 };
 
 export default AdminColegios;
+
+
+

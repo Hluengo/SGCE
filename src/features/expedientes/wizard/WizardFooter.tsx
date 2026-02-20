@@ -33,7 +33,7 @@ export const WizardFooter: React.FC<WizardFooterProps> = ({
       <button
         type="button"
         onClick={isFirstStep ? onClose : onBack}
-        className="flex-1 py-4 rounded-2xl border border-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest hover:bg-white transition-all active:scale-95 flex items-center justify-center space-x-2"
+        className="flex-1 py-4 rounded-2xl border border-slate-200 text-slate-600 font-black text-xs uppercase tracking-widest hover:bg-white transition-all active:scale-95 flex items-center justify-center space-x-2"
       >
         <ChevronLeft className="w-4 h-4" />
         <span>{isFirstStep ? 'Anular' : 'Volver'}</span>
@@ -44,7 +44,7 @@ export const WizardFooter: React.FC<WizardFooterProps> = ({
           type="submit"
           form="wizard-form"
           disabled={isSubmitting}
-          className="flex-1 py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-emerald-600/20 active:scale-95 flex items-center justify-center space-x-2 disabled:opacity-50"
+          className="flex-1 py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-emerald-600/20 active:scale-95 flex items-center justify-center space-x-2 disabled:opacity-50"
         >
           <CheckCircle2 className="w-4 h-4" />
           <span>{isSubmitting ? 'Guardando...' : 'Finalizar Apertura'}</span>
@@ -54,7 +54,7 @@ export const WizardFooter: React.FC<WizardFooterProps> = ({
           type="button"
           onClick={onNext}
           disabled={isNextDisabled}
-          className={`flex-1 py-4 rounded-2xl text-white font-black text-[10px] uppercase tracking-widest transition-all shadow-xl flex items-center justify-center space-x-2 active:scale-95 ${
+          className={`flex-1 py-4 rounded-2xl text-white font-black text-xs uppercase tracking-widest transition-all shadow-xl flex items-center justify-center space-x-2 active:scale-95 ${
             isNextDisabled
               ? 'bg-slate-300 cursor-not-allowed shadow-none'
               : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20'
@@ -69,3 +69,4 @@ export const WizardFooter: React.FC<WizardFooterProps> = ({
 };
 
 export default WizardFooter;
+

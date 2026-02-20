@@ -42,8 +42,11 @@ interface Props {
 
 export const WorkflowSystem: React.FC<Props> = ({ expediente, onTransition }) => {
   const { tienePermiso } = useAuth();
-  const [showModal, setShowModal] = useState(false);
-  const [derivaciones, setDerivaciones] = useState<Derivacion[]>([]);
+  const [uiState, setUiState] = useState({
+    showModal: false,
+    derivaciones: [] as Derivacion[]
+  });
+  const { showModal, derivaciones } = uiState;
 
   const puede = tienePermiso('expedientes:editar');
   const disponibles = TRANSICIONES[expediente.etapa];
@@ -51,15 +54,14 @@ export const WorkflowSystem: React.FC<Props> = ({ expediente, onTransition }) =>
 
   const handleTransition = (nuevo: EtapaProceso, justificacion: string) => {
     onTransition?.(nuevo, justificacion);
-    setShowModal(false);
+    setUiState(prev => ({ ...prev, showModal: false }));
   };
 
   const handleDerivar = (deps: string, urg: NivelUrgencia, just: string) => {
-    setDerivaciones(prev => [...prev, {
+    setUiState(prev => ({ ...prev, derivaciones: [...prev.derivaciones, {
       id: crypto.randomUUID(), aDepartamento: deps, urgencia: urg, justificacion: just, estado: 'pendiente',
       fecha: new Date().toISOString()
-    }]);
-    setShowModal(false);
+    }], showModal: false }));
   };
 
   return (
@@ -81,22 +83,22 @@ export const WorkflowSystem: React.FC<Props> = ({ expediente, onTransition }) =>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {puede && disponibles.length > 0 && (
-          <button onClick={() => setShowModal(true)}
-            className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:shadow-md">
+          <button onClick={() => setUiState(prev => ({ ...prev, showModal: true }))}
+            className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-xl hover:shadow-md">
             <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><ChevronRight className="w-5 h-5" /></div>
             <div className="text-left"><p className="font-medium text-slate-800">Cambiar Estado</p><p className="text-xs text-slate-500">Transicionar</p></div>
           </button>
         )}
-        <button onClick={() => setShowModal(true)}
-          className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:shadow-md">
+        <button onClick={() => setUiState(prev => ({ ...prev, showModal: true }))}
+          className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-xl hover:shadow-md">
           <div className="p-2 bg-purple-100 text-purple-600 rounded-lg"><Send className="w-5 h-5" /></div>
           <div className="text-left"><p className="font-medium text-slate-800">Derivar</p><p className="text-xs text-slate-500">Enviar a otro</p></div>
         </button>
-        <button className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:shadow-md">
+        <button className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-xl hover:shadow-md">
           <div className="p-2 bg-orange-100 text-orange-600 rounded-lg"><Bell className="w-5 h-5" /></div>
           <div className="text-left"><p className="font-medium text-slate-800">Recordatorio</p><p className="text-xs text-slate-500">Enviar alerta</p></div>
         </button>
-        <button className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:shadow-md">
+        <button className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-xl hover:shadow-md">
           <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><User className="w-5 h-5" /></div>
           <div className="text-left"><p className="font-medium text-slate-800">Asignar</p><p className="text-xs text-slate-500">Cambiar responsable</p></div>
         </button>
@@ -107,7 +109,7 @@ export const WorkflowSystem: React.FC<Props> = ({ expediente, onTransition }) =>
           <h4 className="text-sm font-bold text-slate-700 mb-3">Derivaciones</h4>
           <div className="space-y-2">
             {derivaciones.map(d => (
-              <div key={d.id} className="bg-white border border-slate-200 rounded-lg p-3">
+              <div key={d.id} className="bg-white border border-slate-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Building className="w-4 h-4 text-slate-400" />
@@ -140,7 +142,7 @@ export const WorkflowSystem: React.FC<Props> = ({ expediente, onTransition }) =>
       {showModal && (
         <TransitionModal
           estados={disponibles}
-          onClose={() => setShowModal(false)}
+          onClose={() => setUiState(prev => ({ ...prev, showModal: false }))}
           onConfirm={handleTransition}
           onDerivar={handleDerivar}
         />
@@ -155,11 +157,14 @@ const TransitionModal: React.FC<{
   onConfirm: (e: EtapaProceso, j: string) => void;
   onDerivar: (d: string, u: NivelUrgencia, j: string) => void;
 }> = ({ estados, onClose, onConfirm, onDerivar }) => {
-  const [estado, setEstado] = useState<EtapaProceso | ''>('');
-  const [justificacion, setJustificacion] = useState('');
-  const [departamento, setDepartamento] = useState('');
-  const [urgencia, setUrgencia] = useState<NivelUrgencia>('media');
-  const [tab, setTab] = useState<'estado' | 'derivar'>('estado');
+  const [state, setState] = useState({
+    estado: '' as EtapaProceso | '',
+    justificacion: '',
+    departamento: '',
+    urgencia: 'media' as NivelUrgencia,
+    tab: 'estado' as 'estado' | 'derivar'
+  });
+  const { estado, justificacion, departamento, urgencia, tab } = state;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,14 +177,15 @@ const TransitionModal: React.FC<{
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
         <h3 className="text-lg font-bold text-slate-800 mb-4">Acción</h3>
         <div className="flex gap-2 mb-4">
-          <button onClick={() => setTab('estado')} className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium ${tab === 'estado' ? 'bg-indigo-600 text-white' : 'bg-slate-100'}`}>Estado</button>
-          <button onClick={() => setTab('derivar')} className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium ${tab === 'derivar' ? 'bg-indigo-600 text-white' : 'bg-slate-100'}`}>Derivar</button>
+          <button onClick={() => setState(prev => ({ ...prev, tab: 'estado' }))} className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium ${tab === 'estado' ? 'bg-indigo-600 text-white' : 'bg-slate-100'}`}>Estado</button>
+          <button onClick={() => setState(prev => ({ ...prev, tab: 'derivar' }))} className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium ${tab === 'derivar' ? 'bg-indigo-600 text-white' : 'bg-slate-100'}`}>Derivar</button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           {tab === 'estado' ? (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Estado</label>
-              <select value={estado} onChange={(e) => setEstado(e.target.value as EtapaProceso)}
+              <label htmlFor="workflow-estado" className="block text-sm font-medium text-slate-700 mb-2">Estado</label>
+              <select value={estado} onChange={(e) => setState(prev => ({ ...prev, estado: e.target.value as EtapaProceso }))}
+                id="workflow-estado"
                 className="w-full px-4 py-2 border border-slate-200 rounded-lg">
                 <option value="">Seleccionar...</option>
                 {estados.map(e => <option key={e} value={e}>{ESTADO_LABELS[e]}</option>)}
@@ -187,8 +193,9 @@ const TransitionModal: React.FC<{
             </div>
           ) : (
             <>
-              <div><label className="block text-sm font-medium text-slate-700 mb-2">Departamento</label>
-                <select value={departamento} onChange={(e) => setDepartamento(e.target.value)}
+              <div><label htmlFor="workflow-departamento" className="block text-sm font-medium text-slate-700 mb-2">Departamento</label>
+                <select value={departamento} onChange={(e) => setState(prev => ({ ...prev, departamento: e.target.value }))}
+                  id="workflow-departamento"
                   className="w-full px-4 py-2 border border-slate-200 rounded-lg">
                   <option value="">Seleccionar...</option>
                   <option value="CONVIVENCIA_ESCOLAR">Convivencia Escolar</option>
@@ -198,8 +205,9 @@ const TransitionModal: React.FC<{
                   <option value="DIRECCION">Dirección</option>
                 </select>
               </div>
-              <div><label className="block text-sm font-medium text-slate-700 mb-2">Urgencia</label>
-                <select value={urgencia} onChange={(e) => setUrgencia(e.target.value as NivelUrgencia)}
+              <div><label htmlFor="workflow-urgencia" className="block text-sm font-medium text-slate-700 mb-2">Urgencia</label>
+                <select value={urgencia} onChange={(e) => setState(prev => ({ ...prev, urgencia: e.target.value as NivelUrgencia }))}
+                  id="workflow-urgencia"
                   className="w-full px-4 py-2 border border-slate-200 rounded-lg">
                   <option value="baja">Baja</option><option value="media">Media</option>
                   <option value="alta">Alta</option><option value="critica">Crítica</option>
@@ -207,11 +215,12 @@ const TransitionModal: React.FC<{
               </div>
             </>
           )}
-          <div><label className="block text-sm font-medium text-slate-700 mb-2">Justificación *</label>
-            <textarea value={justificacion} onChange={(e) => setJustificacion(e.target.value)} required rows={3}
+          <div><label htmlFor="workflow-justificacion" className="block text-sm font-medium text-slate-700 mb-2">Justificación *</label>
+            <textarea value={justificacion} onChange={(e) => setState(prev => ({ ...prev, justificacion: e.target.value }))} required rows={3}
+              id="workflow-justificacion"
               className="w-full px-4 py-2 border border-slate-200 rounded-lg" placeholder="Motivo..." />
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-4">
             <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50">Cancelar</button>
             <button type="submit" disabled={!justificacion.trim() || (tab === 'estado' && !estado) || (tab === 'derivar' && !departamento)}
               className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
@@ -225,3 +234,4 @@ const TransitionModal: React.FC<{
 };
 
 export default WorkflowSystem;
+

@@ -20,6 +20,7 @@ export default defineConfig({
       '**/dist/**',
       '**/.storybook/**',
       '**/storybook-static/**',
+      '**/*.e2e.spec.{ts,js}',
     ],
     globals: true,
     environment: 'jsdom',

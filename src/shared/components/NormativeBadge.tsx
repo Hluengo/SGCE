@@ -22,10 +22,11 @@ const NormativeBadge: React.FC<NormativeBadgeProps> = ({ gravedad }) => {
   };
 
   return (
-    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${styles[gravedad]}`}>
+    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase tracking-wider ${styles[gravedad]}`}>
       {labels[gravedad]}
     </span>
   );
 };
 
 export default NormativeBadge;
+

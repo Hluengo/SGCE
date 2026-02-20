@@ -101,9 +101,9 @@ const Table = <T extends Record<string, unknown>>({
     <div className="overflow-x-auto">
       <table className="w-full text-left">
         <thead>
-          <tr className="text-[10px] text-slate-400 uppercase tracking-[0.2em] bg-slate-50/50 border-b border-slate-100">
-            {columns.map((col, idx) => (
-              <th key={idx} className={`px-4 py-5 font-black ${col.className || ''}`}>
+          <tr className="border-b border-slate-100 bg-slate-50/50 text-xs uppercase tracking-widest text-slate-400">
+            {columns.map((col) => (
+              <th key={String(col.key)} className={`px-4 py-5 font-black ${col.className || ''}`}>
                 {col.header}
               </th>
             ))}
@@ -112,15 +112,15 @@ const Table = <T extends Record<string, unknown>>({
         <tbody className="divide-y divide-slate-50">
           {data.map((item, rowIdx) => (
             <tr
-              key={rowIdx}
+              key={(item as { id?: React.Key }).id ?? rowIdx}
               className={`
                 hover:bg-blue-50/40 transition-all group
                 ${onRowClick ? 'cursor-pointer' : ''}
               `}
               onClick={() => onRowClick?.(item)}
             >
-              {columns.map((col, colIdx) => (
-                <td key={colIdx} className={`px-4 py-6 ${col.className || ''}`}>
+              {columns.map((col) => (
+                <td key={String(col.key)} className={`px-4 py-6 ${col.className || ''}`}>
                   {col.render 
                     ? col.render(item) 
                     : String(item[col.key as keyof T] ?? '')}

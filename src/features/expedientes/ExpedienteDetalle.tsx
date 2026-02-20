@@ -1,10 +1,9 @@
 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { useConvivencia, hitosBase } from '@/shared/context/ConvivenciaContext';
+import { useConvivencia } from '@/shared/context/ConvivenciaContext';
 import { useTenant } from '@/shared/context/TenantContext';
 import { supabase } from '@/shared/lib/supabaseClient';
-import { EvidenciaQueryRow, ExpedienteQueryRow, mapDbEstadoToEtapa, mapDbTipoFaltaToGravedad } from '@/shared/types/supabase';
 import { isUuid } from '@/shared/utils/expedienteRef';
 import {
   ArrowLeft,
@@ -31,17 +30,10 @@ import CaseTimeline from '@/features/expedientes/CaseTimeline';
 import { useExpedienteHistorial } from '@/shared/hooks/useExpedienteHistorial';
 import { EtapaProceso } from '@/types';
 import { useLocalDraft } from '@/shared/utils/useLocalDraft';
-
-interface HitoDbRow {
-  id: string;
-  titulo: string;
-  descripcion: string | null;
-  fecha_cumplimiento: string | null;
-  completado: boolean;
-  created_at: string;
-}
-
-interface EvidenciaDbRow extends Pick<EvidenciaQueryRow, 'id' | 'nombre' | 'tipo' | 'fecha' | 'url_storage' | 'created_at'> {}
+import { AsyncState } from '@/shared/components/ui';
+import { useExpedienteLoader } from './hooks/useExpedienteLoader';
+import { useExpedienteHitos } from './hooks/useExpedienteHitos';
+import { useExpedienteEvidencias } from './hooks/useExpedienteEvidencias';
 
 const STEP_CONFIG: Record<string, { title: string; dateLabel: string; placeholder: string; hitoTitle: string }> = {
   INICIO: {
@@ -110,7 +102,7 @@ const mapEtapaToEstadoLegal = (etapa: EtapaProceso): string => {
   }
 };
 
-const ExpedienteDetalle: React.FC = () => {
+const useExpedienteDetalleView = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -120,114 +112,71 @@ const ExpedienteDetalle: React.FC = () => {
   const isEditMode = location.pathname.endsWith('/editar') || modoFromUrl === 'apertura';
   const { expedientes, setExpedientes, actualizarEtapa, setExpedienteSeleccionado } = useConvivencia();
   const { tenantId } = useTenant();
-  const [isResolvingExpediente, setIsResolvingExpediente] = useState(false);
-  const [resolveAttempted, setResolveAttempted] = useState(false);
 
   const expedienteSeleccionado = useMemo(() =>
     expedientes.find(e => e.id === id) ?? null,
     [expedientes, id]);
-
-  useEffect(() => {
-    setResolveAttempted(false);
-  }, [id]);
-
-  useEffect(() => {
-    const resolveExpediente = async () => {
-      if (!id || expedienteSeleccionado) {
-        setResolveAttempted(true);
-        return;
-      }
-      if (!supabase) {
-        setResolveAttempted(true);
-        return;
-      }
-
-      setIsResolvingExpediente(true);
-      try {
-        let query = supabase
-          .from('expedientes')
-          .select('id, folio, tipo_falta, estado_legal, etapa_proceso, fecha_inicio, plazo_fatal, creado_por, estudiante_a:estudiantes!expedientes_estudiante_id_fkey(id, nombre_completo, curso), estudiante_b:estudiantes!expedientes_estudiante_b_id_fkey(id, nombre_completo, curso)')
-          .or(`id.eq.${id},folio.eq.${id}`)
-          .limit(1);
-
-        if (tenantId && isUuid(tenantId)) {
-          query = query.eq('establecimiento_id', tenantId);
-        }
-
-        const { data, error } = await query.maybeSingle();
-        if (error || !data) return;
-
-        const row = data as ExpedienteQueryRow;
-        const gravedad = mapDbTipoFaltaToGravedad(row.tipo_falta);
-        const esExpulsion = gravedad === 'GRAVISIMA_EXPULSION';
-        const etapaDb = row.etapa_proceso ?? row.estado_legal;
-        const estudianteA = Array.isArray(row.estudiante_a) ? row.estudiante_a[0] : row.estudiante_a;
-        const estudianteB = Array.isArray(row.estudiante_b) ? row.estudiante_b[0] : row.estudiante_b;
-
-        const mapped = {
-          id: row.folio ?? row.id,
-          dbId: row.id,
-          nnaNombre: estudianteA?.nombre_completo ?? 'Sin nombre',
-          nnaCurso: estudianteA?.curso ?? null,
-          nnaNombreB: estudianteB?.nombre_completo ?? null,
-          nnaCursoB: estudianteB?.curso ?? null,
-          etapa: mapDbEstadoToEtapa(etapaDb),
-          gravedad,
-          fechaInicio: row.fecha_inicio ? new Date(row.fecha_inicio).toISOString() : new Date().toISOString(),
-          plazoFatal: row.plazo_fatal ? new Date(row.plazo_fatal).toISOString() : new Date().toISOString(),
-          encargadoId: row.creado_por ?? '',
-          esProcesoExpulsion: esExpulsion,
-          accionesPrevias: false,
-          hitos: hitosBase(esExpulsion)
-        };
-
-        setExpedientes((prev) => {
-          if (prev.some((exp) => exp.id === mapped.id || exp.dbId === mapped.dbId)) return prev;
-          return [mapped, ...prev];
-        });
-      } finally {
-        setResolveAttempted(true);
-        setIsResolvingExpediente(false);
-      }
-    };
-
-    void resolveExpediente();
-  }, [id, expedienteSeleccionado, setExpedientes, tenantId]);
+  const { isResolvingExpediente, resolveAttempted, loadHechosFromResumen } = useExpedienteLoader({
+    id,
+    tenantId,
+    expedienteSeleccionado,
+    setExpedientes,
+  });
 
   const currentEtapa = expedienteSeleccionado?.etapa || 'INICIO';
   const hitoConfig = STEP_CONFIG[currentEtapa] || STEP_CONFIG.INICIO;
-  const draftKey = useMemo(
-    () => `expediente:${tenantId ?? 'no-tenant'}:${id ?? 'none'}:${hitoConfig.hitoTitle}:resumen`,
-    [tenantId, id, hitoConfig.hitoTitle]
-  );
-  const fechaKey = useMemo(
-    () => `expediente:${tenantId ?? 'no-tenant'}:${id ?? 'none'}:${hitoConfig.hitoTitle}:fecha`,
-    [tenantId, id, hitoConfig.hitoTitle]
-  );
+  const draftKey = `expediente:${tenantId ?? 'no-tenant'}:${id ?? 'none'}:${hitoConfig.hitoTitle}:resumen`;
+  const fechaKey = `expediente:${tenantId ?? 'no-tenant'}:${id ?? 'none'}:${hitoConfig.hitoTitle}:fecha`;
   const [hitoResumen, setHitoResumen, clearHitoResumen] = useLocalDraft(draftKey, '');
   const [hitoFecha, setHitoFecha, clearFecha] = useLocalDraft(fechaKey, '');
-  const [isGeneradorOpen, setIsGeneradorOpen] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<string>('');
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveFeedback, setSaveFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
-  const [evidenciasDb, setEvidenciasDb] = useState<EvidenciaDbRow[]>([]);
-  const [hitosDb, setHitosDb] = useState<HitoDbRow[]>([]);
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadNombre, setUploadNombre] = useState('');
-  const [uploadTipo, setUploadTipo] = useState('PDF');
-  const [uploadFuente, setUploadFuente] = useState('ESCUELA');
-  const [uploadFeedback, setUploadFeedback] = useState<{
-    type: 'success' | 'error' | 'info';
-    title: string;
-    message?: string;
-  } | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [isLoadingHechos, setIsLoadingHechos] = useState(false);
-
-  // Estado para Timeline
-  const [activeTab, setActiveTab] = useState<'workflow' | 'timeline'>(
-    isEditMode ? 'workflow' : tabFromUrl === 'timeline' ? 'timeline' : 'workflow'
-  );
+  const [uiState, setUiState] = useState({
+    isGeneradorOpen: false,
+    saveStatus: '' as string,
+    isSaving: false,
+    saveFeedback: null as { type: 'success' | 'error' | 'info'; message: string } | null,
+    uploadFile: null as File | null,
+    uploadNombre: '',
+    uploadTipo: 'PDF',
+    uploadFuente: 'ESCUELA',
+    uploadFeedback: null as {
+      type: 'success' | 'error' | 'info';
+      title: string;
+      message?: string;
+    } | null,
+    isUploading: false,
+    isLoadingHechos: false,
+    activeTab: (isEditMode ? 'workflow' : tabFromUrl === 'timeline' ? 'timeline' : 'workflow') as 'workflow' | 'timeline'
+  });
+  const {
+    isGeneradorOpen,
+    saveStatus,
+    isSaving,
+    saveFeedback,
+    uploadFile,
+    uploadNombre,
+    uploadTipo,
+    uploadFuente,
+    uploadFeedback,
+    isUploading,
+    isLoadingHechos,
+    activeTab
+  } = uiState;
+  const setIsGeneradorOpen = (value: boolean) => setUiState((prev) => ({ ...prev, isGeneradorOpen: value }));
+  const setSaveStatus = (value: string) => setUiState((prev) => ({ ...prev, saveStatus: value }));
+  const setIsSaving = (value: boolean) => setUiState((prev) => ({ ...prev, isSaving: value }));
+  const setSaveFeedback = (
+    value: { type: 'success' | 'error' | 'info'; message: string } | null
+  ) => setUiState((prev) => ({ ...prev, saveFeedback: value }));
+  const setUploadFile = (value: File | null) => setUiState((prev) => ({ ...prev, uploadFile: value }));
+  const setUploadNombre = (value: string) => setUiState((prev) => ({ ...prev, uploadNombre: value }));
+  const setUploadTipo = (value: string) => setUiState((prev) => ({ ...prev, uploadTipo: value }));
+  const setUploadFuente = (value: string) => setUiState((prev) => ({ ...prev, uploadFuente: value }));
+  const setUploadFeedback = (
+    value: { type: 'success' | 'error' | 'info'; title: string; message?: string } | null
+  ) => setUiState((prev) => ({ ...prev, uploadFeedback: value }));
+  const setIsUploading = (value: boolean) => setUiState((prev) => ({ ...prev, isUploading: value }));
+  const setIsLoadingHechos = (value: boolean) => setUiState((prev) => ({ ...prev, isLoadingHechos: value }));
+  const setActiveTab = (value: 'workflow' | 'timeline') => setUiState((prev) => ({ ...prev, activeTab: value }));
   const { entries: historial, isLoading: isLoadingHistorial, reload: reloadHistorial } = useExpedienteHistorial(
     expedienteSeleccionado?.dbId ?? expedienteSeleccionado?.id ?? null
   );
@@ -240,21 +189,6 @@ const ExpedienteDetalle: React.FC = () => {
         return stepKey;
     }
   }, []);
-
-  const loadHitosDb = useCallback(async () => {
-    if (!supabase || !expedienteSeleccionado?.dbId) {
-      setHitosDb([]);
-      return;
-    }
-    const { data, error } = await supabase
-      .from('hitos_expediente')
-      .select('*')
-      .eq('expediente_id', expedienteSeleccionado.dbId)
-      .order('created_at', { ascending: true });
-    if (!error && data) {
-      setHitosDb(data as HitoDbRow[]);
-    }
-  }, [expedienteSeleccionado?.dbId]);
 
   useEffect(() => {
     if (isEditMode) {
@@ -277,68 +211,27 @@ const ExpedienteDetalle: React.FC = () => {
     }
   }, [id, hitoConfig.hitoTitle]);
 
-  const loadHechosFromResumen = async (): Promise<string | null> => {
-    if (!supabase || !expedienteSeleccionado?.dbId) return null;
-    const { data, error } = await supabase
-      .from('expedientes')
-      .select('descripcion_hechos')
-      .eq('id', expedienteSeleccionado.dbId)
-      .maybeSingle();
-    if (error) return null;
-    const initialText = (data?.descripcion_hechos || '').toString().trim();
-    return initialText || null;
-  };
-
-  // Sync context for header breadcrumbs (optional, but good for now)
-  useEffect(() => {
-    const loadDescargos = async () => {
-      if (!supabase || !expedienteSeleccionado?.dbId) return;
-      // Cambiar de etapa debe limpiar estado local para no reutilizar el hito previo.
-      setHitoResumen('');
-      setHitoFecha('');
-      const { data, error } = await supabase
-        .from('hitos_expediente')
-        .select('*')
-        .eq('expediente_id', expedienteSeleccionado.dbId)
-        .eq('titulo', hitoConfig.hitoTitle)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (error || !data || data.length == 0) return;
-      const row = data[0];
-      if (row) {
-        if (row.descripcion) setHitoResumen(row.descripcion);
-        if (row.fecha_cumplimiento) setHitoFecha(row.fecha_cumplimiento);
-      }
-    };
-
-    loadDescargos();
-  }, [expedienteSeleccionado?.dbId, hitoConfig.hitoTitle]);
-
-  useEffect(() => {
-    void loadHitosDb();
-  }, [loadHitosDb, currentEtapa]);
-
-  useEffect(() => {
-    const loadEvidencias = async () => {
-      if (!supabase || !expedienteSeleccionado?.dbId) {
-        setEvidenciasDb([]);
-        return;
-      }
-      const { data, error } = await supabase
-        .from('evidencias')
-        .select('id, nombre, tipo, fecha, url_storage, created_at')
-        .eq('expediente_id', expedienteSeleccionado.dbId)
-        .order('created_at', { ascending: false });
-      if (!error && data) {
-        // No firmar URLs en la carga inicial para evitar errores 400 innecesarios
-        // en buckets/policies con reglas estrictas. Se puede firmar on-demand al abrir.
-        setEvidenciasDb(data as EvidenciaDbRow[]);
-      }
-    };
-
-    loadEvidencias();
-  }, [expedienteSeleccionado?.dbId, hitoConfig.hitoTitle]);
+  const { hitosDb, refreshHitos } = useExpedienteHitos({
+    expedienteDbId: expedienteSeleccionado?.dbId,
+    hitoTitle: hitoConfig.hitoTitle,
+    currentEtapa,
+    setHitoResumen,
+    setHitoFecha,
+  });
+  const { evidenciasDb, refreshEvidencias } = useExpedienteEvidencias(expedienteSeleccionado?.dbId);
+  const evidencias = useMemo(
+    () =>
+      evidenciasDb.length > 0
+        ? evidenciasDb.map((doc) => ({
+            id: doc.id,
+            name: doc.nombre || doc.url_storage || 'Archivo',
+            type: doc.tipo || 'DOC',
+            date: (doc.fecha || doc.created_at || '').toString().slice(0, 10),
+            icon: doc.tipo === 'IMG' ? ImageIcon : FileText
+          }))
+        : [],
+    [evidenciasDb]
+  );
 
   useEffect(() => {
     if (expedienteSeleccionado) {
@@ -350,22 +243,35 @@ const ExpedienteDetalle: React.FC = () => {
 
   if (!expedienteSeleccionado && isResolvingExpediente) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <p className="text-slate-500 font-bold">Cargando expediente...</p>
-        </div>
+      <div className="flex items-center justify-center h-full p-6">
+        <AsyncState
+          state="loading"
+          title="Cargando expediente"
+          message="Recuperando información del caso."
+          compact
+        />
       </div>
     );
   }
 
   if (!expedienteSeleccionado && resolveAttempted) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <h2 className="text-xl font-bold text-slate-700">Expediente no encontrado</h2>
-          <button onClick={() => navigate('/expedientes')} className="mt-4 text-blue-600 hover:underline">
-            Volver al listado
-          </button>
+      <div className="flex items-center justify-center h-full p-6">
+        <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6">
+          <AsyncState
+            state="error"
+            title="Expediente no encontrado"
+            message="No existe o no tienes permisos para este expediente."
+            compact
+          />
+          <div className="mt-4 flex justify-center">
+            <button
+              onClick={() => navigate('/expedientes')}
+              className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50"
+            >
+              Volver al listado
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -494,13 +400,7 @@ const ExpedienteDetalle: React.FC = () => {
         });
         setUploadFile(null);
         setUploadNombre('');
-        // reload list
-        const { data } = await supabase
-          .from('evidencias')
-          .select('id, nombre, tipo, fecha, url_storage, created_at')
-          .eq('expediente_id', expedienteSeleccionado.dbId)
-          .order('created_at', { ascending: false });
-        if (data) setEvidenciasDb(data as EvidenciaDbRow[]);
+        await refreshEvidencias();
       }
     } finally {
       setIsUploading(false);
@@ -547,7 +447,7 @@ const ExpedienteDetalle: React.FC = () => {
         setSaveStatus('Guardado');
         setSaveFeedback({ type: 'success', message: 'Registro guardado correctamente y agregado al historial.' });
         // refrescar hitos visibles inmediatamente
-        await loadHitosDb();
+        await refreshHitos();
         // refrescar timeline consolidado
         await reloadHistorial();
       }
@@ -651,7 +551,7 @@ const ExpedienteDetalle: React.FC = () => {
       }
 
       actualizarEtapa(expedienteSeleccionado.id, 'CERRADO_GCC');
-      await loadHitosDb();
+      await refreshHitos();
       await reloadHistorial();
       setSaveFeedback({
         type: 'success',
@@ -702,7 +602,7 @@ const ExpedienteDetalle: React.FC = () => {
 
     actualizarEtapa(expedienteSeleccionado.id, stepKey);
     setExpedienteSeleccionado({ ...expedienteSeleccionado, etapa: stepKey });
-    await loadHitosDb();
+    await refreshHitos();
     await reloadHistorial();
     setSaveFeedback({
       type: 'success',
@@ -731,16 +631,6 @@ const ExpedienteDetalle: React.FC = () => {
     }
   };
 
-  const evidencias = evidenciasDb.length > 0
-    ? evidenciasDb.map((doc) => ({
-        id: doc.id,
-        name: doc.nombre || doc.url_storage || 'Archivo',
-        type: doc.tipo || 'DOC',
-        date: (doc.fecha || doc.created_at || '').toString().slice(0, 10),
-        icon: doc.tipo === 'IMG' ? ImageIcon : FileText
-      }))
-    : [];
-
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50 animate-in fade-in slide-in-from-right-8 duration-500 pb-20">
       <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
@@ -748,7 +638,7 @@ const ExpedienteDetalle: React.FC = () => {
           <div className="flex items-center gap-4 md:gap-6">
             <button
               onClick={() => navigate('/expedientes')}
-              className="p-3 hover:bg-slate-100 rounded-2xl transition-all text-slate-400 hover:text-blue-600 border border-slate-200"
+              className="p-4 hover:bg-slate-100 rounded-2xl transition-all text-slate-400 hover:text-blue-600 border border-slate-200"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -757,7 +647,7 @@ const ExpedienteDetalle: React.FC = () => {
                 <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">{expedienteSeleccionado.id}</h2>
                 <NormativeBadge gravedad={expedienteSeleccionado.gravedad} />
                 {expedienteSeleccionado.nnaNombreB && (
-                  <span className="px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-indigo-100 text-indigo-700 border border-indigo-200">
+                  <span className="px-2 py-1 rounded-full text-xs font-black uppercase tracking-widest bg-indigo-100 text-indigo-700 border border-indigo-200">
                     Caso bilateral A/B
                   </span>
                 )}
@@ -777,7 +667,7 @@ const ExpedienteDetalle: React.FC = () => {
           <div className="flex items-center flex-wrap gap-4">
             <PlazoCounter fechaLimite={expedienteSeleccionado.plazoFatal} />
             {isExpulsion && (
-              <div className="bg-red-600 text-white px-4 py-2 rounded-xl text-[10px] font-black flex items-center shadow-lg border border-red-500 tracking-widest uppercase">
+              <div className="bg-red-600 text-white px-4 py-2 rounded-xl text-xs font-black flex items-center shadow-lg border border-red-500 tracking-widest uppercase">
                 <AlertTriangle className="w-4 h-4 mr-2" />
                 Ley Aula Segura
               </div>
@@ -826,7 +716,7 @@ const ExpedienteDetalle: React.FC = () => {
         </div>
         {isEditMode && (
           <div className="mt-4 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3">
-            <p className="text-[11px] font-black uppercase tracking-widest text-blue-700">
+            <p className="text-xs font-black uppercase tracking-widest text-blue-700">
               Modo Edicion de Apertura
             </p>
             <p className="text-xs font-semibold text-blue-600 mt-1">
@@ -841,7 +731,7 @@ const ExpedienteDetalle: React.FC = () => {
         )}
         {expedienteSeleccionado.etapa === 'CERRADO_GCC' && (
           <div className="mt-4 bg-blue-50 border-2 border-blue-200 border-dashed rounded-2xl px-4 py-3">
-            <p className="text-[11px] font-black uppercase tracking-widest text-blue-800">
+            <p className="text-xs font-black uppercase tracking-widest text-blue-800">
               Pausa Legal
             </p>
             <p className="text-xs font-semibold text-blue-700 mt-1">
@@ -854,16 +744,18 @@ const ExpedienteDetalle: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 md:py-10 space-y-8">
         {/* Vista de Timeline */}
         {activeTab === 'timeline' ? (
-          <section className="bg-white p-4 md:p-8 rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/40">
+          <section className="bg-white p-4 md:p-8 rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/40">
             <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-6 flex items-center">
               <Clock className="w-5 h-5 mr-3 text-blue-600" />
               Historial del Expediente
             </h3>
             {isLoadingHistorial ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <span className="ml-3 text-slate-500">Cargando historial...</span>
-              </div>
+              <AsyncState
+                state="loading"
+                title="Cargando historial"
+                message="Estamos reuniendo la trazabilidad del expediente."
+                compact
+              />
             ) : historial.length > 0 ? (
               <CaseTimeline 
                 items={historial.map(entry => ({
@@ -877,22 +769,23 @@ const ExpedienteDetalle: React.FC = () => {
                 initialLimit={20}
               />
             ) : (
-              <div className="text-center py-12">
-                <Clock className="w-12 h-12 mx-auto text-slate-300 mb-4" />
-                <p className="text-slate-500">No hay registros en el historial del expediente.</p>
-                <p className="text-xs text-slate-400 mt-2">Los cambios se registrarán automáticamente.</p>
-              </div>
+              <AsyncState
+                state="empty"
+                title="Sin registros en el historial"
+                message="Los cambios del expediente se registrarán automáticamente."
+                compact
+              />
             )}
           </section>
         ) : (
           /* Vista de Workflow */
-          <section className="bg-white p-4 md:p-8 rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/40">
+          <section className="bg-white p-4 md:p-8 rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/40">
             <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-10 flex items-center">
               <History className="w-5 h-5 mr-3 text-blue-600" />
               Ruta Crítica de Cumplimiento (Circular 782)
             </h3>
           <div className="overflow-x-auto">
-            <div className="relative flex justify-between items-start min-w-[720px]">
+            <div className="relative flex justify-between items-start min-w-full">
               <div className="absolute top-6 left-0 w-full h-1 bg-slate-100 -z-0"></div>
               {STEPS.map((step, idx) => {
                 const hitoTitle = getHitoTitleFromStepKey(step.key);
@@ -918,7 +811,7 @@ const ExpedienteDetalle: React.FC = () => {
                       {isCompleted ? <CheckCircle2 className="w-6 h-6" /> : <step.icon className="w-5 h-5" />}
                     </div>
                     <div className="mt-4 text-center">
-                      <p className={`text-[9px] font-black uppercase tracking-tighter ${isCompleted ? 'text-emerald-600' : isCurrent ? 'text-blue-700' : 'text-slate-400'
+                      <p className={`text-xs font-black uppercase tracking-tighter ${isCompleted ? 'text-emerald-600' : isCurrent ? 'text-blue-700' : 'text-slate-400'
                         }`}>
                         {step.label}
                       </p>
@@ -946,19 +839,19 @@ const ExpedienteDetalle: React.FC = () => {
                   <div className={`flex items-center p-4 rounded-2xl border-2 ${expedienteSeleccionado.accionesPrevias ? 'bg-emerald-100 border-emerald-200 text-emerald-700' : 'bg-white border-red-200 text-red-700'}`}>
                     <Check className="w-4 h-4 mr-3" />
                     <div>
-                      <p className="text-[10px] font-black uppercase">Advertencia Escrita</p>
+                      <p className="text-xs font-black uppercase">Advertencia Escrita</p>
                     </div>
                   </div>
                   <div className={`flex items-center p-4 rounded-2xl border-2 ${expedienteSeleccionado.accionesPrevias ? 'bg-emerald-100 border-emerald-200 text-emerald-700' : 'bg-white border-red-200 text-red-700'}`}>
                     <Check className="w-4 h-4 mr-3" />
                     <div>
-                      <p className="text-[10px] font-black uppercase">Apoyo Psicosocial</p>
+                      <p className="text-xs font-black uppercase">Apoyo Psicosocial</p>
                     </div>
                   </div>
                 </div>
                 {!expedienteSeleccionado.accionesPrevias && (
                   <div className="mt-6 p-4 bg-white rounded-xl border border-red-200">
-                    <p className="text-[10px] text-red-600 font-bold flex items-center italic">
+                    <p className="text-xs text-red-600 font-bold flex items-center italic">
                       <AlertTriangle className="w-4 h-4 mr-2" />
                       BLOQUEO LEGAL: No se puede proceder con la resolución de expulsión sin acreditar estas medidas previas.
                     </p>
@@ -967,14 +860,14 @@ const ExpedienteDetalle: React.FC = () => {
               </div>
             )}
 
-            <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-4 md:p-8">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-4 md:p-8">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-8 flex items-center">
                 <MessageSquare className="w-5 h-5 mr-3 text-blue-600" />
                 {isEditMode ? 'Edicion de Apertura' : hitoConfig.title}
               </h3>
               <div className="flex flex-col md:flex-row gap-4 mb-4">
                 <div className="flex-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">{hitoConfig.dateLabel}</label>
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-2">{hitoConfig.dateLabel}</label>
                   <input
                     type="date"
                     value={hitoFecha}
@@ -986,7 +879,7 @@ const ExpedienteDetalle: React.FC = () => {
                 <button
                   onClick={() => { clearHitoResumen(); clearFecha(); }}
                   disabled={isEditMode && !isAperturaEditable}
-                  className="self-end md:self-start px-4 py-3 bg-white border border-slate-200 text-slate-500 rounded-2xl text-[10px] font-black uppercase hover:bg-slate-50 transition-all"
+                  className="self-end md:self-start px-4 py-3 bg-white border border-slate-200 text-slate-500 rounded-2xl text-xs font-black uppercase hover:bg-slate-50 transition-all"
                 >
                   Limpiar borrador
                 </button>
@@ -994,7 +887,7 @@ const ExpedienteDetalle: React.FC = () => {
                   <button
                     onClick={handleLoadHechosFromResumen}
                     disabled={isLoadingHechos || (isEditMode && !isAperturaEditable)}
-                    className={`self-end md:self-start px-4 py-3 rounded-2xl text-[10px] font-black uppercase transition-all ${
+                    className={`self-end md:self-start px-4 py-3 rounded-2xl text-xs font-black uppercase transition-all ${
                       isLoadingHechos
                         ? 'bg-slate-200 text-slate-400'
                         : 'bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200'
@@ -1006,7 +899,7 @@ const ExpedienteDetalle: React.FC = () => {
                 <button
                   onClick={handleSaveDescargos}
                   disabled={isSaving || (isEditMode && !isAperturaEditable)}
-                  className={`self-end md:self-start px-4 py-3 rounded-2xl text-[10px] font-black uppercase transition-all ${isSaving ? 'bg-slate-200 text-slate-400' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                  className={`self-end md:self-start px-4 py-3 rounded-2xl text-xs font-black uppercase transition-all ${isSaving ? 'bg-slate-200 text-slate-400' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                 >
                   {isSaving ? 'Guardando...' : isEditMode ? 'Guardar apertura' : 'Guardar'}
                 </button>
@@ -1025,7 +918,7 @@ const ExpedienteDetalle: React.FC = () => {
                 </div>
               )}
               {saveStatus && !saveFeedback && (
-                <p className="text-[10px] font-bold text-slate-500 mb-2">{saveStatus}</p>
+                <p className="text-xs font-bold text-slate-500 mb-2">{saveStatus}</p>
               )}
               <textarea
                 className="w-full h-40 bg-slate-50 border border-slate-200 rounded-3xl p-6 text-sm font-medium focus:ring-4 focus:ring-blue-500/5 focus:outline-none placeholder:text-slate-300"
@@ -1036,30 +929,33 @@ const ExpedienteDetalle: React.FC = () => {
               />
             </div>
 
-            <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-4 md:p-8">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-4 md:p-8">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-6 flex items-center">
                 <History className="w-5 h-5 mr-3 text-blue-600" />
                 Historial de Hitos
               </h3>
               {hitosDb.length === 0 ? (
-                <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  Sin hitos registrados
-                </div>
+                <AsyncState
+                  state="empty"
+                  title="Sin hitos registrados"
+                  message="Los hitos aparecerán aquí al guardar avances."
+                  compact
+                />
               ) : (
                 <ol className="relative border-l border-slate-200 ml-3">
                   {hitosDb.map((hito) => (
                     <li key={hito.id} className="mb-6 ml-6">
-                      <span className={`absolute -left-3 flex items-center justify-center w-6 h-6 rounded-full ${hito.completado ? 'bg-emerald-500' : 'bg-blue-500'} text-white text-[10px] font-black`}>
+                      <span className={`absolute -left-3 flex items-center justify-center w-6 h-6 rounded-full ${hito.completado ? 'bg-emerald-500' : 'bg-blue-500'} text-white text-xs font-black`}>
                         {hito.completado ? 'OK' : '...'}
                       </span>
                       <div className="flex items-center gap-2">
-                        <p className="text-[11px] font-black uppercase tracking-widest text-slate-700">{hito.titulo}</p>
+                        <p className="text-xs font-black uppercase tracking-widest text-slate-700">{hito.titulo}</p>
                         {hito.fecha_cumplimiento && (
-                          <span className="text-[9px] font-bold text-slate-400">{String(hito.fecha_cumplimiento).slice(0, 10)}</span>
+                          <span className="text-xs font-bold text-slate-400">{String(hito.fecha_cumplimiento).slice(0, 10)}</span>
                         )}
                       </div>
                       {hito.descripcion && (
-                        <p className="text-[11px] text-slate-600 mt-1">{hito.descripcion}</p>
+                        <p className="text-xs text-slate-600 mt-1">{hito.descripcion}</p>
                       )}
                     </li>
                   ))}
@@ -1072,7 +968,7 @@ const ExpedienteDetalle: React.FC = () => {
                 <button
                   onClick={() => setIsGeneradorOpen(true)}
                   disabled={!puedeFinalizar}
-                  className={`flex-1 flex items-center justify-center space-x-3 py-5 rounded-[1.5rem] text-xs font-black uppercase tracking-[0.15em] transition-all shadow-xl ${puedeFinalizar
+                  className={`flex-1 flex items-center justify-center space-x-3 py-5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-xl ${puedeFinalizar
                     ? 'bg-blue-600 text-white shadow-blue-600/20 hover:bg-blue-700'
                     : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                     }`}
@@ -1084,7 +980,7 @@ const ExpedienteDetalle: React.FC = () => {
                 <button
                   onClick={handleDerivarAMediacion}
                   disabled={isSaving}
-                  className="flex-1 flex items-center justify-center space-x-3 py-5 rounded-[1.5rem] bg-emerald-600 text-white text-xs font-black uppercase tracking-[0.15em] hover:bg-emerald-700 shadow-xl shadow-emerald-600/20"
+                  className="flex-1 flex items-center justify-center space-x-3 py-5 rounded-2xl bg-emerald-600 text-white text-xs font-black uppercase tracking-widest hover:bg-emerald-700 shadow-xl shadow-emerald-600/20"
                 >
                   <Handshake className="w-5 h-5" />
                   <span>Derivar a Mediación GCC</span>
@@ -1094,40 +990,43 @@ const ExpedienteDetalle: React.FC = () => {
           </div>
 
           <div className="space-y-8">
-            <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-8 flex flex-col h-full">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-8 flex flex-col h-full">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-8 flex items-center">
                 <FileText className="w-5 h-5 mr-3 text-blue-600" />
                 Evidencia Indexada
               </h3>
-              <div className="space-y-3 flex-1">
+              <div className="space-y-4 flex-1">
                 {evidencias.length === 0 ? (
-                  <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    Sin evidencias
-                  </div>
+                  <AsyncState
+                    state="empty"
+                    title="Sin evidencias indexadas"
+                    message="Sube archivos para crear trazabilidad en este expediente."
+                    compact
+                  />
                 ) : (
                   evidencias.map((doc) => (
                     <div key={doc.id} className="flex items-center p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:bg-blue-50 transition-all cursor-pointer">
                       <doc.icon className="w-5 h-5 text-blue-600 mr-4" />
                       <div className="flex-1 overflow-hidden">
-                        <p className="text-[11px] font-black text-slate-700 truncate uppercase">{doc.name}</p>
-                        <p className="text-[9px] font-bold text-slate-400 italic">{doc.date}</p>
+                        <p className="text-xs font-black text-slate-700 truncate uppercase">{doc.name}</p>
+                        <p className="text-xs font-bold text-slate-400 italic">{doc.date}</p>
                       </div>
                     </div>
                   ))
                 )}
 
                 <div className="mt-4 border-t border-slate-100 pt-4">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Subir evidencia</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Subir evidencia</p>
                   <input
                     type="file"
                     onChange={(e) => {
                       setUploadFile(e.target.files ? e.target.files[0] : null);
                       setUploadFeedback(null);
                     }}
-                    className="w-full text-[10px] font-bold text-slate-500"
+                    className="w-full text-xs font-bold text-slate-500"
                   />
                   {uploadFile && expedienteSeleccionado?.dbId && tenantId && (
-                    <p className="mt-2 text-[10px] font-semibold text-blue-700 break-all">
+                    <p className="mt-2 text-xs font-semibold text-blue-700 break-all">
                       Se guardará como: {uploadBucket}/{tenantId}/{expedienteSeleccionado.dbId}/&lt;timestamp&gt;-{uploadSafeName}
                     </p>
                   )}
@@ -1177,9 +1076,9 @@ const ExpedienteDetalle: React.FC = () => {
                           <Clock className="w-4 h-4 mt-0.5" />
                         )}
                         <div>
-                          <p className="text-[11px] font-black">{uploadFeedback.title}</p>
+                          <p className="text-xs font-black">{uploadFeedback.title}</p>
                           {uploadFeedback.message && (
-                            <p className="text-[10px] font-semibold mt-0.5 opacity-90">{uploadFeedback.message}</p>
+                            <p className="text-xs font-semibold mt-0.5 opacity-90">{uploadFeedback.message}</p>
                           )}
                         </div>
                       </div>
@@ -1188,7 +1087,7 @@ const ExpedienteDetalle: React.FC = () => {
                   <button
                     onClick={handleUploadEvidencia}
                     disabled={isUploading}
-                    className={`mt-2 w-full px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest ${isUploading ? 'bg-slate-200 text-slate-400' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                    className={`mt-2 w-full px-3 py-2 rounded-lg text-xs font-black uppercase tracking-widest ${isUploading ? 'bg-slate-200 text-slate-400' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                   >
                     {isUploading ? 'Subiendo...' : 'Subir evidencia'}
                   </button>
@@ -1203,8 +1102,12 @@ const ExpedienteDetalle: React.FC = () => {
   );
 };
 
+const ExpedienteDetalle: React.FC = () => useExpedienteDetalleView();
+
 const Handshake: React.FC<{ className?: string }> = ({ className }) => (
   <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m11 17 2 2 6-6" /><path d="m18 10 1-1a2 2 0 0 0-3-3l-1 1" /><path d="m14 14 1 1a2 2 0 0 0 3 0l.5-.5" /><path d="m8 5.8a2.1 2.1 0 0 1 2.1-2.1c1.1 0 2 1 2 2.1a2.1 2.1 0 0 1-2.1 2.1c-1.1 0-2-1-2-2.1Z" /><path d="M10.5 9.9a4.8 4.8 0 0 0-6.3 1.8A5.2 5.2 0 0 0 5.6 18l.8.7" /><path d="M7 15h2" /><path d="m15 18-2 2" /></svg>
 );
 
 export default ExpedienteDetalle;
+
+

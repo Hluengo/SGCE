@@ -182,7 +182,7 @@ const NotificationsPanel: React.FC = () => {
       >
         <Bell className="w-6 h-6" />
         {notificacionesNoLeidas.length > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-black rounded-full flex items-center justify-center">
             {notificacionesNoLeidas.length > 9 ? '9+' : notificacionesNoLeidas.length}
           </span>
         )}
@@ -195,6 +195,15 @@ const NotificationsPanel: React.FC = () => {
           <div
             className="fixed inset-0 z-40"
             onClick={() => setShowPanel(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setShowPanel(false);
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-label="Cerrar panel de notificaciones"
           />
 
           {/* Panel */}
@@ -263,7 +272,7 @@ const NotificationsPanel: React.FC = () => {
                               {notificacion.mensaje}
                             </p>
                             {notificacion.expedienteId && (
-                              <p className="text-[10px] font-black text-indigo-600 uppercase mt-2">
+                              <p className="text-xs font-black text-indigo-600 uppercase mt-2">
                                 Folio: {notificacion.expedienteId}
                               </p>
                             )}
@@ -293,3 +302,4 @@ const NotificationsPanel: React.FC = () => {
 };
 
 export default NotificationsPanel;
+

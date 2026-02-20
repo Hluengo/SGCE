@@ -9,7 +9,7 @@ import html2pdf from 'html2pdf.js';
 interface GeneratePdfMessage {
   type: 'generate';
   html: string;
-  options: any;
+  options: Record<string, unknown>;
   id: string;
 }
 

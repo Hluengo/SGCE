@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useReducer } from 'react';
 import { AlertCircle, MapPin, Send, CheckCircle, Calendar, ChevronDown, Users, X } from 'lucide-react';
 import { useLocalDraft } from '@/shared/utils/useLocalDraft';
 import { useConvivencia } from '@/shared/context/ConvivenciaContext';
@@ -27,14 +27,53 @@ interface ReportePatioModalProps {
   onSuccess?: () => void;
 }
 
+interface ReportePatioUiState {
+  enviado: boolean;
+  submitError: string | null;
+  selectedCurso: string;
+  isExpanded: boolean;
+  searchEstudiante: string;
+}
+
+type ReportePatioUiAction =
+  | { type: 'SET_ENVIADO'; payload: boolean }
+  | { type: 'SET_SUBMIT_ERROR'; payload: string | null }
+  | { type: 'SET_SELECTED_CURSO'; payload: string }
+  | { type: 'SET_IS_EXPANDED'; payload: boolean }
+  | { type: 'SET_SEARCH_ESTUDIANTE'; payload: string }
+  | { type: 'RESET_SELECTOR' };
+
+const initialUiState: ReportePatioUiState = {
+  enviado: false,
+  submitError: null,
+  selectedCurso: '',
+  isExpanded: false,
+  searchEstudiante: ''
+};
+
+function reportePatioUiReducer(state: ReportePatioUiState, action: ReportePatioUiAction): ReportePatioUiState {
+  switch (action.type) {
+    case 'SET_ENVIADO':
+      return { ...state, enviado: action.payload };
+    case 'SET_SUBMIT_ERROR':
+      return { ...state, submitError: action.payload };
+    case 'SET_SELECTED_CURSO':
+      return { ...state, selectedCurso: action.payload };
+    case 'SET_IS_EXPANDED':
+      return { ...state, isExpanded: action.payload };
+    case 'SET_SEARCH_ESTUDIANTE':
+      return { ...state, searchEstudiante: action.payload };
+    case 'RESET_SELECTOR':
+      return { ...state, selectedCurso: '', isExpanded: false, searchEstudiante: '' };
+    default:
+      return state;
+  }
+}
+
 const ReportePatioModal: React.FC<ReportePatioModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { estudiantes, setIsAssistantOpen } = useConvivencia();
   const { tenantId } = useTenant();
-  const [enviado, setEnviado] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [selectedCurso, setSelectedCurso] = useState<string>('');
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [searchEstudiante, setSearchEstudiante] = useState('');
+  const [ui, dispatch] = useReducer(reportePatioUiReducer, initialUiState);
 
   const [formData, setFormData, clearFormData] = useLocalDraft<FormDataPatio>(`reporte:patio:${tenantId ?? 'no-tenant'}`, {
     informante: '',
@@ -58,28 +97,26 @@ const ReportePatioModal: React.FC<ReportePatioModalProps> = ({ isOpen, onClose, 
   }, [estudiantes]);
 
   const estudiantesDelCurso = useMemo(() => {
-    if (!selectedCurso) return [];
-    let filtered = (estudiantes || []).filter((est: Estudiante) => est.curso === selectedCurso);
-    if (searchEstudiante.trim()) {
-      const term = searchEstudiante.toLowerCase().trim();
+    if (!ui.selectedCurso) return [];
+    let filtered = (estudiantes || []).filter((est: Estudiante) => est.curso === ui.selectedCurso);
+    if (ui.searchEstudiante.trim()) {
+      const term = ui.searchEstudiante.toLowerCase().trim();
       filtered = filtered.filter((est: Estudiante) => est.nombreCompleto.toLowerCase().includes(term));
     }
     return filtered;
-  }, [estudiantes, selectedCurso, searchEstudiante]);
+  }, [estudiantes, ui.searchEstudiante, ui.selectedCurso]);
 
-  const totalEstudiantesCurso = useMemo(() => {
-    return (estudiantes || []).filter((est: Estudiante) => est.curso === selectedCurso).length;
-  }, [estudiantes, selectedCurso]);
+  const totalEstudiantesCurso = (estudiantes || []).filter((est: Estudiante) => est.curso === ui.selectedCurso).length;
 
   const handleEstudianteSelect = (estudiante: { id: string; nombreCompleto: string; curso?: string | null }) => {
     setFormData((prev: FormDataPatio) => ({
       ...prev,
       estudianteId: estudiante.id,
       estudianteNombre: estudiante.nombreCompleto,
-      estudianteCurso: estudiante.curso || selectedCurso
+      estudianteCurso: estudiante.curso || ui.selectedCurso
     }));
-    setIsExpanded(false);
-    setSearchEstudiante('');
+    dispatch({ type: 'SET_IS_EXPANDED', payload: false });
+    dispatch({ type: 'SET_SEARCH_ESTUDIANTE', payload: '' });
   };
 
   const handleClearEstudiante = () => {
@@ -89,13 +126,13 @@ const ReportePatioModal: React.FC<ReportePatioModalProps> = ({ isOpen, onClose, 
       estudianteNombre: '',
       estudianteCurso: ''
     }));
-    setIsExpanded(false);
-    setSearchEstudiante('');
+    dispatch({ type: 'SET_IS_EXPANDED', payload: false });
+    dispatch({ type: 'SET_SEARCH_ESTUDIANTE', payload: '' });
   };
 
   const handleEnviar = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitError(null);
+    dispatch({ type: 'SET_SUBMIT_ERROR', payload: null });
     if (!tenantId) return;
     if (supabase) {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -109,7 +146,7 @@ const ReportePatioModal: React.FC<ReportePatioModalProps> = ({ isOpen, onClose, 
           establecimiento_id: tenantId,
           estudiante_id: formData.estudianteId,
           estudiante_nombre: formData.estudianteNombre || null,
-          curso: formData.estudianteCurso || selectedCurso,
+          curso: formData.estudianteCurso || ui.selectedCurso,
           informante: formData.informante,
           lugar: formData.lugar || null,
           descripcion: formData.descripcion,
@@ -118,16 +155,16 @@ const ReportePatioModal: React.FC<ReportePatioModalProps> = ({ isOpen, onClose, 
         });
 
         if (error) {
-          setSubmitError(error.message);
+          dispatch({ type: 'SET_SUBMIT_ERROR', payload: error.message });
           return;
         }
       }
     }
-    setEnviado(true);
+    dispatch({ type: 'SET_ENVIADO', payload: true });
     setTimeout(() => {
-      setEnviado(false);
+      dispatch({ type: 'SET_ENVIADO', payload: false });
       clearFormData();
-      setSelectedCurso('');
+      dispatch({ type: 'RESET_SELECTOR' });
       onSuccess?.(); // Notificar al padre que se creó el reporte
       onClose();
     }, 2000);
@@ -137,7 +174,7 @@ const ReportePatioModal: React.FC<ReportePatioModalProps> = ({ isOpen, onClose, 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in">
-      <div className="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl p-6 max-h-screen overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center">
@@ -156,23 +193,24 @@ const ReportePatioModal: React.FC<ReportePatioModalProps> = ({ isOpen, onClose, 
           </div>
         </div>
 
-        {enviado ? (
+        {ui.enviado ? (
           <div className="py-12 text-center space-y-4">
             <CheckCircle className="w-16 h-16 text-emerald-500 mx-auto" />
             <h3 className="text-xl font-black text-slate-900">REPORTE REGISTRADO</h3>
           </div>
         ) : (
           <form onSubmit={handleEnviar} className="space-y-6">
-            {submitError && (
+            {ui.submitError && (
               <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-                No se pudo registrar el reporte: {submitError}
+                No se pudo registrar el reporte: {ui.submitError}
               </div>
             )}
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Curso del Estudiante</label>
+              <label htmlFor="reporte-curso" className="text-xs font-black text-slate-400 uppercase tracking-widest">Curso del Estudiante</label>
               <select
-                value={selectedCurso}
-                onChange={(e) => { setSelectedCurso(e.target.value); handleClearEstudiante(); }}
+                id="reporte-curso"
+                value={ui.selectedCurso}
+                onChange={(e) => { dispatch({ type: 'SET_SELECTED_CURSO', payload: e.target.value }); handleClearEstudiante(); }}
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold"
               >
                 <option value="">Seleccione curso...</option>
@@ -182,24 +220,24 @@ const ReportePatioModal: React.FC<ReportePatioModalProps> = ({ isOpen, onClose, 
               </select>
             </div>
 
-            <div className={`space-y-3 ${!selectedCurso ? 'opacity-50 pointer-events-none' : ''}`}>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Estudiante</label>
-              {selectedCurso ? (
+            <div className={`space-y-3 ${!ui.selectedCurso ? 'opacity-50 pointer-events-none' : ''}`}>
+              <label htmlFor="reporte-estudiante-search" className="text-xs font-black text-slate-400 uppercase tracking-widest block">Estudiante</label>
+              {ui.selectedCurso ? (
                 <>
-                  <button type="button" onClick={() => setIsExpanded(!isExpanded)} className="w-full p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between">
+                  <button type="button" onClick={() => dispatch({ type: 'SET_IS_EXPANDED', payload: !ui.isExpanded })} className="w-full p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <Users className="w-5 h-5 text-amber-600" />
                       <div className="text-left">
-                        <p className="text-sm font-bold text-amber-800">{totalEstudiantesCurso} estudiante{totalEstudiantesCurso !== 1 ? 's' : ''} en {selectedCurso}</p>
-                        <p className="text-xs text-amber-600">{isExpanded ? 'Ocultar' : 'Ver lista'}</p>
+                        <p className="text-sm font-bold text-amber-800">{totalEstudiantesCurso} estudiante{totalEstudiantesCurso !== 1 ? 's' : ''} en {ui.selectedCurso}</p>
+                        <p className="text-xs text-amber-600">{ui.isExpanded ? 'Ocultar' : 'Ver lista'}</p>
                       </div>
                     </div>
-                    <ChevronDown className={`w-5 h-5 text-amber-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-5 h-5 text-amber-400 transition-transform ${ui.isExpanded ? 'rotate-180' : ''}`} />
                   </button>
-                  {isExpanded && (
+                  {ui.isExpanded && (
                     <div className="border border-slate-200 rounded-xl overflow-hidden">
                       <div className="p-3 bg-slate-50 border-b border-slate-200">
-                        <input type="text" placeholder="Buscar..." value={searchEstudiante} onChange={(e) => setSearchEstudiante(e.target.value)} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm" />
+                        <input id="reporte-estudiante-search" type="text" placeholder="Buscar..." value={ui.searchEstudiante} onChange={(e) => dispatch({ type: 'SET_SEARCH_ESTUDIANTE', payload: e.target.value })} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm" />
                       </div>
                       <div className="max-h-48 overflow-y-auto">
                         {estudiantesDelCurso.map((est: Estudiante) => (
@@ -211,7 +249,7 @@ const ReportePatioModal: React.FC<ReportePatioModalProps> = ({ isOpen, onClose, 
                       </div>
                     </div>
                   )}
-                  {formData.estudianteId && !isExpanded && (
+                  {formData.estudianteId && !ui.isExpanded && (
                     <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-amber-200 rounded-full flex items-center justify-center"><span className="text-sm font-bold text-amber-700">{formData.estudianteNombre.charAt(0)}</span></div>
@@ -227,33 +265,33 @@ const ReportePatioModal: React.FC<ReportePatioModalProps> = ({ isOpen, onClose, 
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Informante</label>
-              <input required type="text" placeholder="Nombre del funcionario que reporta" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold" value={formData.informante} onChange={(e) => setFormData({ ...formData, informante: e.target.value })} />
+              <label htmlFor="reporte-informante" className="text-xs font-black text-slate-400 uppercase tracking-widest">Informante</label>
+              <input id="reporte-informante" required type="text" placeholder="Nombre del funcionario que reporta" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold" value={formData.informante} onChange={(e) => setFormData({ ...formData, informante: e.target.value })} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center"><MapPin className="w-3 h-3 mr-2" /> Lugar</label>
-                <input required type="text" placeholder="Dónde ocurrió" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold" value={formData.lugar} onChange={(e) => setFormData({ ...formData, lugar: e.target.value })} />
+                <label htmlFor="reporte-lugar" className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center"><MapPin className="w-3 h-3 mr-2" /> Lugar</label>
+                <input id="reporte-lugar" required type="text" placeholder="Dónde ocurrió" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold" value={formData.lugar} onChange={(e) => setFormData({ ...formData, lugar: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center"><Calendar className="w-3 h-3 mr-2" /> Fecha</label>
-                <input required type="date" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold" value={formData.fechaIncidente} onChange={(e) => setFormData({ ...formData, fechaIncidente: e.target.value })} />
+                <label htmlFor="reporte-fecha" className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center"><Calendar className="w-3 h-3 mr-2" /> Fecha</label>
+                <input id="reporte-fecha" required type="date" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold" value={formData.fechaIncidente} onChange={(e) => setFormData({ ...formData, fechaIncidente: e.target.value })} />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gravedad Percibida</label>
+              <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Gravedad Percibida</p>
               <div className="flex gap-4">
                 {(['LEVE', 'RELEVANTE', 'GRAVE'] as const).map(g => (
-                  <button key={g} type="button" onClick={() => setFormData((prev: FormDataPatio) => ({ ...prev, gravedadPercibida: g }))} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${formData.gravedadPercibida === g ? g === 'LEVE' ? 'bg-amber-400 text-white border-amber-400' : g === 'RELEVANTE' ? 'bg-orange-500 text-white border-orange-500' : 'bg-red-600 text-white border-red-600' : 'bg-white text-slate-400 border-slate-100'}`}>{g}</button>
+                  <button key={g} type="button" onClick={() => setFormData((prev: FormDataPatio) => ({ ...prev, gravedadPercibida: g }))} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all border-2 ${formData.gravedadPercibida === g ? g === 'LEVE' ? 'bg-amber-400 text-white border-amber-400' : g === 'RELEVANTE' ? 'bg-orange-500 text-white border-orange-500' : 'bg-red-600 text-white border-red-600' : 'bg-white text-slate-400 border-slate-100'}`}>{g}</button>
                 ))}
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Descripción del Incidente</label>
-              <textarea required className="w-full h-24 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium resize-none" placeholder="Relato objetivo de lo observado..." value={formData.descripcion} onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })} />
+              <label htmlFor="reporte-descripcion" className="text-xs font-black text-slate-400 uppercase tracking-widest">Descripción del Incidente</label>
+              <textarea id="reporte-descripcion" required className="w-full h-24 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium resize-none" placeholder="Relato objetivo de lo observado..." value={formData.descripcion} onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })} />
             </div>
 
             <div className="flex gap-4 pt-4">
@@ -270,3 +308,4 @@ const ReportePatioModal: React.FC<ReportePatioModalProps> = ({ isOpen, onClose, 
 };
 
 export default ReportePatioModal;
+

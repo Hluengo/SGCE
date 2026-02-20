@@ -76,6 +76,7 @@ const AppRoutes: React.FC = () => {
           <Route path="expedientes/:id/editar" element={<SuspendedRoute><ExpedienteDetalle /></SuspendedRoute>} />
           <Route path="auditoria" element={<SuspendedRoute><DashboardAuditoriaSIE /></SuspendedRoute>} />
           <Route path="mediacion" element={<SuspendedRoute><CentroMediacionGCC /></SuspendedRoute>} />
+
           <Route path="calendario" element={<SuspendedRoute><CalendarioPlazosLegales /></SuspendedRoute>} />
           <Route path="bitacora/*" element={<SuspendedRoute><BitacoraPsicosocial /></SuspendedRoute>} />
           <Route path="evidencias" element={<SuspendedRoute><GestionEvidencias /></SuspendedRoute>} />

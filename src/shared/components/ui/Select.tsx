@@ -65,7 +65,7 @@ const Select: React.FC<SelectProps> = ({
   return (
     <div className="space-y-1">
       {label && (
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+        <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">
           {label}
         </label>
       )}
@@ -94,3 +94,4 @@ const Select: React.FC<SelectProps> = ({
 };
 
 export default Select;
+

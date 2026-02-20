@@ -1,10 +1,11 @@
 
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect, useMemo, useRef } from 'react';
-import { Estudiante, Expediente, EtapaProceso, GravedadFalta, Hito } from '@/types';
+import { Estudiante, Expediente, EtapaProceso, GravedadFalta } from '@/types';
 import { calcularPlazoLegal, addBusinessDays } from '@/shared/utils/plazos';
 import { supabase, safeSupabase } from '@/shared/lib/supabaseClient';
 import { useTenant } from '@/shared/context/TenantContext';
 import { isUuid } from '@/shared/utils/expedienteRef';
+import { hitosBase } from '@/shared/domain/expedientes/hitosBase';
 import { 
   DbEstudiante, 
   ExpedienteQueryRow,
@@ -39,32 +40,7 @@ const getStorageKey = (tenantId: string | null) =>
 
 // Helper para días hábiles moved to utils/plazos.ts
 
-export const hitosBase = (esExpulsion: boolean): Hito[] => {
-  const hitos: Hito[] = [
-    { id: 'h1', titulo: 'Inicio de Proceso', descripcion: 'Registro de la denuncia y apertura de folio.', completado: true, fechaCumplimiento: new Date().toISOString().split('T')[0], requiereEvidencia: true },
-    { id: 'h2', titulo: 'Notificación a Apoderados', descripcion: 'Comunicación oficial del inicio del proceso (Plazo 24h).', completado: false, requiereEvidencia: true },
-    { id: 'h3', titulo: 'Periodo de Descargos', descripcion: 'Recepción de la versión del estudiante y su familia.', completado: false, requiereEvidencia: true },
-    { id: 'h4', titulo: 'Investigación y Entrevistas', descripcion: 'Recopilación de pruebas y testimonios.', completado: false, requiereEvidencia: true },
-  ];
-
-  if (esExpulsion) {
-    hitos.push({
-      id: 'h-consejo',
-      titulo: 'Consulta Consejo Profesores',
-      descripcion: 'Hito obligatorio para medidas de expulsión según Ley Aula Segura.',
-      completado: false,
-      requiereEvidencia: true,
-      esObligatorioExpulsion: true
-    });
-  }
-
-  hitos.push(
-    { id: 'h5', titulo: 'Resolución del Director', descripcion: 'Determinación de la medida formativa o disciplinaria.', completado: false, requiereEvidencia: true },
-    { id: 'h6', titulo: 'Plazo de Reconsideración', descripcion: 'Periodo para apelación ante la entidad sostenedora (15 días hábiles).', completado: false, requiereEvidencia: false }
-  );
-
-  return hitos;
-};
+export { hitosBase } from '@/shared/domain/expedientes/hitosBase';
 
 /**
  * Carga datos de localStorage de forma segura
@@ -90,9 +66,12 @@ const loadLocalExpedientes = (tenantId: string | null): Expediente[] => {
 export const ConvivenciaProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [expedienteSeleccionado, setExpedienteSeleccionado] = useState<Expediente | null>(null);
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
-  const [isWizardOpen, setIsWizardOpen] = useState(false);
-  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
-  const [supabaseLoaded, setSupabaseLoaded] = useState(false);
+  const [uiState, setUiState] = useState({
+    isWizardOpen: false,
+    isAssistantOpen: false,
+    supabaseLoaded: false
+  });
+  const { isWizardOpen, isAssistantOpen, supabaseLoaded } = uiState;
   const loadSeqRef = useRef(0);
   const expedientesRef = useRef<Expediente[]>([]);
   
@@ -104,6 +83,33 @@ export const ConvivenciaProvider: React.FC<{ children: ReactNode }> = ({ childre
   }, []);
 
   const [expedientes, setExpedientes] = useState<Expediente[]>([]);
+  const setIsWizardOpen = useCallback((open: boolean) => {
+    setUiState((prev) => ({ ...prev, isWizardOpen: open }));
+  }, []);
+
+  const setIsAssistantOpen = useCallback((open: boolean) => {
+    setUiState((prev) => ({ ...prev, isAssistantOpen: open }));
+  }, []);
+
+  const resetTenantState = useCallback(() => {
+    setExpedienteSeleccionado(null);
+    setExpedientes([]);
+    setEstudiantes([]);
+    setUiState((prev) => ({ ...prev, supabaseLoaded: false }));
+  }, []);
+
+  const applyCachedExpedientes = useCallback((items: Expediente[]) => {
+    setExpedientes(items);
+  }, []);
+
+  const applyRemoteExpedientes = useCallback((items: Expediente[]) => {
+    setExpedientes(items);
+    setUiState((prev) => ({ ...prev, supabaseLoaded: true }));
+  }, []);
+
+  const applyRemoteEstudiantes = useCallback((items: Estudiante[]) => {
+    setEstudiantes(items);
+  }, []);
 
   useEffect(() => {
     expedientesRef.current = expedientes;
@@ -116,16 +122,13 @@ export const ConvivenciaProvider: React.FC<{ children: ReactNode }> = ({ childre
     const isCurrentLoad = () => !isCancelled && currentLoadSeq === loadSeqRef.current;
 
     // Al cambiar tenant, limpiar estado para evitar mezcla visual entre colegios.
-    setExpedienteSeleccionado(null);
-    setExpedientes([]);
-    setEstudiantes([]);
-    setSupabaseLoaded(false);
+    resetTenantState();
 
     if (!tenantId) return;
     const tenantIsUuid = isUuid(tenantId);
 
     // Carga rápida desde cache local por tenant (solo como fallback visual mientras consulta).
-    setExpedientes(loadLocalExpedientes(tenantId));
+    applyCachedExpedientes(loadLocalExpedientes(tenantId));
     if (!supabaseClient) return;
     if (!tenantIsUuid) {
       console.warn('ConvivenciaContext: tenantId no UUID, se omite carga remota', { tenantId });
@@ -148,11 +151,11 @@ export const ConvivenciaProvider: React.FC<{ children: ReactNode }> = ({ childre
 
       if (!isCurrentLoad()) return;
 
-      if (error || !data) {
-        console.error('Supabase: no se pudieron cargar expedientes', error);
-        setExpedientes([]);
-        return;
-      }
+        if (error || !data) {
+          console.error('Supabase: no se pudieron cargar expedientes', error);
+          applyCachedExpedientes([]);
+          return;
+        }
 
       const mapped: Expediente[] = data.map((row: ExpedienteQueryRow) => {
         const gravedad = mapDbTipoFaltaToGravedad(row.tipo_falta);
@@ -184,8 +187,7 @@ export const ConvivenciaProvider: React.FC<{ children: ReactNode }> = ({ childre
         };
       });
 
-      setExpedientes(mapped);
-      setSupabaseLoaded(true);
+      applyRemoteExpedientes(mapped);
     };
 
     const loadEstudiantes = async () => {
@@ -206,11 +208,11 @@ export const ConvivenciaProvider: React.FC<{ children: ReactNode }> = ({ childre
 
       if (error || !data) {
         console.error('Supabase: no se pudieron cargar estudiantes', error);
-        setEstudiantes([]);
+        applyRemoteEstudiantes([]);
         return;
       }
 
-      setEstudiantes(
+      applyRemoteEstudiantes(
         data.map((row: DbEstudiante) => ({
           id: row.id,
           nombreCompleto: row.nombre_completo,
@@ -228,7 +230,7 @@ export const ConvivenciaProvider: React.FC<{ children: ReactNode }> = ({ childre
     return () => {
       isCancelled = true;
     };
-  }, [tenantId]);
+  }, [tenantId, applyCachedExpedientes, applyRemoteEstudiantes, applyRemoteExpedientes, resetTenantState]);
 
   useEffect(() => {
     if (!tenantId || !supabaseLoaded) return;

@@ -19,6 +19,7 @@ import { useTenantClient } from '@/shared/hooks/useTenantClient';
 import { formatearFecha, calcularDiasRestantes } from '@/shared/utils/plazos';
 import AssistantButton from '@/shared/components/AssistantButton';
 import { isUuid } from '@/shared/utils/expedienteRef';
+import { AsyncState } from '@/shared/components/ui';
 
 interface ExpedienteResumenProps {
   expedienteId: string;
@@ -58,6 +59,157 @@ interface ResumenData {
     descripcion: string;
   } | null;
 }
+
+const ResumenHeader: React.FC<{
+  data: ResumenData | null;
+  expedienteId: string;
+  onClose: () => void;
+}> = ({ data, expedienteId, onClose }) => (
+  <div className="bg-gradient-to-r from-indigo-600 to-blue-600 p-6 text-white">
+    <div className="flex items-start justify-between">
+      <div>
+        <div className="flex items-center gap-4 mb-2">
+          <span className="text-xs font-black uppercase tracking-widest opacity-80">Expediente</span>
+          {data?.es_proceso_expulsion && (
+            <span className="px-2 py-0.5 bg-red-500/20 border border-red-400/30 rounded-full text-xs font-bold text-red-100">
+              EXPULSION
+            </span>
+          )}
+        </div>
+        <h2 className="text-2xl leading-none font-black">
+          {data?.estudiante_nombre || 'Sin nombre'}{data?.curso ? ` • ${data.curso}` : ''}
+        </h2>
+        <p className="text-xs font-bold opacity-90 mt-1 uppercase tracking-wide">
+          Número expediente: {data?.folio || expedienteId || '-'}
+        </p>
+      </div>
+      <button
+        onClick={onClose}
+        className="p-2 hover:bg-white/20 rounded-full transition-colors"
+      >
+        <X className="w-5 h-5" />
+      </button>
+    </div>
+  </div>
+);
+
+const ResumenDataContent: React.FC<{ data: ResumenData; diasRestantes: number | null }> = ({ data, diasRestantes }) => (
+  <div className="space-y-6">
+    <div className="grid grid-cols-2 gap-4">
+      <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+        <div className="flex items-center gap-2 mb-2">
+          <Clock className="w-4 h-4 text-slate-500" />
+          <span className="text-xs font-bold text-slate-500 uppercase">Estado</span>
+        </div>
+        <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+          data.estado_legal === 'cerrado' ? 'bg-emerald-100 text-emerald-700' :
+          data.estado_legal === 'resolucion' ? 'bg-amber-100 text-amber-700' :
+          'bg-blue-100 text-blue-700'
+        }`}>
+          {data.estado_legal?.toUpperCase()}
+        </span>
+      </div>
+
+      <div className={`rounded-xl p-4 border ${
+        diasRestantes !== null && diasRestantes <= 3 ? 'bg-red-50 border-red-200' :
+        diasRestantes !== null && diasRestantes <= 10 ? 'bg-amber-50 border-amber-200' :
+        'bg-slate-50 border-slate-200'
+      }`}>
+        <div className="flex items-center gap-2 mb-2">
+          <AlertTriangle className={`w-4 h-4 ${
+            diasRestantes !== null && diasRestantes <= 3 ? 'text-red-500' :
+            diasRestantes !== null && diasRestantes <= 10 ? 'text-amber-500' :
+            'text-slate-500'
+          }`} />
+          <span className="text-xs font-bold text-slate-500 uppercase">Plazo</span>
+        </div>
+        <span className={`text-sm font-bold ${
+          diasRestantes !== null && diasRestantes <= 3 ? 'text-red-700' :
+          diasRestantes !== null && diasRestantes <= 10 ? 'text-amber-700' :
+          'text-slate-700'
+        }`}>
+          {diasRestantes !== null ? (diasRestantes <= 0 ? 'VENCIDO' : `${diasRestantes} días restantes`) : 'Sin plazo'}
+        </span>
+      </div>
+    </div>
+
+    <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+      <div className="flex items-center gap-2 mb-2">
+        <Shield className="w-4 h-4 text-slate-500" />
+        <span className="text-xs font-bold text-slate-500 uppercase">Clasificación</span>
+      </div>
+      <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+        data.tipo_falta === 'expulsion' ? 'bg-red-100 text-red-700' :
+        data.tipo_falta === 'relevante' ? 'bg-amber-100 text-amber-700' :
+        'bg-slate-100 text-slate-700'
+      }`}>
+        FALTA {data.tipo_falta?.toUpperCase()}
+      </span>
+    </div>
+
+    <div>
+      <div className="flex items-center gap-2 mb-2">
+        <FileText className="w-4 h-4 text-slate-500" />
+        <span className="text-xs font-bold text-slate-500 uppercase">Hechos</span>
+      </div>
+      <p className="text-sm text-slate-700 bg-slate-50 rounded-xl p-4 border border-slate-200">
+        {data.descripcion_hechos || 'Sin descripción registrada'}
+      </p>
+    </div>
+
+    <div className="grid grid-cols-4 gap-4">
+      <div className="text-center p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+        <Activity className="w-5 h-5 text-indigo-600 mx-auto mb-1" />
+        <p className="text-xl font-black text-indigo-600">{data.actualizaciones_count}</p>
+        <p className="text-xs text-indigo-400 uppercase font-bold">Actualizaciones</p>
+      </div>
+      <div className="text-center p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+        <CheckCircle className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
+        <p className="text-xl font-black text-emerald-600">{data.hitos_completados}/{data.hitos_totales}</p>
+        <p className="text-xs text-emerald-400 uppercase font-bold">Hitos</p>
+      </div>
+      <div className="text-center p-4 bg-amber-50 rounded-xl border border-amber-100">
+        <FileText className="w-5 h-5 text-amber-600 mx-auto mb-1" />
+        <p className="text-xl font-black text-amber-600">{data.evidencias_count}</p>
+        <p className="text-xs text-amber-400 uppercase font-bold">Evidencias</p>
+      </div>
+      <div className="text-center p-4 bg-purple-50 rounded-xl border border-purple-100">
+        <Shield className="w-5 h-5 text-purple-600 mx-auto mb-1" />
+        <p className="text-xl font-black text-purple-600">{data.medidas_count}</p>
+        <p className="text-xs text-purple-400 uppercase font-bold">Medidas</p>
+      </div>
+    </div>
+
+    {data.ultimo_movimiento && (
+      <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+        <div className="flex items-center gap-2 mb-2">
+          <Send className="w-4 h-4 text-slate-500" />
+          <span className="text-xs font-bold text-slate-500 uppercase">Último Movimiento</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-bold text-slate-700">{data.ultimo_movimiento.tipo}</p>
+            <p className="text-xs text-slate-500">{data.ultimo_movimiento.descripcion}</p>
+          </div>
+          <span className="text-xs text-slate-400">
+            {formatearFecha(data.ultimo_movimiento.fecha)}
+          </span>
+        </div>
+      </div>
+    )}
+
+    <div className="grid grid-cols-2 gap-4 text-sm">
+      <div>
+        <span className="text-slate-500">Fecha de inicio: </span>
+        <span className="font-bold text-slate-700">{data.fecha_inicio ? formatearFecha(data.fecha_inicio) : '-'}</span>
+      </div>
+      <div>
+        <span className="text-slate-500">Plazo fatal: </span>
+        <span className="font-bold text-slate-700">{data.plazo_fatal ? formatearFecha(data.plazo_fatal) : '-'}</span>
+      </div>
+    </div>
+  </div>
+);
 
 export const ExpedienteResumenModal: React.FC<ExpedienteResumenProps> = ({
   expedienteId,
@@ -229,187 +381,47 @@ export const ExpedienteResumenModal: React.FC<ExpedienteResumenProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
         onClick={onClose}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClose();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label="Cerrar resumen de expediente"
       />
       
       {/* Modal */}
       <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Botón de Asistente IA */}
         <AssistantButton position="top-right" />
-        
-        {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 to-blue-600 p-6 text-white">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-xs font-black uppercase tracking-widest opacity-80">Expediente</span>
-                {data?.es_proceso_expulsion && (
-                  <span className="px-2 py-0.5 bg-red-500/20 border border-red-400/30 rounded-full text-xs font-bold text-red-100">
-                    EXPULSION
-                  </span>
-                )}
-              </div>
-              <h2 className="text-[1.45rem] leading-none font-black">
-                {data?.estudiante_nombre || 'Sin nombre'}{data?.curso ? ` • ${data.curso}` : ''}
-              </h2>
-              <p className="text-[12px] font-bold opacity-90 mt-1 uppercase tracking-wide">
-                Número expediente: {data?.folio || expedienteId || '-'}
-              </p>
-            </div>
-            <button 
-              onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-full transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
+        <ResumenHeader data={data} expedienteId={expedienteId} onClose={onClose} />
 
         {/* Content */}
-        <div className="p-6 max-h-[60vh] overflow-y-auto">
+        <div className="p-6 max-h-screen overflow-y-auto">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-              <span className="ml-3 text-slate-500">Cargando resumen...</span>
-            </div>
+            <AsyncState
+              state="loading"
+              title="Cargando resumen del expediente"
+              message="Recuperando información consolidada."
+              compact
+            />
           ) : data ? (
-            <div className="space-y-6">
-              {/* Estado y Plazo */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Clock className="w-4 h-4 text-slate-500" />
-                    <span className="text-xs font-bold text-slate-500 uppercase">Estado</span>
-                  </div>
-                  <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-                    data.estado_legal === 'cerrado' ? 'bg-emerald-100 text-emerald-700' :
-                    data.estado_legal === 'resolucion' ? 'bg-amber-100 text-amber-700' :
-                    'bg-blue-100 text-blue-700'
-                  }`}>
-                    {data.estado_legal?.toUpperCase()}
-                  </span>
-                </div>
-                
-                <div className={`rounded-xl p-4 border ${
-                  diasRestantes !== null && diasRestantes <= 3 ? 'bg-red-50 border-red-200' :
-                  diasRestantes !== null && diasRestantes <= 10 ? 'bg-amber-50 border-amber-200' :
-                  'bg-slate-50 border-slate-200'
-                }`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle className={`w-4 h-4 ${
-                      diasRestantes !== null && diasRestantes <= 3 ? 'text-red-500' :
-                      diasRestantes !== null && diasRestantes <= 10 ? 'text-amber-500' :
-                      'text-slate-500'
-                    }`} />
-                    <span className="text-xs font-bold text-slate-500 uppercase">Plazo</span>
-                  </div>
-                  <span className={`text-sm font-bold ${
-                    diasRestantes !== null && diasRestantes <= 3 ? 'text-red-700' :
-                    diasRestantes !== null && diasRestantes <= 10 ? 'text-amber-700' :
-                    'text-slate-700'
-                  }`}>
-                    {diasRestantes !== null ? (
-                      diasRestantes <= 0 ? 'VENCIDO' : `${diasRestantes} días restantes`
-                    ) : 'Sin plazo'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Tipo de Falta */}
-              <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <Shield className="w-4 h-4 text-slate-500" />
-                  <span className="text-xs font-bold text-slate-500 uppercase">Clasificación</span>
-                </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-                  data.tipo_falta === 'expulsion' ? 'bg-red-100 text-red-700' :
-                  data.tipo_falta === 'relevante' ? 'bg-amber-100 text-amber-700' :
-                  'bg-slate-100 text-slate-700'
-                }`}>
-                  FALTA {data.tipo_falta?.toUpperCase()}
-                </span>
-              </div>
-
-              {/* Descripción de Hechos */}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <FileText className="w-4 h-4 text-slate-500" />
-                  <span className="text-xs font-bold text-slate-500 uppercase">Hechos</span>
-                </div>
-                <p className="text-sm text-slate-700 bg-slate-50 rounded-xl p-4 border border-slate-200">
-                  {data.descripcion_hechos || 'Sin descripción registrada'}
-                </p>
-              </div>
-
-              {/* Estadísticas */}
-              <div className="grid grid-cols-4 gap-3">
-                <div className="text-center p-3 bg-indigo-50 rounded-xl border border-indigo-100">
-                  <Activity className="w-5 h-5 text-indigo-600 mx-auto mb-1" />
-                  <p className="text-xl font-black text-indigo-600">{data.actualizaciones_count}</p>
-                  <p className="text-[10px] text-indigo-400 uppercase font-bold">Actualizaciones</p>
-                </div>
-                
-                <div className="text-center p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-                  <CheckCircle className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
-                  <p className="text-xl font-black text-emerald-600">{data.hitos_completados}/{data.hitos_totales}</p>
-                  <p className="text-[10px] text-emerald-400 uppercase font-bold">Hitos</p>
-                </div>
-                
-                <div className="text-center p-3 bg-amber-50 rounded-xl border border-amber-100">
-                  <FileText className="w-5 h-5 text-amber-600 mx-auto mb-1" />
-                  <p className="text-xl font-black text-amber-600">{data.evidencias_count}</p>
-                  <p className="text-[10px] text-amber-400 uppercase font-bold">Evidencias</p>
-                </div>
-                
-                <div className="text-center p-3 bg-purple-50 rounded-xl border border-purple-100">
-                  <Shield className="w-5 h-5 text-purple-600 mx-auto mb-1" />
-                  <p className="text-xl font-black text-purple-600">{data.medidas_count}</p>
-                  <p className="text-[10px] text-purple-400 uppercase font-bold">Medidas</p>
-                </div>
-              </div>
-
-              {/* Último Movimiento */}
-              {data.ultimo_movimiento && (
-                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Send className="w-4 h-4 text-slate-500" />
-                    <span className="text-xs font-bold text-slate-500 uppercase">Último Movimiento</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-bold text-slate-700">{data.ultimo_movimiento.tipo}</p>
-                      <p className="text-xs text-slate-500">{data.ultimo_movimiento.descripcion}</p>
-                    </div>
-                    <span className="text-xs text-slate-400">
-                      {formatearFecha(data.ultimo_movimiento.fecha)}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Fechas */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-slate-500">Fecha de inicio: </span>
-                  <span className="font-bold text-slate-700">
-                    {data.fecha_inicio ? formatearFecha(data.fecha_inicio) : '-'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-500">Plazo fatal: </span>
-                  <span className="font-bold text-slate-700">
-                    {data.plazo_fatal ? formatearFecha(data.plazo_fatal) : '-'}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <ResumenDataContent data={data} diasRestantes={diasRestantes} />
           ) : (
-            <div className="text-center py-12 text-slate-500 space-y-2">
-              <p>No se pudo cargar la información del expediente</p>
-              {loadError && <p className="text-xs text-rose-600">{loadError}</p>}
-            </div>
+            <AsyncState
+              state="error"
+              title="No se pudo cargar la información del expediente"
+              message={loadError ?? 'Intenta nuevamente en unos segundos.'}
+              onRetry={() => {
+                void loadResumen();
+              }}
+              compact
+            />
           )}
         </div>
 
@@ -442,3 +454,4 @@ function getDescripcionFromAccion(accion: string, detalle: Record<string, unknow
 }
 
 export default ExpedienteResumenModal;
+

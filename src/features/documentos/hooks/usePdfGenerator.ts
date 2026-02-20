@@ -4,12 +4,30 @@ import DOMPurify from 'dompurify';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
 
+type PdfOrientation = 'portrait' | 'landscape';
+
+interface PdfJsOptions {
+  unit?: 'mm' | 'pt' | 'px';
+  format?: 'a4' | 'letter' | [number, number];
+  orientation?: PdfOrientation;
+}
+
+interface PdfHtml2CanvasOptions {
+  scale?: number;
+  useCORS?: boolean;
+}
+
+interface PdfImageOptions {
+  type?: 'jpeg' | 'png' | 'webp';
+  quality?: number;
+}
+
 export type PdfOptions = Partial<{
   filename: string;
   margin: number;
-  jsPDF: any;
-  html2canvas: any;
-  image: any;
+  jsPDF: PdfJsOptions;
+  html2canvas: PdfHtml2CanvasOptions;
+  image: PdfImageOptions;
 }>;
 
 export function sanitizeHtml(html: string) {

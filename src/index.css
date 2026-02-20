@@ -27,7 +27,9 @@ body {
 }
 
 body {
-  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-body);
+  color: var(--color-texto);
+  background: var(--color-fondo);
 }
 
 /* Modern scrollbar */

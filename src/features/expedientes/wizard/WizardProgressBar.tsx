@@ -23,7 +23,7 @@ export const WizardProgressBar: React.FC<WizardProgressBarProps> = ({
         {stepsConfig.map((s, idx) => (
           <div
             key={s.id}
-            className={`relative z-10 w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black transition-all duration-300 ${
+            className={`relative z-10 w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black transition-all duration-300 ${
               activeIndex === idx
                 ? 'bg-blue-600 text-white ring-4 ring-blue-100 shadow-lg'
                 : idx < activeIndex
@@ -44,3 +44,4 @@ export const WizardProgressBar: React.FC<WizardProgressBarProps> = ({
 };
 
 export default WizardProgressBar;
+

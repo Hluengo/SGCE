@@ -29,6 +29,10 @@ vi.mock('@/shared/hooks/useGccMetrics', () => ({
     }))
 }));
 
+vi.mock('@/features/mediacion/components', () => ({
+    GccDashboard: () => <div data-testid="gcc-dashboard-module">GCC Dashboard Mock</div>,
+}));
+
 describe('Dashboard', () => {
     const mockSetIsWizardOpen = vi.fn();
     

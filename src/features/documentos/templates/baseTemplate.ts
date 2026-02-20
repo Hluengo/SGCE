@@ -79,4 +79,5 @@ function escapeHtml(s: string) {
     .replace(/'/g, '&#39;');
 }
 
+export { escapeHtml };
 export default baseTemplate;

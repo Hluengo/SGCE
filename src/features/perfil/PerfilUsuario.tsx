@@ -11,79 +11,89 @@ const ROLE_OPTIONS = [
 ];
 
 const PerfilUsuario: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [nombre, setNombre] = useState('');
-  const [rol, setRol] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [status, setStatus] = useState('');
+  const [state, setState] = useState({
+    form: { email: '', nombre: '', rol: '' },
+    isLoading: true,
+    isSaving: false,
+    status: ''
+  });
+  const form = state.form;
 
   useEffect(() => {
     const load = async () => {
-      if (!supabase) return;
-      const { data: sessionData } = await supabase.auth.getSession();
-      const user = sessionData.session?.user;
-      if (!user) {
-        setIsLoading(false);
-        setStatus('Inicia sesion para ver tu perfil.');
-        return;
+      let nextForm = { email: '', nombre: '', rol: '' };
+      let nextStatus = '';
+
+      if (!supabase) {
+        nextStatus = 'Error de conexion.';
+      } else {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const user = sessionData.session?.user;
+        if (!user) {
+          nextStatus = 'Inicia sesion para ver tu perfil.';
+        } else {
+          nextForm = { email: user.email ?? '', nombre: '', rol: '' };
+          const { data, error } = await supabase
+            .from('perfiles')
+            .select('nombre, rol')
+            .eq('id', user.id)
+            .single();
+
+          if (!error && data) {
+            nextForm = {
+              email: user.email ?? '',
+              nombre: data.nombre ?? '',
+              rol: String(data.rol ?? '')
+            };
+          }
+        }
       }
-      setEmail(user.email ?? '');
-      const { data, error } = await supabase
-        .from('perfiles')
-        .select('nombre, rol')
-        .eq('id', user.id)
-        .single();
-      if (!error && data) {
-        setNombre(data.nombre ?? '');
-        setRol(String(data.rol ?? ''));
-      }
-      setIsLoading(false);
+
+      setState(prev => ({ ...prev, form: nextForm, isLoading: false, status: nextStatus }));
     };
     load();
   }, []);
 
   const handleSave = async () => {
     if (!supabase) {
-      setStatus('Error de conexion.');
+      setState(prev => ({ ...prev, status: 'Error de conexion.' }));
       return;
     }
     const { data: sessionData } = await supabase.auth.getSession();
     const user = sessionData.session?.user;
     if (!user) {
-      setStatus('Inicia sesion para guardar.');
+      setState(prev => ({ ...prev, status: 'Inicia sesion para guardar.' }));
       return;
     }
-    if (!nombre.trim()) {
-      setStatus('Nombre es obligatorio.');
+    if (!form.nombre.trim()) {
+      setState(prev => ({ ...prev, status: 'Nombre es obligatorio.' }));
       return;
     }
-    if (!rol || !ROLE_OPTIONS.includes(rol)) {
-      setStatus('Selecciona un rol valido.');
+    if (!form.rol || !ROLE_OPTIONS.includes(form.rol)) {
+      setState(prev => ({ ...prev, status: 'Selecciona un rol valido.' }));
       return;
     }
 
-    setIsSaving(true);
-    setStatus('');
+    setState(prev => ({ ...prev, isSaving: true, status: '' }));
 
     const { error: perfilError } = await supabase
       .from('perfiles')
-      .update({ nombre: nombre.trim(), rol })
+      .update({ nombre: form.nombre.trim(), rol: form.rol })
       .eq('id', user.id);
 
     const { error: userError } = await supabase.auth.updateUser({
       data: {
-        display_name: nombre.trim(),
-        Display_Name: nombre.trim()
+        display_name: form.nombre.trim(),
+        Display_Name: form.nombre.trim()
       }
     });
 
     if (perfilError || userError) {
-      setStatus('No se pudo guardar.');
+      setState(prev => ({ ...prev, status: 'No se pudo guardar.' }));
     } else {
-      setStatus('Guardado correctamente.');
+      setState(prev => ({ ...prev, status: 'Guardado correctamente.' }));
     }
-    setIsSaving(false);
+    setState(prev => ({ ...prev, isSaving: false }));
   };
 
   return (
@@ -92,24 +102,26 @@ const PerfilUsuario: React.FC = () => {
         <h1 className="text-xl font-black text-slate-900 uppercase tracking-widest">Perfil</h1>
         <p className="text-xs text-slate-500 font-bold mt-1">Informacion de usuario</p>
 
-        {isLoading ? (
+        {state.isLoading ? (
           <div className="mt-6 text-slate-400 text-sm font-semibold">Cargando...</div>
         ) : (
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nombre</label>
+              <label htmlFor="perfil-nombre" className="text-xs font-black uppercase tracking-widest text-slate-400">Nombre</label>
               <input
-                value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
+                id="perfil-nombre"
+                value={form.nombre}
+                onChange={(e) => setState(prev => ({ ...prev, form: { ...prev.form, nombre: e.target.value } }))}
                 className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-800"
                 placeholder="Nombre completo"
               />
             </div>
             <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Rol</label>
+              <label htmlFor="perfil-rol" className="text-xs font-black uppercase tracking-widest text-slate-400">Rol</label>
               <select
-                value={rol}
-                onChange={(e) => setRol(e.target.value)}
+                id="perfil-rol"
+                value={form.rol}
+                onChange={(e) => setState(prev => ({ ...prev, form: { ...prev.form, rol: e.target.value } }))}
                 className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-800"
               >
                 <option value="">Selecciona rol</option>
@@ -119,20 +131,20 @@ const PerfilUsuario: React.FC = () => {
               </select>
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Email</p>
-              <p className="text-sm font-bold text-slate-800 mt-1">{email || 'Sin email'}</p>
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Email</p>
+              <p className="text-sm font-bold text-slate-800 mt-1">{form.email || 'Sin email'}</p>
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Estado</p>
-              <p className="text-sm font-bold text-slate-800 mt-1">{status || 'Activo'}</p>
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Estado</p>
+              <p className="text-sm font-bold text-slate-800 mt-1">{state.status || 'Activo'}</p>
             </div>
             <div className="md:col-span-2">
               <button
                 onClick={handleSave}
-                disabled={isSaving}
-                className={`w-full px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest ${isSaving ? 'bg-slate-200 text-slate-400' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                disabled={state.isSaving}
+                className={`w-full px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest ${state.isSaving ? 'bg-slate-200 text-slate-400' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
               >
-                {isSaving ? 'Guardando...' : 'Guardar cambios'}
+                {state.isSaving ? 'Guardando...' : 'Guardar cambios'}
               </button>
             </div>
           </div>

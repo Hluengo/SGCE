@@ -26,7 +26,7 @@ export const WizardStep2Gradualidad: React.FC<WizardStep2GradualidadProps> = ({
           <h4 className="text-amber-900 font-black text-xs uppercase tracking-widest mb-2">
             Validación de Debido Proceso
           </h4>
-          <p className="text-[11px] text-amber-700 font-medium leading-relaxed">
+          <p className="text-xs text-amber-700 font-medium leading-relaxed">
             Para iniciar una medida de expulsión (Circular 782), la entidad educativa
             debe demostrar que la sanción es proporcional y precedida de medidas formativas.
           </p>
@@ -44,7 +44,7 @@ export const WizardStep2Gradualidad: React.FC<WizardStep2GradualidadProps> = ({
             <p className="text-xs font-black text-slate-800 uppercase tracking-tight">
               ¿Existe Advertencia Escrita previa?
             </p>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter mt-1">
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-tighter mt-1">
               Hito obligatorio de gradualidad
             </p>
           </div>
@@ -60,7 +60,7 @@ export const WizardStep2Gradualidad: React.FC<WizardStep2GradualidadProps> = ({
             <p className="text-xs font-black text-slate-800 uppercase tracking-tight">
               ¿Se implementó Plan de Apoyo Psicosocial?
             </p>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter mt-1">
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-tighter mt-1">
               Requerido para sustentar la medida ante la SIE
             </p>
           </div>
@@ -71,10 +71,10 @@ export const WizardStep2Gradualidad: React.FC<WizardStep2GradualidadProps> = ({
         <div className="p-6 bg-red-50 border-2 border-red-200 rounded-2xl flex items-center space-x-4 border-dashed animate-pulse">
           <AlertTriangle className="w-8 h-8 text-red-600 shrink-0" />
           <div>
-            <h5 className="font-black text-red-700 text-[10px] uppercase tracking-widest mb-1">
+            <h5 className="font-black text-red-700 text-xs uppercase tracking-widest mb-1">
               ALERTA DE VULNERABILIDAD LEGAL
             </h5>
-            <p className="text-[10px] text-red-600 font-bold leading-tight">
+            <p className="text-xs text-red-600 font-bold leading-tight">
               Atenci&oacute;n: Iniciar expulsi&oacute;n sin acciones previas puede invalidar
               el proceso ante la SIE por falta de gradualidad.
             </p>
@@ -86,3 +86,4 @@ export const WizardStep2Gradualidad: React.FC<WizardStep2GradualidadProps> = ({
 };
 
 export default WizardStep2Gradualidad;
+

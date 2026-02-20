@@ -77,19 +77,19 @@ export const Breadcrumb: React.FC = () => {
               {isLast ? (
                 <span
                   aria-current="page"
-                  className="text-slate-600 font-medium truncate max-w-[200px]"
+                  className="text-slate-600 font-medium truncate max-w-52"
                 >
                   {item.label}
                 </span>
               ) : item.path ? (
                 <NavLink
                   to={item.path}
-                  className="text-slate-500 hover:text-blue-600 transition-colors truncate max-w-[200px]"
+                  className="text-slate-500 hover:text-blue-600 transition-colors truncate max-w-52"
                 >
                   {item.label}
                 </NavLink>
               ) : (
-                <span className="text-slate-500 truncate max-w-[200px]">
+                <span className="text-slate-500 truncate max-w-52">
                   {item.label}
                 </span>
               )}
@@ -131,7 +131,7 @@ export const BreadcrumbWithHome: React.FC = () => {
               {isLast ? (
                 <span
                   aria-current="page"
-                  className="text-slate-800 font-semibold truncate max-w-[200px]"
+                  className="text-slate-800 font-semibold truncate max-w-52"
                 >
                   {item.label}
                 </span>
@@ -156,3 +156,4 @@ export const BreadcrumbWithHome: React.FC = () => {
 };
 
 export default Breadcrumb;
+

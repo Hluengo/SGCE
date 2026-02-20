@@ -6,7 +6,7 @@ import Header from './Header';
 const Layout: React.FC = () => {
     // We could lift isOnline here eventually
     return (
-        <div className="flex min-h-screen min-h-[100dvh] bg-slate-900 font-sans selection:bg-blue-100 selection:text-blue-700 overflow-x-hidden">
+        <div className="flex min-h-screen min-h-screen bg-slate-900 font-sans selection:bg-blue-100 selection:text-blue-700 overflow-x-hidden">
             <Sidebar />
             <div className="flex-1 min-w-0 flex flex-col min-h-0">
                 <Header />
@@ -19,3 +19,4 @@ const Layout: React.FC = () => {
 };
 
 export default Layout;
+

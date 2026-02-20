@@ -19,7 +19,7 @@ const PlazoCounter: React.FC<PlazoCounterProps> = ({ fechaLimite }) => {
   };
 
   return (
-    <div className={`inline-flex items-center px-2 py-1 rounded-md border text-[11px] font-semibold ${getUrgencyColor()}`}>
+    <div className={`inline-flex items-center px-2 py-1 rounded-md border text-xs font-semibold ${getUrgencyColor()}`}>
       <Clock className="w-3 h-3 mr-1" />
       {diffDays < 0 ? 'Plazo Vencido' : `${diffDays}d restantes`}
     </div>
@@ -27,3 +27,4 @@ const PlazoCounter: React.FC<PlazoCounterProps> = ({ fechaLimite }) => {
 };
 
 export default PlazoCounter;
+

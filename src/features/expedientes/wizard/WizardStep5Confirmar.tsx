@@ -38,12 +38,12 @@ export const WizardStep5Confirmar: React.FC<WizardStep5ConfirmarProps> = ({
         </p>
       </div>
 
-      <div className="bg-slate-900 text-white rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group">
+      <div className="bg-slate-900 text-white rounded-3xl p-8 shadow-2xl relative overflow-hidden group">
         <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl"></div>
 
         <div className="space-y-4">
           <div className="flex justify-between items-start border-b border-white/10 pb-3">
-            <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
+            <span className="text-xs font-black text-blue-400 uppercase tracking-widest">
               Estudiante
             </span>
             <EstudianteBadge
@@ -54,19 +54,19 @@ export const WizardStep5Confirmar: React.FC<WizardStep5ConfirmarProps> = ({
             />
           </div>
           <div className="flex justify-between border-b border-white/10 pb-3">
-            <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
+            <span className="text-xs font-black text-blue-400 uppercase tracking-widest">
               Gravedad
             </span>
             <NormativeBadge gravedad={formData.gravedad as GravedadFalta} />
           </div>
           <div className="flex justify-between border-b border-white/10 pb-3">
-            <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
+            <span className="text-xs font-black text-blue-400 uppercase tracking-widest">
               Lugar
             </span>
             <span className="text-xs font-bold uppercase">{formData.lugarIncidente}</span>
           </div>
           <div className="flex justify-between border-b border-white/10 pb-3">
-            <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
+            <span className="text-xs font-black text-blue-400 uppercase tracking-widest">
               Estudiante A
             </span>
             <span className="text-xs font-bold uppercase">
@@ -74,7 +74,7 @@ export const WizardStep5Confirmar: React.FC<WizardStep5ConfirmarProps> = ({
             </span>
           </div>
           <div className="flex justify-between border-b border-white/10 pb-3">
-            <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
+            <span className="text-xs font-black text-blue-400 uppercase tracking-widest">
               Estudiante B
             </span>
             <span className="text-xs font-bold uppercase">
@@ -82,11 +82,11 @@ export const WizardStep5Confirmar: React.FC<WizardStep5ConfirmarProps> = ({
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
+            <span className="text-xs font-black text-blue-400 uppercase tracking-widest">
               Cumplimiento Gradualidad
             </span>
             <span
-              className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase ${
+              className={`px-3 py-1 rounded-lg text-xs font-black uppercase ${
                 isGradualityValid
                   ? 'bg-emerald-500/20 text-emerald-400'
                   : 'bg-red-500/20 text-red-400'
@@ -98,7 +98,7 @@ export const WizardStep5Confirmar: React.FC<WizardStep5ConfirmarProps> = ({
         </div>
       </div>
 
-      <p className="text-[10px] text-slate-400 text-center italic font-medium leading-relaxed">
+      <p className="text-xs text-slate-400 text-center italic font-medium leading-relaxed">
         "Al confirmar, el sistema generar&aacute; el folio oficial y activar&aacute; las alertas
         de plazo fatal para los encargados de convivencia."
       </p>
@@ -107,3 +107,4 @@ export const WizardStep5Confirmar: React.FC<WizardStep5ConfirmarProps> = ({
 };
 
 export default WizardStep5Confirmar;
+

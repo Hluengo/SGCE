@@ -56,26 +56,26 @@ const BitacoraSalida: React.FC = () => {
 
   return (
     <main className="flex-1 p-4 md:p-10 bg-slate-50 flex justify-center items-start overflow-y-auto animate-in fade-in duration-700">
-      <div className="bg-white w-full max-w-4xl rounded-[3rem] border border-slate-200 shadow-2xl p-6 md:p-12 space-y-8">
+      <div className="bg-white w-full max-w-4xl rounded-3xl border border-slate-200 shadow-2xl p-6 md:p-12 space-y-8">
         <header className="text-center space-y-2">
-          <div className="w-16 h-16 md:w-20 md:h-20 bg-emerald-100 text-emerald-600 rounded-[2rem] flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 md:w-20 md:h-20 bg-emerald-100 text-emerald-600 rounded-3xl flex items-center justify-center mx-auto mb-4">
             <DoorOpen className="w-8 h-8 md:w-10 md:h-10" />
           </div>
           <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">Bitacora de Salida</h2>
-          <p className="text-slate-400 font-bold text-[9px] md:text-[10px] uppercase tracking-[0.2em]">Control de Custodia y Retiro de Estudiantes</p>
+          <p className="text-slate-400 font-bold text-xs md:text-xs uppercase tracking-widest">Control de Custodia y Retiro de Estudiantes</p>
         </header>
 
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
           <ShieldAlert className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-amber-800 leading-relaxed">
             <p className="font-bold text-xs uppercase tracking-wider mb-1">Aviso Legal</p>
-            <p className="text-[11px] font-medium leading-relaxed">
+            <p className="text-xs font-medium leading-relaxed">
               El establecimiento no puede hacer abandono del estudiante sin antes entregarlo a un adulto responsable. Este registro constituye la prueba legal de entrega de custodia.
             </p>
           </div>
         </div>
 
-        <button className="w-full py-4 bg-slate-900 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] shadow-2xl hover:bg-slate-800 transition-all flex items-center justify-center gap-3">
+        <button className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl hover:bg-slate-800 transition-all flex items-center justify-center gap-3">
           <Plus className="w-5 h-5" />
           <span>Nuevo Registro de Salida</span>
         </button>
@@ -94,29 +94,29 @@ const BitacoraSalida: React.FC = () => {
                       </span>
                     </div>
                     <div>
-                      <p className="text-[10px] font-black text-slate-500">{reg.fecha}</p>
-                      <p className="text-[10px] font-black text-slate-500">{reg.hora}</p>
+                      <p className="text-xs font-black text-slate-500">{reg.fecha}</p>
+                      <p className="text-xs font-black text-slate-500">{reg.hora}</p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-black text-slate-500">{reg.id.slice(0, 8)}</span>
+                  <span className="text-xs font-black text-slate-500">{reg.id.slice(0, 8)}</span>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                   <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase">Estudiante</p>
+                    <p className="text-xs font-black text-slate-400 uppercase">Estudiante</p>
                     <EstudianteBadge nombre={reg.nna} curso={reg.nnaCurso} size="md" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase">Motivo</p>
-                    <span className="px-2.5 py-1 bg-slate-100 rounded-lg text-[9px] font-black text-slate-500 uppercase tracking-tighter">
+                    <p className="text-xs font-black text-slate-400 uppercase">Motivo</p>
+                    <span className="px-2.5 py-1 bg-slate-100 rounded-lg text-xs font-black text-slate-500 uppercase tracking-tighter">
                       {reg.motivo}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase">Adulto Responsable</p>
+                      <p className="text-xs font-black text-slate-400 uppercase">Adulto Responsable</p>
                       <p className="text-xs font-black text-slate-800 uppercase">{reg.retiradoPor}</p>
-                      <p className="text-[9px] font-bold text-slate-400 font-mono">{reg.rut}</p>
+                      <p className="text-xs font-bold text-slate-400 font-mono">{reg.rut}</p>
                     </div>
                     <button className="p-2 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100 hover:bg-emerald-600 hover:text-white transition-all">
                       <FileText className="w-4 h-4" />
@@ -138,3 +138,4 @@ const BitacoraSalida: React.FC = () => {
 };
 
 export default BitacoraSalida;
+

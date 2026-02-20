@@ -9,7 +9,7 @@
  * - Flujo de creación paso a paso
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useConvivencia } from '@/shared/context/ConvivenciaContext';
 import { supabase } from '@/shared/lib/supabaseClient';
@@ -23,13 +23,13 @@ import {
   AlertTriangle,
   FilePlus,
   CheckCircle,
-  X,
   Upload,
   Trash2,
   ShieldAlert
 } from 'lucide-react';
 import { EtapaProceso, GravedadFalta, Expediente } from '@/types';
 import { calcularPlazoLegal } from '@/shared/utils/plazos';
+import { AsyncState } from '@/shared/components/ui';
 
 /**
  * Tipos de falta según normativa
@@ -141,17 +141,20 @@ const STEPS = [
 /**
  * Componente principal del formulario
  */
-const ExpedienteForm: React.FC = () => {
+const useExpedienteFormView = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { setExpedientes } = useConvivencia();
 
-  const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<ExpedienteFormData>(initialFormData);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [nuevoExpedienteId, setNuevoExpedienteId] = useState<string | null>(null);
+  const [uiState, setUiState] = useState({
+    currentStep: 0,
+    errors: {} as Record<string, string>,
+    isSubmitting: false,
+    submitError: null as string | null,
+    nuevoExpedienteId: null as string | null
+  });
+  const { currentStep, errors, isSubmitting, submitError, nuevoExpedienteId } = uiState;
 
   // Validar paso actual
   const validateStep = (step: number): boolean => {
@@ -195,19 +198,19 @@ const ExpedienteForm: React.FC = () => {
         break;
     }
 
-    setErrors(newErrors);
+    setUiState(prev => ({ ...prev, errors: newErrors }));
     return Object.keys(newErrors).length === 0;
   };
 
   // Navegación entre pasos
   const handleNext = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
+      setUiState(prev => ({ ...prev, currentStep: Math.min(prev.currentStep + 1, STEPS.length - 1) }));
     }
   };
 
   const handleBack = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 0));
+    setUiState(prev => ({ ...prev, currentStep: Math.max(prev.currentStep - 1, 0) }));
   };
 
   // Manejo de cambios en el formulario
@@ -215,10 +218,10 @@ const ExpedienteForm: React.FC = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Limpiar error al modificar
     if (errors[field]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
+      setUiState(prev => {
+        const newErrors = { ...prev.errors };
         delete newErrors[field];
-        return newErrors;
+        return { ...prev, errors: newErrors };
       });
     }
   };
@@ -273,8 +276,7 @@ const ExpedienteForm: React.FC = () => {
   const handleSubmit = async () => {
     if (!validateStep(2)) return;
 
-    setIsSubmitting(true);
-    setSubmitError(null);
+    setUiState(prev => ({ ...prev, isSubmitting: true, submitError: null }));
 
     try {
       // Generar número de expediente
@@ -352,7 +354,7 @@ const ExpedienteForm: React.FC = () => {
           es_proceso_expulsion: nuevoExpediente.esProcesoExpulsion,
           acciones_previas: nuevoExpediente.accionesPrevias,
           hitos: nuevoExpediente.hitos,
-          interaction_type: 'creacion'
+          interaction_type: 'creacion',
           additional_data: nuevoExpediente.additionalData ?? {
             estudianteCurso: formData.estudianteCurso,
             descripcionHecho: formData.descripcionHecho,
@@ -367,24 +369,24 @@ const ExpedienteForm: React.FC = () => {
       // Guardar en contexto local
       setExpedientes(prev => [...prev, nuevoExpediente as Expediente]);
 
-      setNuevoExpedienteId(expedienteId);
+      setUiState(prev => ({ ...prev, nuevoExpedienteId: expedienteId }));
 
     } catch (error) {
       console.error('Error al crear expediente:', error);
-      setSubmitError(error instanceof Error ? error.message : 'Error al crear el expediente');
+      setUiState(prev => ({ ...prev, submitError: error instanceof Error ? error.message : 'Error al crear el expediente' }));
     } finally {
-      setIsSubmitting(false);
+      setUiState(prev => ({ ...prev, isSubmitting: false }));
     }
   };
 
-  // Renderizar paso actual
-  const renderStep = () => {
+  // Contenido del paso actual memoizado para evitar render inline function
+  const stepContent = useMemo(() => {
     switch (currentStep) {
       case 0: // Estudiante
         return (
           <div className="space-y-6">
             <div className="flex items-center space-x-4 mb-6">
-              <div className="p-3 bg-indigo-100 text-indigo-600 rounded-2xl">
+              <div className="p-4 bg-indigo-100 text-indigo-600 rounded-2xl">
                 <Users className="w-6 h-6" />
               </div>
               <div>
@@ -395,77 +397,77 @@ const ExpedienteForm: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest">
                   Nombre Completo *
+                  <input
+                    type="text"
+                    value={formData.estudianteNombre}
+                    onChange={(e) => handleChange('estudianteNombre', e.target.value)}
+                    className={`mt-2 w-full px-4 py-3 rounded-xl border-2 text-sm font-medium focus:outline-none transition-all ${
+                      errors.estudianteNombre
+                        ? 'border-red-300 focus:border-red-500 bg-red-50'
+                        : 'border-slate-200 focus:border-indigo-300 bg-slate-50'
+                    }`}
+                    placeholder="Nombres y apellidos"
+                  />
                 </label>
-                <input
-                  type="text"
-                  value={formData.estudianteNombre}
-                  onChange={(e) => handleChange('estudianteNombre', e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border-2 text-sm font-medium focus:outline-none transition-all ${
-                    errors.estudianteNombre
-                      ? 'border-red-300 focus:border-red-500 bg-red-50'
-                      : 'border-slate-200 focus:border-indigo-300 bg-slate-50'
-                  }`}
-                  placeholder="Nombres y apellidos"
-                />
                 {errors.estudianteNombre && (
                   <p className="text-xs text-red-500 font-medium">{errors.estudianteNombre}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest">
                   RUN (sin puntos ni guión) *
+                  <input
+                    type="text"
+                    value={formData.estudianteRun}
+                    onChange={(e) => handleChange('estudianteRun', e.target.value)}
+                    className={`mt-2 w-full px-4 py-3 rounded-xl border-2 text-sm font-medium focus:outline-none transition-all ${
+                      errors.estudianteRun
+                        ? 'border-red-300 focus:border-red-500 bg-red-50'
+                        : 'border-slate-200 focus:border-indigo-300 bg-slate-50'
+                    }`}
+                    placeholder="12345678-9"
+                  />
                 </label>
-                <input
-                  type="text"
-                  value={formData.estudianteRun}
-                  onChange={(e) => handleChange('estudianteRun', e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border-2 text-sm font-medium focus:outline-none transition-all ${
-                    errors.estudianteRun
-                      ? 'border-red-300 focus:border-red-500 bg-red-50'
-                      : 'border-slate-200 focus:border-indigo-300 bg-slate-50'
-                  }`}
-                  placeholder="12345678-9"
-                />
                 {errors.estudianteRun && (
                   <p className="text-xs text-red-500 font-medium">{errors.estudianteRun}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest">
                   Curso *
+                  <input
+                    type="text"
+                    value={formData.estudianteCurso}
+                    onChange={(e) => handleChange('estudianteCurso', e.target.value)}
+                    className={`mt-2 w-full px-4 py-3 rounded-xl border-2 text-sm font-medium focus:outline-none transition-all ${
+                      errors.estudianteCurso
+                        ? 'border-red-300 focus:border-red-500 bg-red-50'
+                        : 'border-slate-200 focus:border-indigo-300 bg-slate-50'
+                    }`}
+                    placeholder="8° Básico A"
+                  />
                 </label>
-                <input
-                  type="text"
-                  value={formData.estudianteCurso}
-                  onChange={(e) => handleChange('estudianteCurso', e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border-2 text-sm font-medium focus:outline-none transition-all ${
-                    errors.estudianteCurso
-                      ? 'border-red-300 focus:border-red-500 bg-red-50'
-                      : 'border-slate-200 focus:border-indigo-300 bg-slate-50'
-                  }`}
-                  placeholder="8° Básico A"
-                />
                 {errors.estudianteCurso && (
                   <p className="text-xs text-red-500 font-medium">{errors.estudianteCurso}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest">
                   Nivel Educativo
+                  <select
+                    value={formData.estudianteNivel}
+                    onChange={(e) => handleChange('estudianteNivel', e.target.value)}
+                    className="mt-2 w-full px-4 py-3 rounded-xl border-2 border-slate-200 text-sm font-medium focus:outline-none focus:border-indigo-300 bg-slate-50 transition-all"
+                  >
+                    <option value="basica">Educación Básica</option>
+                    <option value="media">Educación Media</option>
+                  </select>
                 </label>
-                <select
-                  value={formData.estudianteNivel}
-                  onChange={(e) => handleChange('estudianteNivel', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 text-sm font-medium focus:outline-none focus:border-indigo-300 bg-slate-50 transition-all"
-                >
-                  <option value="basica">Educación Básica</option>
-                  <option value="media">Educación Media</option>
-                </select>
               </div>
             </div>
           </div>
@@ -475,7 +477,7 @@ const ExpedienteForm: React.FC = () => {
         return (
           <div className="space-y-6">
             <div className="flex items-center space-x-4 mb-6">
-              <div className="p-3 bg-indigo-100 text-indigo-600 rounded-2xl">
+              <div className="p-4 bg-indigo-100 text-indigo-600 rounded-2xl">
                 <ShieldAlert className="w-6 h-6" />
               </div>
               <div>
@@ -486,69 +488,69 @@ const ExpedienteForm: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest">
                   Nombre Completo *
+                  <input
+                    type="text"
+                    value={formData.apoderadoNombre}
+                    onChange={(e) => handleChange('apoderadoNombre', e.target.value)}
+                    className={`mt-2 w-full px-4 py-3 rounded-xl border-2 text-sm font-medium focus:outline-none transition-all ${
+                      errors.apoderadoNombre
+                        ? 'border-red-300 focus:border-red-500 bg-red-50'
+                        : 'border-slate-200 focus:border-indigo-300 bg-slate-50'
+                    }`}
+                    placeholder="Nombres y apellidos"
+                  />
                 </label>
-                <input
-                  type="text"
-                  value={formData.apoderadoNombre}
-                  onChange={(e) => handleChange('apoderadoNombre', e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border-2 text-sm font-medium focus:outline-none transition-all ${
-                    errors.apoderadoNombre
-                      ? 'border-red-300 focus:border-red-500 bg-red-50'
-                      : 'border-slate-200 focus:border-indigo-300 bg-slate-50'
-                  }`}
-                  placeholder="Nombres y apellidos"
-                />
                 {errors.apoderadoNombre && (
                   <p className="text-xs text-red-500 font-medium">{errors.apoderadoNombre}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest">
                   RUN
+                  <input
+                    type="text"
+                    value={formData.apoderadoRun}
+                    onChange={(e) => handleChange('apoderadoRun', e.target.value)}
+                    className="mt-2 w-full px-4 py-3 rounded-xl border-2 border-slate-200 text-sm font-medium focus:outline-none focus:border-indigo-300 bg-slate-50 transition-all"
+                    placeholder="12345678-9"
+                  />
                 </label>
-                <input
-                  type="text"
-                  value={formData.apoderadoRun}
-                  onChange={(e) => handleChange('apoderadoRun', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 text-sm font-medium focus:outline-none focus:border-indigo-300 bg-slate-50 transition-all"
-                  placeholder="12345678-9"
-                />
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest">
                   Teléfono *
+                  <input
+                    type="tel"
+                    value={formData.apoderadoTelefono}
+                    onChange={(e) => handleChange('apoderadoTelefono', e.target.value)}
+                    className={`mt-2 w-full px-4 py-3 rounded-xl border-2 text-sm font-medium focus:outline-none transition-all ${
+                      errors.apoderadoTelefono
+                        ? 'border-red-300 focus:border-red-500 bg-red-50'
+                        : 'border-slate-200 focus:border-indigo-300 bg-slate-50'
+                    }`}
+                    placeholder="+56 9 XXXX XXXX"
+                  />
                 </label>
-                <input
-                  type="tel"
-                  value={formData.apoderadoTelefono}
-                  onChange={(e) => handleChange('apoderadoTelefono', e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border-2 text-sm font-medium focus:outline-none transition-all ${
-                    errors.apoderadoTelefono
-                      ? 'border-red-300 focus:border-red-500 bg-red-50'
-                      : 'border-slate-200 focus:border-indigo-300 bg-slate-50'
-                  }`}
-                  placeholder="+56 9 XXXX XXXX"
-                />
                 {errors.apoderadoTelefono && (
                   <p className="text-xs text-red-500 font-medium">{errors.apoderadoTelefono}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest">
                   Email
+                  <input
+                    type="email"
+                    value={formData.apoderadoEmail}
+                    onChange={(e) => handleChange('apoderadoEmail', e.target.value)}
+                    className="mt-2 w-full px-4 py-3 rounded-xl border-2 border-slate-200 text-sm font-medium focus:outline-none focus:border-indigo-300 bg-slate-50 transition-all"
+                    placeholder="correo@ejemplo.com"
+                  />
                 </label>
-                <input
-                  type="email"
-                  value={formData.apoderadoEmail}
-                  onChange={(e) => handleChange('apoderadoEmail', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 text-sm font-medium focus:outline-none focus:border-indigo-300 bg-slate-50 transition-all"
-                  placeholder="correo@ejemplo.com"
-                />
               </div>
             </div>
           </div>
@@ -558,7 +560,7 @@ const ExpedienteForm: React.FC = () => {
         return (
           <div className="space-y-6">
             <div className="flex items-center space-x-4 mb-6">
-              <div className="p-3 bg-indigo-100 text-indigo-600 rounded-2xl">
+              <div className="p-4 bg-indigo-100 text-indigo-600 rounded-2xl">
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
@@ -568,10 +570,10 @@ const ExpedienteForm: React.FC = () => {
             </div>
 
             {/* Tipo de falta */}
-            <div className="space-y-3">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            <div className="space-y-4">
+              <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
                 Tipo de Falta *
-              </label>
+              </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {TIPOS_FALTA.map((tipo) => (
                   <button
@@ -595,23 +597,23 @@ const ExpedienteForm: React.FC = () => {
             </div>
 
             {/* Gravedad */}
-            <div className="space-y-3">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            <div className="space-y-4">
+              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest">
                 Gravedad de la Falta *
+                <select
+                  value={formData.gravedad}
+                  onChange={(e) => handleChange('gravedad', e.target.value)}
+                  className={`mt-2 w-full px-4 py-3 rounded-xl border-2 text-sm font-medium focus:outline-none transition-all ${
+                    errors.gravedad
+                      ? 'border-red-300 focus:border-red-500 bg-red-50'
+                      : 'border-slate-200 focus:border-indigo-300 bg-slate-50'
+                  }`}
+                >
+                  {getGravedadOptions(formData.tipoFalta).map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
               </label>
-              <select
-                value={formData.gravedad}
-                onChange={(e) => handleChange('gravedad', e.target.value)}
-                className={`w-full px-4 py-3 rounded-xl border-2 text-sm font-medium focus:outline-none transition-all ${
-                  errors.gravedad
-                    ? 'border-red-300 focus:border-red-500 bg-red-50'
-                    : 'border-slate-200 focus:border-indigo-300 bg-slate-50'
-                }`}
-              >
-                {getGravedadOptions(formData.tipoFalta).map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
               {errors.gravedad && (
                 <p className="text-xs text-red-500 font-medium">{errors.gravedad}</p>
               )}
@@ -620,54 +622,54 @@ const ExpedienteForm: React.FC = () => {
             {/* Fecha y lugar */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest">
                   Fecha del Hecho *
+                  <input
+                    type="date"
+                    value={formData.fechaHecho}
+                    onChange={(e) => handleChange('fechaHecho', e.target.value)}
+                    className={`mt-2 w-full px-4 py-3 rounded-xl border-2 text-sm font-medium focus:outline-none transition-all ${
+                      errors.fechaHecho
+                        ? 'border-red-300 focus:border-red-500 bg-red-50'
+                        : 'border-slate-200 focus:border-indigo-300 bg-slate-50'
+                    }`}
+                  />
                 </label>
-                <input
-                  type="date"
-                  value={formData.fechaHecho}
-                  onChange={(e) => handleChange('fechaHecho', e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border-2 text-sm font-medium focus:outline-none transition-all ${
-                    errors.fechaHecho
-                      ? 'border-red-300 focus:border-red-500 bg-red-50'
-                      : 'border-slate-200 focus:border-indigo-300 bg-slate-50'
-                  }`}
-                />
                 {errors.fechaHecho && (
                   <p className="text-xs text-red-500 font-medium">{errors.fechaHecho}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest">
                   Lugar del Hecho
+                  <input
+                    type="text"
+                    value={formData.lugarHecho}
+                    onChange={(e) => handleChange('lugarHecho', e.target.value)}
+                    className="mt-2 w-full px-4 py-3 rounded-xl border-2 border-slate-200 text-sm font-medium focus:outline-none focus:border-indigo-300 bg-slate-50 transition-all"
+                    placeholder="Sala de clases, patio, etc."
+                  />
                 </label>
-                <input
-                  type="text"
-                  value={formData.lugarHecho}
-                  onChange={(e) => handleChange('lugarHecho', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 text-sm font-medium focus:outline-none focus:border-indigo-300 bg-slate-50 transition-all"
-                  placeholder="Sala de clases, patio, etc."
-                />
               </div>
             </div>
 
             {/* Descripción */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest">
                 Descripción Detallada del Hecho *
+                <textarea
+                  value={formData.descripcionHecho}
+                  onChange={(e) => handleChange('descripcionHecho', e.target.value)}
+                  rows={5}
+                  className={`mt-2 w-full px-4 py-3 rounded-xl border-2 text-sm font-medium focus:outline-none transition-all resize-none ${
+                    errors.descripcionHecho
+                      ? 'border-red-300 focus:border-red-500 bg-red-50'
+                      : 'border-slate-200 focus:border-indigo-300 bg-slate-50'
+                  }`}
+                  placeholder="Describa los hechos de manera objetiva, incluyendo qué ocurrió, cuándo, dónde y cómo..."
+                />
               </label>
-              <textarea
-                value={formData.descripcionHecho}
-                onChange={(e) => handleChange('descripcionHecho', e.target.value)}
-                rows={5}
-                className={`w-full px-4 py-3 rounded-xl border-2 text-sm font-medium focus:outline-none transition-all resize-none ${
-                  errors.descripcionHecho
-                    ? 'border-red-300 focus:border-red-500 bg-red-50'
-                    : 'border-slate-200 focus:border-indigo-300 bg-slate-50'
-                }`}
-                placeholder="Describa los hechos de manera objetiva, incluyendo qué ocurrió, cuándo, dónde y cómo..."
-              />
               {errors.descripcionHecho && (
                 <p className="text-xs text-red-500 font-medium">{errors.descripcionHecho}</p>
               )}
@@ -703,7 +705,7 @@ const ExpedienteForm: React.FC = () => {
         return (
           <div className="space-y-6">
             <div className="flex items-center space-x-4 mb-6">
-              <div className="p-3 bg-indigo-100 text-indigo-600 rounded-2xl">
+              <div className="p-4 bg-indigo-100 text-indigo-600 rounded-2xl">
                 <FilePlus className="w-6 h-6" />
               </div>
               <div>
@@ -713,7 +715,7 @@ const ExpedienteForm: React.FC = () => {
             </div>
 
             {/* Área de carga */}
-            <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-indigo-400 transition-colors">
+            <div className="relative border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-indigo-400 transition-colors">
               <Upload className="w-10 h-10 mx-auto text-slate-400 mb-4" />
               <p className="text-sm font-bold text-slate-600 mb-2">
                 Arrastra archivos aquí o haz clic para seleccionar
@@ -733,11 +735,11 @@ const ExpedienteForm: React.FC = () => {
             {/* Lista de archivos */}
             {formData.documentos.length > 0 && (
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
                   Archivos Cargados
-                </label>
+                </p>
                 {formData.documentos.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
+                  <div key={`${file.name}-${file.size}-${file.lastModified}`} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
                     <div className="flex items-center space-x-3">
                       <FileText className="w-5 h-5 text-indigo-600" />
                       <span className="text-sm font-medium text-slate-700">{file.name}</span>
@@ -763,7 +765,7 @@ const ExpedienteForm: React.FC = () => {
         return (
           <div className="space-y-6">
             <div className="flex items-center space-x-4 mb-6">
-              <div className="p-3 bg-indigo-100 text-indigo-600 rounded-2xl">
+              <div className="p-4 bg-indigo-100 text-indigo-600 rounded-2xl">
                 <CheckCircle className="w-6 h-6" />
               </div>
               <div>
@@ -822,9 +824,13 @@ const ExpedienteForm: React.FC = () => {
             </div>
 
             {submitError && (
-              <div className="p-4 bg-red-50 border-2 border-red-200 rounded-xl flex items-center space-x-3">
-                <X className="w-5 h-5 text-red-500" />
-                <p className="text-sm font-bold text-red-700">{submitError}</p>
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+                <AsyncState
+                  state="error"
+                  title="No se pudo crear el expediente"
+                  message={submitError}
+                  compact
+                />
               </div>
             )}
           </div>
@@ -833,13 +839,13 @@ const ExpedienteForm: React.FC = () => {
       default:
         return null;
     }
-  };
+  }, [currentStep, errors, formData, submitError]);
 
   // Si se creó exitosamente, mostrar confirmación
   if (nuevoExpedienteId) {
     return (
       <main className="flex-1 p-4 md:p-8 flex items-center justify-center animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="bg-white rounded-[2.5rem] border border-emerald-200 shadow-2xl shadow-emerald-200/20 p-8 md:p-12 max-w-lg w-full text-center">
+        <div className="bg-white rounded-3xl border border-emerald-200 shadow-2xl shadow-emerald-200/20 p-8 md:p-12 max-w-lg w-full text-center">
           <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-10 h-10 text-emerald-600" />
           </div>
@@ -862,9 +868,8 @@ const ExpedienteForm: React.FC = () => {
             </button>
             <button
               onClick={() => {
-                setNuevoExpedienteId(null);
+                setUiState(prev => ({ ...prev, nuevoExpedienteId: null, currentStep: 0 }));
                 setFormData(initialFormData);
-                setCurrentStep(0);
               }}
               className="flex-1 py-4 bg-white border-2 border-slate-200 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all"
             >
@@ -881,7 +886,7 @@ const ExpedienteForm: React.FC = () => {
       {/* Header */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center flex-wrap gap-4">
-          <div className="p-4 bg-indigo-600 text-white rounded-[1.5rem] shadow-xl shadow-indigo-200">
+          <div className="p-4 bg-indigo-600 text-white rounded-2xl shadow-xl shadow-indigo-200">
             <FileText className="w-8 h-8" />
           </div>
           <div>
@@ -903,7 +908,7 @@ const ExpedienteForm: React.FC = () => {
       </header>
 
       {/* Indicador de progreso */}
-      <div className="bg-white rounded-[2rem] border border-slate-200 shadow-lg shadow-slate-200/20 p-4 md:p-6">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-lg shadow-slate-200/20 p-4 md:p-6">
         <div className="flex items-center justify-between mb-4">
           {STEPS.map((step, index) => {
             const Icon = step.icon;
@@ -924,7 +929,7 @@ const ExpedienteForm: React.FC = () => {
                   >
                     {isCompleted ? <CheckCircle className="w-6 h-6" /> : <Icon className="w-6 h-6" />}
                   </div>
-                  <span className={`text-[10px] font-black uppercase tracking-widest mt-2 ${
+                  <span className={`text-xs font-black uppercase tracking-widest mt-2 ${
                     isActive ? 'text-indigo-600' : 'text-slate-400'
                   }`}>
                     {step.label}
@@ -942,8 +947,8 @@ const ExpedienteForm: React.FC = () => {
       </div>
 
       {/* Formulario */}
-      <div className="bg-white rounded-[2rem] border border-slate-200 shadow-lg shadow-slate-200/20 p-4 md:p-8">
-        {renderStep()}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-lg shadow-slate-200/20 p-4 md:p-8">
+        {stepContent}
 
         {/* Botones de navegación */}
         <div className="flex justify-between mt-8 pt-6 border-t border-slate-100">
@@ -992,5 +997,7 @@ const ExpedienteForm: React.FC = () => {
     </main>
   );
 };
+
+const ExpedienteForm: React.FC = () => useExpedienteFormView();
 
 export default ExpedienteForm;

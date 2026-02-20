@@ -3,3 +3,4 @@ export * from './plazos';
 export * from './retry';
 export * from './useLocalDraft';
 export * from './buildDescripcionHechos';
+export * from './perfProfiler';

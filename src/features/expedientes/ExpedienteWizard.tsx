@@ -57,6 +57,120 @@ const fieldStepMap: Record<keyof FormValues, number> = {
   lugarIncidente: 3,
 };
 
+const persistWizardExpediente = async ({
+  data,
+  estudiantes,
+  plazoCalculado,
+  isExpulsion,
+  setExpedientes,
+  setIsWizardOpen,
+}: {
+  data: FormValues;
+  estudiantes: ReturnType<typeof useConvivencia>['estudiantes'];
+  plazoCalculado: Date;
+  isExpulsion: boolean;
+  setExpedientes: ReturnType<typeof useConvivencia>['setExpedientes'];
+  setIsWizardOpen: ReturnType<typeof useConvivencia>['setIsWizardOpen'];
+}) => {
+  const estudiante = estudiantes.find(e => e.id === data.estudianteId);
+  const actorA = estudiantes.find(e => e.id === data.estudianteId);
+  const actorB = estudiantes.find(e => e.id === data.actorBId);
+  const nombreEstudiante = estudiante?.nombreCompleto ?? 'Sin nombre';
+  const cursoEstudiante = estudiante?.curso ?? null;
+
+  const descripcionHechos = buildDescripcionHechos(
+    actorA?.nombreCompleto,
+    actorA?.curso,
+    actorB?.nombreCompleto,
+    actorB?.curso,
+    data.descripcionHechos
+  );
+
+  const actoresResumen = actorB?.nombreCompleto
+    ? `Actores involucrados: A) ${actorA?.nombreCompleto ?? 'Sin nombre'} (${actorA?.curso ?? 'Sin curso'}) | B) ${actorB.nombreCompleto} (${actorB.curso ?? 'Sin curso'})`
+    : null;
+
+  const tipoFalta = data.gravedad === 'LEVE'
+    ? 'leve'
+    : data.gravedad === 'RELEVANTE'
+      ? 'relevante'
+      : 'expulsion';
+  const folio = `EXP-${new Date().getFullYear()}-${Math.floor(Math.random() * 900) + 100}`;
+  const nuevoExp: Expediente = {
+    id: folio,
+    nnaNombre: nombreEstudiante,
+    nnaCurso: cursoEstudiante,
+    nnaNombreB: actorB?.nombreCompleto ?? null,
+    nnaCursoB: actorB?.curso ?? null,
+    etapa: 'INICIO',
+    gravedad: data.gravedad,
+    fechaInicio: new Date().toISOString(),
+    plazoFatal: plazoCalculado.toISOString(),
+    encargadoId: 'u1',
+    esProcesoExpulsion: isExpulsion,
+    accionesPrevias: data.advertenciaEscrita && data.planApoyoPrevio,
+    hitos: hitosBase(isExpulsion),
+    interactionType: 'creacion',
+    additionalData: {
+      actoresResumen,
+      gravedad: data.gravedad,
+      lugarIncidente: data.lugarIncidente,
+      fechaIncidente: data.fechaIncidente,
+    }
+  };
+
+  if (!supabase) {
+    throw new Error('Conexión a Supabase no disponible');
+  }
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData.session?.user?.id;
+  if (!userId) {
+    throw new Error('No hay sesión activa. Inicia sesión para continuar.');
+  }
+
+  const { data: inserted, error } = await supabase
+    .from('expedientes')
+    .insert({
+      estudiante_id: data.estudianteId,
+      estudiante_b_id: data.actorBId || null,
+      folio,
+      tipo_falta: tipoFalta,
+      estado_legal: 'apertura',
+      etapa_proceso: 'INICIO',
+      fecha_inicio: new Date().toISOString(),
+      plazo_fatal: plazoCalculado.toISOString(),
+      creado_por: userId,
+      acciones_previas: data.advertenciaEscrita && data.planApoyoPrevio,
+      es_proceso_expulsion: isExpulsion,
+      descripcion_hechos: descripcionHechos,
+      fecha_incidente: data.fechaIncidente,
+      hora_incidente: data.horaIncidente,
+      lugar_incidente: data.lugarIncidente,
+      curso: cursoEstudiante,
+      interaction_type: 'creacion',
+      additional_data: {
+        actoresResumen,
+        gravedad: data.gravedad,
+        lugarIncidente: data.lugarIncidente,
+        fechaIncidente: data.fechaIncidente,
+      }
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    throw new Error(`Error creando expediente en Supabase: ${error.message}`);
+  }
+  if (!inserted?.id) {
+    throw new Error('Error: expediente no fue guardado correctamente en Supabase');
+  }
+
+  nuevoExp.dbId = inserted.id;
+  setExpedientes(prev => [nuevoExp, ...prev]);
+  setIsWizardOpen(false);
+};
+
 const ExpedienteWizard: React.FC = () => {
   const { setIsWizardOpen, setExpedientes, calcularPlazoLegal, estudiantes } = useConvivencia();
   const [step, setStep] = React.useState(1);
@@ -169,110 +283,15 @@ const ExpedienteWizard: React.FC = () => {
     setSubmitError(null);
     setIsSubmitting(true);
     try {
-      const estudiante = estudiantes.find(e => e.id === data.estudianteId);
-      const actorA = estudiantes.find(e => e.id === data.estudianteId);
-      const actorB = estudiantes.find(e => e.id === data.actorBId);
-      const nombreEstudiante = estudiante?.nombreCompleto ?? 'Sin nombre';
-      const cursoEstudiante = estudiante?.curso ?? null;
-      
-      // Construir descripción de hechos usando la nueva lógica condicional
-      const descripcionHechos = buildDescripcionHechos(
-        actorA?.nombreCompleto,
-        actorA?.curso,
-        actorB?.nombreCompleto,
-        actorB?.curso,
-        data.descripcionHechos
-      );
-
-      // Construir resumen de actores SOLO si hay estudiante B
-      const actoresResumen = actorB?.nombreCompleto
-        ? `Actores involucrados: A) ${actorA?.nombreCompleto ?? 'Sin nombre'} (${actorA?.curso ?? 'Sin curso'}) | B) ${actorB.nombreCompleto} (${actorB.curso ?? 'Sin curso'})`
-        : null;
-
-      const tipoFalta = data.gravedad === 'LEVE'
-        ? 'leve'
-        : data.gravedad === 'RELEVANTE'
-          ? 'relevante'
-          : 'expulsion';
-      const folio = `EXP-${new Date().getFullYear()}-${Math.floor(Math.random() * 900) + 100}`;
-      const nuevoExp: Expediente = {
-        id: folio,
-        nnaNombre: nombreEstudiante,
-        nnaCurso: cursoEstudiante,
-        nnaNombreB: actorB?.nombreCompleto ?? null,
-        nnaCursoB: actorB?.curso ?? null,
-        etapa: 'INICIO',
-        gravedad: data.gravedad,
-        fechaInicio: new Date().toISOString(),
-        plazoFatal: plazoCalculado.toISOString(),
-        encargadoId: 'u1',
-        esProcesoExpulsion: isExpulsion,
-        accionesPrevias: data.advertenciaEscrita && data.planApoyoPrevio,
-        hitos: hitosBase(isExpulsion),
-        interactionType: 'creacion',
-        additionalData: {
-          actoresResumen,
-          gravedad: data.gravedad,
-          lugarIncidente: data.lugarIncidente,
-          fechaIncidente: data.fechaIncidente,
-        }
-      };
-
-      if (!supabase) {
-        throw new Error('Conexión a Supabase no disponible');
-      }
-
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user?.id;
-
-      if (!userId) {
-        throw new Error('No hay sesión activa. Inicia sesión para continuar.');
-      }
-
-      const { data: inserted, error } = await supabase
-        .from('expedientes')
-        .insert({
-          estudiante_id: data.estudianteId,
-          estudiante_b_id: data.actorBId || null,
-          folio,
-          tipo_falta: tipoFalta,
-          estado_legal: 'apertura',
-          etapa_proceso: 'INICIO',
-          fecha_inicio: new Date().toISOString(),
-          plazo_fatal: plazoCalculado.toISOString(),
-          creado_por: userId,
-          acciones_previas: data.advertenciaEscrita && data.planApoyoPrevio,
-          es_proceso_expulsion: isExpulsion,
-          descripcion_hechos: descripcionHechos,
-          fecha_incidente: data.fechaIncidente,
-          hora_incidente: data.horaIncidente,
-          lugar_incidente: data.lugarIncidente,
-          curso: cursoEstudiante,
-          interaction_type: 'creacion',
-          additional_data: {
-            actoresResumen,
-            gravedad: data.gravedad,
-            lugarIncidente: data.lugarIncidente,
-            fechaIncidente: data.fechaIncidente,
-          }
-        })
-        .select('id')
-        .single();
-
-      if (error) {
-        throw new Error(`Error creando expediente en Supabase: ${error.message}`);
-      }
-
-      if (!inserted?.id) {
-        throw new Error('Error: expediente no fue guardado correctamente en Supabase');
-      }
-
-      nuevoExp.dbId = inserted.id;
-
-      setExpedientes(prev => [nuevoExp, ...prev]);
+      await persistWizardExpediente({
+        data,
+        estudiantes,
+        plazoCalculado,
+        isExpulsion,
+        setExpedientes,
+        setIsWizardOpen,
+      });
       setSubmitError(null);
-      // Cierra el modal solo si fue exitoso
-      setIsWizardOpen(false);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido al crear expediente';
       setSubmitError(errorMessage);
@@ -309,13 +328,6 @@ const ExpedienteWizard: React.FC = () => {
     }
   };
 
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      // Opcional: permitir cerrar al hacer clic fuera, o bloquearlo si se prefiere
-      // setIsWizardOpen(false);
-    }
-  };
-
   // FIX: Prevenir Enter en el formulario para evitar navigation/submission accidental
   const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
     if (e.key === 'Enter' && !(e.target instanceof HTMLTextAreaElement)) {
@@ -328,12 +340,8 @@ const ExpedienteWizard: React.FC = () => {
   return (
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
-      onClick={(e) => {
-        // Bloquear cierre automático. El modal no debe cerrarse al hacer clic fuera
-        e.stopPropagation();
-      }}
     >
-      <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-screen">
         <ErrorBoundary>
         <WizardHeader
           stepConfig={activeStepConfig}
@@ -416,3 +424,4 @@ const ExpedienteWizard: React.FC = () => {
 };
 
 export default ExpedienteWizard;
+

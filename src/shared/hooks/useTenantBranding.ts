@@ -44,7 +44,7 @@ export function useTenantBranding(): UseTenantBrandingReturn {
   const [error, setError] = useState<string | null>(null);
 
   const fetchBranding = async () => {
-    if (!tenantId) {
+    if (!tenantId || !supabase) {
       setBranding(null);
       return;
     }

@@ -93,6 +93,13 @@ const Modal: React.FC<ModalProps> = ({
       onClose();
     }
   }, [onClose]);
+  const handleOverlayKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.target !== e.currentTarget) return;
+    if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClose();
+    }
+  }, [onClose]);
 
   if (!isOpen) return null;
 
@@ -106,9 +113,13 @@ const Modal: React.FC<ModalProps> = ({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
       onClick={handleOverlayClick}
+      onKeyDown={handleOverlayKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label="Cerrar modal"
     >
       <div className={`
-        bg-white w-full rounded-[2.5rem] shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]
+        bg-white w-full rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-screen
         ${sizes[size]}
       `}>
         {/* Header */}
@@ -138,3 +149,4 @@ const Modal: React.FC<ModalProps> = ({
 };
 
 export default Modal;
+

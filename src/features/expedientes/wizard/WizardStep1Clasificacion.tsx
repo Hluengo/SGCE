@@ -30,7 +30,7 @@ export const WizardStep1Clasificacion: React.FC<WizardStep1ClasificacionProps> =
 }) => {
   return (
     <div className="space-y-8 animate-in slide-in-from-right-8 duration-500">
-      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+      <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
         Curso del Estudiante
       </p>
       <WizardStudentSelector
@@ -46,9 +46,9 @@ export const WizardStep1Clasificacion: React.FC<WizardStep1ClasificacionProps> =
 
       {/* Selector de gravedad */}
       <div className="space-y-4">
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+        <p className="text-xs font-black text-slate-400 uppercase tracking-widest block">
           Tipo de Falta (Gravedad RICE)
-        </label>
+        </p>
         <Controller
           control={control}
           name="gravedad"
@@ -59,7 +59,7 @@ export const WizardStep1Clasificacion: React.FC<WizardStep1ClasificacionProps> =
                   key={g}
                   type="button"
                   onClick={() => field.onChange(g)}
-                  className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center text-center space-y-3 ${
+                  className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center text-center space-y-4 ${
                     field.value === g
                       ? 'border-blue-600 bg-blue-50/50 shadow-lg shadow-blue-500/5 scale-[1.02]'
                       : 'border-slate-100 bg-white hover:border-slate-200'
@@ -77,3 +77,5 @@ export const WizardStep1Clasificacion: React.FC<WizardStep1ClasificacionProps> =
 };
 
 export default WizardStep1Clasificacion;
+
+

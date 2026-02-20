@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { AlertCircle, MapPin, Send, ShieldAlert, CheckCircle, Calendar, ChevronDown, ChevronUp, Users, Search, X } from 'lucide-react';
 import { useLocalDraft } from '@/shared/utils/useLocalDraft';
 import { useConvivencia } from '@/shared/context/ConvivenciaContext';
@@ -18,6 +18,154 @@ interface FormDataPatio {
   gravedadPercibida: GravedadType;
   fechaIncidente: string;
 }
+
+interface EstudianteCursoSelectorProps {
+  selectedCurso: string;
+  isExpanded: boolean;
+  setIsExpanded: (value: boolean) => void;
+  searchEstudiante: string;
+  setSearchEstudiante: (value: string) => void;
+  estudiantesDelCurso: Array<{ id: string; nombreCompleto: string; curso?: string | null }>;
+  totalEstudiantesCurso: number;
+  selectedEstudianteId: string | null;
+  selectedEstudianteNombre: string;
+  selectedEstudianteCurso: string;
+  onSelect: (estudiante: { id: string; nombreCompleto: string; curso?: string | null }) => void;
+  onClear: () => void;
+}
+
+const EstudianteCursoSelector: React.FC<EstudianteCursoSelectorProps> = ({
+  selectedCurso,
+  isExpanded,
+  setIsExpanded,
+  searchEstudiante,
+  setSearchEstudiante,
+  estudiantesDelCurso,
+  totalEstudiantesCurso,
+  selectedEstudianteId,
+  selectedEstudianteNombre,
+  selectedEstudianteCurso,
+  onSelect,
+  onClear,
+}) => (
+  <div className={`space-y-4 transition-all ${!selectedCurso ? 'opacity-50 pointer-events-none' : ''}`}>
+    <label htmlFor="patio-estudiante-search" className="text-xs font-black text-slate-400 uppercase tracking-widest block">
+      Estudiante(s) Involucrado(s)
+    </label>
+
+    {selectedCurso ? (
+      <>
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="w-full p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between hover:bg-amber-100 transition-colors"
+        >
+          <div className="flex items-center gap-4">
+            <Users className="w-5 h-5 text-amber-600" />
+            <div className="text-left">
+              <p className="text-sm font-bold text-amber-800">
+                {totalEstudiantesCurso} estudiante{totalEstudiantesCurso !== 1 ? 's' : ''} en {selectedCurso}
+              </p>
+              <p className="text-xs text-amber-600">
+                {isExpanded ? 'Ocultar lista' : 'Ver estudiantes para seleccionar'}
+              </p>
+            </div>
+          </div>
+          {isExpanded ? <ChevronUp className="w-5 h-5 text-amber-400" /> : <ChevronDown className="w-5 h-5 text-amber-400" />}
+        </button>
+
+        {isExpanded && (
+          <div className="border border-slate-200 rounded-2xl overflow-hidden animate-in slide-in-from-top-2">
+            <div className="p-4 bg-slate-50 border-b border-slate-200">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  id="patio-estudiante-search"
+                  type="text"
+                  placeholder="Buscar por nombre..."
+                  value={searchEstudiante}
+                  onChange={(e) => setSearchEstudiante(e.target.value)}
+                  className="w-full pl-10 pr-10 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/5 text-sm"
+                />
+                {searchEstudiante && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchEstudiante('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded"
+                  >
+                    <X className="w-4 h-4 text-slate-400" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="max-h-60 overflow-y-auto">
+              {estudiantesDelCurso.length > 0 ? (
+                estudiantesDelCurso.map((est) => (
+                  <button
+                    type="button"
+                    key={est.id}
+                    onClick={() => onSelect(est)}
+                    className={`w-full flex items-center p-4 hover:bg-amber-50 cursor-pointer border-b border-slate-100 last:border-0 transition-colors ${selectedEstudianteId === est.id ? 'bg-amber-100' : ''}`}
+                  >
+                    <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-bold text-amber-600">{est.nombreCompleto.charAt(0)}</span>
+                    </div>
+                    <div className="ml-3 flex items-center gap-4 flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-800 truncate">{est.nombreCompleto}</p>
+                      {selectedEstudianteId === est.id && <CheckCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />}
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="p-4 text-center text-slate-400 text-sm">
+                  {searchEstudiante ? `No se encontró "${searchEstudiante}"` : 'Sin estudiantes'}
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 bg-slate-50 border-t border-slate-200">
+              <button
+                type="button"
+                onClick={onClear}
+                className="text-xs text-amber-600 hover:text-amber-700 font-bold flex items-center gap-1"
+              >
+                <X className="w-3 h-3" />
+                Cambiar curso
+              </button>
+            </div>
+          </div>
+        )}
+
+        {selectedEstudianteId && !isExpanded && (
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-amber-200 rounded-full flex items-center justify-center">
+                <span className="text-sm font-bold text-amber-700">{selectedEstudianteNombre.charAt(0)}</span>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-800">{selectedEstudianteNombre}</p>
+                <p className="text-xs text-slate-500">{selectedEstudianteCurso}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onClear}
+              className="p-2 hover:bg-amber-200 rounded-lg transition-colors"
+            >
+              <X className="w-4 h-4 text-slate-400" />
+            </button>
+          </div>
+        )}
+      </>
+    ) : (
+      <div className="p-8 text-center border border-slate-200 rounded-2xl bg-slate-50">
+        <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+        <p className="text-sm font-bold text-slate-500">Seleccione un curso para ver los estudiantes</p>
+      </div>
+    )}
+  </div>
+);
 
 const ReportePatio: React.FC = () => {
   const { estudiantes } = useConvivencia();
@@ -66,9 +214,7 @@ const ReportePatio: React.FC = () => {
   }, [estudiantes, selectedCurso, searchEstudiante]);
 
   // Total de estudiantes en el curso
-  const totalEstudiantesCurso = useMemo(() => {
-    return estudiantes.filter(est => est.curso === selectedCurso).length;
-  }, [estudiantes, selectedCurso]);
+  const totalEstudiantesCurso = estudiantes.filter(est => est.curso === selectedCurso).length;
 
   const handleEstudianteSelect = (estudiante: { id: string; nombreCompleto: string; curso?: string | null }) => {
     setFormData(prev => ({
@@ -136,13 +282,13 @@ const ReportePatio: React.FC = () => {
 
   return (
     <main className="flex-1 p-4 md:p-10 bg-slate-50 flex justify-center items-center overflow-y-auto animate-in fade-in duration-700">
-      <div className="bg-white w-full max-w-2xl rounded-[3rem] border border-slate-200 shadow-2xl p-6 md:p-12 space-y-8">
+      <div className="bg-white w-full max-w-2xl rounded-3xl border border-slate-200 shadow-2xl p-6 md:p-12 space-y-8">
         <header className="text-center space-y-2">
-          <div className="w-16 h-16 md:w-20 md:h-20 bg-amber-100 text-amber-600 rounded-[2rem] flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 md:w-20 md:h-20 bg-amber-100 text-amber-600 rounded-3xl flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-8 h-8 md:w-10 md:h-10" />
           </div>
           <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">Reporte de Incidente en Patio</h2>
-          <p className="text-slate-400 font-bold text-[9px] md:text-[10px] uppercase tracking-[0.2em]">Entrada Rápida - Vigilancia y Convivencia</p>
+          <p className="text-slate-400 font-bold text-xs md:text-xs uppercase tracking-widest">Entrada Rápida - Vigilancia y Convivencia</p>
         </header>
 
         {enviado ? (
@@ -156,10 +302,11 @@ const ReportePatio: React.FC = () => {
             {/* Primera fila: Informante y Curso */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <label htmlFor="patio-informante" className="text-xs font-black text-slate-400 uppercase tracking-widest">
                   Informante (Nombre/Cargo)
                 </label>
                 <input
+                  id="patio-informante"
                   required
                   type="text"
                   className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-amber-500/5 focus:outline-none"
@@ -168,11 +315,12 @@ const ReportePatio: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <label htmlFor="patio-curso" className="text-xs font-black text-slate-400 uppercase tracking-widest">
                   Curso del Estudiante
                 </label>
                 <div className="relative">
                   <select
+                    id="patio-curso"
                     value={selectedCurso}
                     onChange={(e) => handleCursoChange(e.target.value)}
                     className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:outline-none appearance-none cursor-pointer"
@@ -189,152 +337,29 @@ const ReportePatio: React.FC = () => {
               </div>
             </div>
 
-            {/* Segunda fila: Selector de Estudiante (mismo patrón que WizardStep1Clasificacion) */}
-            <div className={`space-y-3 transition-all ${!selectedCurso ? 'opacity-50 pointer-events-none' : ''}`}>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
-                Estudiante(s) Involucrado(s)
-              </label>
-
-              {selectedCurso ? (
-                <>
-                  {/* Barra de resumen con botón expandir */}
-                  <button
-                    type="button"
-                    onClick={() => setIsExpanded(!isExpanded)}
-                    className="w-full p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between hover:bg-amber-100 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Users className="w-5 h-5 text-amber-600" />
-                      <div className="text-left">
-                        <p className="text-sm font-bold text-amber-800">
-                          {totalEstudiantesCurso} estudiante{totalEstudiantesCurso !== 1 ? 's' : ''} en {selectedCurso}
-                        </p>
-                        <p className="text-xs text-amber-600">
-                          {isExpanded ? 'Ocultar lista' : 'Ver estudiantes para seleccionar'}
-                        </p>
-                      </div>
-                    </div>
-                    {isExpanded ? (
-                      <ChevronUp className="w-5 h-5 text-amber-400" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-amber-400" />
-                    )}
-                  </button>
-
-                  {/* Lista expandida con buscador */}
-                  {isExpanded && (
-                    <div className="border border-slate-200 rounded-2xl overflow-hidden animate-in slide-in-from-top-2">
-                      {/* Buscador */}
-                      <div className="p-3 bg-slate-50 border-b border-slate-200">
-                        <div className="relative">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                          <input
-                            type="text"
-                            placeholder="Buscar por nombre..."
-                            value={searchEstudiante}
-                            onChange={(e) => setSearchEstudiante(e.target.value)}
-                            className="w-full pl-10 pr-10 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/5 text-sm"
-                          />
-                          {searchEstudiante && (
-                            <button
-                              type="button"
-                              onClick={() => setSearchEstudiante('')}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded"
-                            >
-                              <X className="w-4 h-4 text-slate-400" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Lista con scroll */}
-                      <div className="max-h-60 overflow-y-auto">
-                        {estudiantesDelCurso.length > 0 ? (
-                          estudiantesDelCurso.map((est) => (
-                            <button
-                              type="button"
-                              key={est.id}
-                              onClick={() => handleEstudianteSelect(est)}
-                              className={`w-full flex items-center p-3 hover:bg-amber-50 cursor-pointer border-b border-slate-100 last:border-0 transition-colors ${formData.estudianteId === est.id ? 'bg-amber-100' : ''
-                                }`}
-                            >
-                              <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                <span className="text-xs font-bold text-amber-600">
-                                  {est.nombreCompleto.charAt(0)}
-                                </span>
-                              </div>
-                              <div className="ml-3 flex items-center gap-3 flex-1 min-w-0">
-                                <p className="text-sm font-bold text-slate-800 truncate">{est.nombreCompleto}</p>
-                                {formData.estudianteId === est.id && (
-                                  <CheckCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                                )}
-                              </div>
-                            </button>
-                          ))
-                        ) : (
-                          <div className="p-4 text-center text-slate-400 text-sm">
-                            {searchEstudiante
-                              ? `No se encontró "${searchEstudiante}"`
-                              : 'Sin estudiantes'}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Footer con cambio de curso */}
-                      <div className="p-3 bg-slate-50 border-t border-slate-200">
-                        <button
-                          type="button"
-                          onClick={handleClearEstudiante}
-                          className="text-xs text-amber-600 hover:text-amber-700 font-bold flex items-center gap-1"
-                        >
-                          <X className="w-3 h-3" />
-                          Cambiar curso
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Estudiante seleccionado */}
-                  {formData.estudianteId && !isExpanded && (
-                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-amber-200 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-bold text-amber-700">
-                            {formData.estudianteNombre.charAt(0)}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-slate-800">{formData.estudianteNombre}</p>
-                          <p className="text-xs text-slate-500">{formData.estudianteCurso}</p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleClearEstudiante}
-                        className="p-2 hover:bg-amber-200 rounded-lg transition-colors"
-                      >
-                        <X className="w-4 h-4 text-slate-400" />
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="p-8 text-center border border-slate-200 rounded-2xl bg-slate-50">
-                  <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                  <p className="text-sm font-bold text-slate-500">
-                    Seleccione un curso para ver los estudiantes
-                  </p>
-                </div>
-              )}
-            </div>
+            <EstudianteCursoSelector
+              selectedCurso={selectedCurso}
+              isExpanded={isExpanded}
+              setIsExpanded={setIsExpanded}
+              searchEstudiante={searchEstudiante}
+              setSearchEstudiante={setSearchEstudiante}
+              estudiantesDelCurso={estudiantesDelCurso}
+              totalEstudiantesCurso={totalEstudiantesCurso}
+              selectedEstudianteId={formData.estudianteId}
+              selectedEstudianteNombre={formData.estudianteNombre}
+              selectedEstudianteCurso={formData.estudianteCurso}
+              onSelect={handleEstudianteSelect}
+              onClear={handleClearEstudiante}
+            />
 
             {/* Tercera fila: Lugar y Fecha */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center">
+                <label htmlFor="patio-lugar" className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center">
                   <MapPin className="w-3 h-3 mr-2" /> Lugar del Evento
                 </label>
                 <select
+                  id="patio-lugar"
                   className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:outline-none"
                   value={formData.lugar}
                   onChange={e => setFormData({ ...formData, lugar: e.target.value })}
@@ -348,10 +373,11 @@ const ReportePatio: React.FC = () => {
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center">
+                <label htmlFor="patio-fecha-incidente" className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center">
                   <Calendar className="w-3 h-3 mr-2" /> Fecha y Hora del Incidente
                 </label>
                 <input
+                  id="patio-fecha-incidente"
                   type="datetime-local"
                   className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:outline-none"
                   value={formData.fechaIncidente}
@@ -362,16 +388,16 @@ const ReportePatio: React.FC = () => {
 
             {/* Cuarta fila: Gravedad */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center">
+              <p className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center">
                 <ShieldAlert className="w-3 h-3 mr-2" /> Gravedad Observada
-              </label>
+              </p>
               <div className="flex gap-4">
                 {(['LEVE', 'RELEVANTE', 'GRAVE'] as const).map((g) => (
                   <button
                     key={g}
                     type="button"
                     onClick={() => setFormData({ ...formData, gravedadPercibida: g })}
-                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${formData.gravedadPercibida === g ? 'bg-amber-600 text-white border-amber-600' : 'bg-white text-slate-400 border-slate-100'
+                    className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all border-2 ${formData.gravedadPercibida === g ? 'bg-amber-600 text-white border-amber-600' : 'bg-white text-slate-400 border-slate-100'
                       }`}
                   >
                     {g}
@@ -382,10 +408,11 @@ const ReportePatio: React.FC = () => {
 
             {/* Quinta fila: Descripción */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              <label htmlFor="patio-descripcion" className="text-xs font-black text-slate-400 uppercase tracking-widest">
                 Narración de los Hechos
               </label>
               <textarea
+                id="patio-descripcion"
                 required
                 className="w-full h-32 px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:outline-none resize-none"
                 placeholder="Describa brevemente lo sucedido..."
@@ -397,7 +424,7 @@ const ReportePatio: React.FC = () => {
             {/* Botón de envío */}
             <button
               type="submit"
-              className="w-full py-5 bg-slate-900 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] shadow-2xl hover:bg-slate-800 transition-all flex items-center justify-center space-x-3 active:scale-95"
+              className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl hover:bg-slate-800 transition-all flex items-center justify-center space-x-4 active:scale-95"
             >
               <Send className="w-5 h-5" />
               <span>Enviar a Convivencia</span>
@@ -410,3 +437,5 @@ const ReportePatio: React.FC = () => {
 };
 
 export default ReportePatio;
+
+

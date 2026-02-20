@@ -12,10 +12,11 @@ import React, {
   ReactNode,
   useRef,
 } from 'react';
-import type { Expediente, EtapaProceso, GravedadFalta, Hito } from '@/types';
+import type { Expediente, EtapaProceso, GravedadFalta } from '@/types';
 import { calcularPlazoLegal, addBusinessDays } from '@/shared/utils/plazos';
 import { supabase } from '@/shared/lib/supabaseClient';
 import type { ExpedienteQueryRow } from '@/shared/types/supabase';
+import { hitosBase } from '@/shared/domain/expedientes/hitosBase';
 
 // Constante de almacenamiento
 const STORAGE_KEY = 'sge_expedientes_v1';
@@ -45,76 +46,7 @@ interface ExpedientesContextType {
 // Crear contexto
 const ExpedientesContext = createContext<ExpedientesContextType | undefined>(undefined);
 
-/**
- * Hitos base según tipo de proceso
- */
-export const hitosBase = (esExpulsion: boolean): Hito[] => {
-  const hitos: Hito[] = [
-    {
-      id: 'h1',
-      titulo: 'Inicio de Proceso',
-      descripcion: 'Registro de la denuncia y apertura de folio.',
-      completado: true,
-      fechaCumplimiento: new Date().toISOString().split('T')[0],
-      requiereEvidencia: true,
-    },
-    {
-      id: 'h2',
-      titulo: 'Notificación a Apoderados',
-      descripcion:
-        'Comunicación oficial del inicio del proceso (Plazo 24h).',
-      completado: false,
-      requiereEvidencia: true,
-    },
-    {
-      id: 'h3',
-      titulo: 'Periodo de Descargos',
-      descripcion: 'Recepción de la versión del estudiante y su familia.',
-      completado: false,
-      requiereEvidencia: true,
-    },
-    {
-      id: 'h4',
-      titulo: 'Investigación y Entrevistas',
-      descripcion: 'Recopilación de pruebas y testimonios.',
-      completado: false,
-      requiereEvidencia: true,
-    },
-  ];
-
-  if (esExpulsion) {
-    hitos.push({
-      id: 'h-consejo',
-      titulo: 'Consulta Consejo Profesores',
-      descripcion:
-        'Hito obligatorio para medidas de expulsión según Ley Aula Segura.',
-      completado: false,
-      requiereEvidencia: true,
-      esObligatorioExpulsion: true,
-    });
-  }
-
-  hitos.push(
-    {
-      id: 'h5',
-      titulo: 'Resolución del Director',
-      descripcion:
-        'Determinación de la medida formativa o disciplinaria.',
-      completado: false,
-      requiereEvidencia: true,
-    },
-    {
-      id: 'h6',
-      titulo: 'Plazo de Reconsideración',
-      descripcion:
-        'Periodo para apelación ante la entidad sostenedora (15 días hábiles).',
-      completado: false,
-      requiereEvidencia: false,
-    }
-  );
-
-  return hitos;
-};
+export { hitosBase } from '@/shared/domain/expedientes/hitosBase';
 
 /**
  * Mapeo de gravedad desde base de datos
@@ -213,9 +145,18 @@ export const ExpedientesProvider: React.FC<{ children: ReactNode }> = ({
     return initialExpedientes;
   });
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [uiState, setUiState] = useState<{ loading: boolean; error: string | null }>({
+    loading: false,
+    error: null
+  });
   const dataLoadedRef = useRef(false);
+
+  const applyLoadedExpedientes = useCallback((mapped: Expediente[]) => {
+    if (mapped.length > 0 && !dataLoadedRef.current) {
+      dataLoadedRef.current = true;
+      setExpedientes(mapped);
+    }
+  }, []);
 
   // Persistir en localStorage
   useEffect(() => {
@@ -233,7 +174,8 @@ export const ExpedientesProvider: React.FC<{ children: ReactNode }> = ({
     const loadExpedientes = async () => {
       if (dataLoadedRef.current) return;
       if (!supabase) return;
-      setLoading(true);
+      setUiState(prev => ({ ...prev, loading: true, error: null }));
+      let nextError: string | null = null;
 
       try {
         const { data, error } = await supabase
@@ -281,20 +223,17 @@ export const ExpedientesProvider: React.FC<{ children: ReactNode }> = ({
           };
         });
 
-        if (mapped.length > 0 && !dataLoadedRef.current) {
-          dataLoadedRef.current = true;
-          setExpedientes(mapped);
-        }
+        applyLoadedExpedientes(mapped);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Error desconocido';
-        setError(message);
+        nextError = message;
       } finally {
-        setLoading(false);
+        setUiState(prev => ({ ...prev, loading: false, error: nextError }));
       }
     };
 
     loadExpedientes();
-  }, []);
+  }, [applyLoadedExpedientes]);
 
   // Calcular plazo legal
   const calcularPlazo = useCallback(
@@ -367,7 +306,8 @@ export const ExpedientesProvider: React.FC<{ children: ReactNode }> = ({
     if (!supabase) return;
     
     dataLoadedRef.current = false;
-    setLoading(true);
+    setUiState({ loading: true, error: null });
+    let nextError: string | null = null;
 
     try {
       const { data, error } = await supabase
@@ -412,9 +352,9 @@ export const ExpedientesProvider: React.FC<{ children: ReactNode }> = ({
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error desconocido';
-      setError(message);
+      nextError = message;
     } finally {
-      setLoading(false);
+      setUiState({ loading: false, error: nextError });
     }
   }, []);
 
@@ -422,8 +362,8 @@ export const ExpedientesProvider: React.FC<{ children: ReactNode }> = ({
     <ExpedientesContext.Provider
       value={{
         expedientes,
-        loading,
-        error,
+        loading: uiState.loading,
+        error: uiState.error,
         setExpedientes,
         addExpediente,
         updateExpediente,

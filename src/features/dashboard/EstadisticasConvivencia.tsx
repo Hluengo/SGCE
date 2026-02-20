@@ -42,12 +42,12 @@ export const EstadisticasConvivencia: React.FC<EstadisticasConvivenciaProps> = (
   }, [expedientes]);
 
   return (
-    <div className="bg-white border border-emerald-100 rounded-[2rem] shadow-sm p-4 md:p-6">
+    <div className="bg-white border border-emerald-100 rounded-3xl shadow-sm p-4 md:p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
           Panel General de Expedientes
         </h3>
-        <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
+        <span className="text-xs font-black text-slate-500 uppercase tracking-wider">
           Datos operativos
         </span>
       </div>
@@ -106,7 +106,7 @@ const KPICard: React.FC<KPICardProps> = ({ title, value, icon, color, onClick })
         onClick ? 'cursor-pointer hover:brightness-95' : ''
       }`}
     >
-      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wide mb-1">
+      <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wide mb-1">
         {icon}
         <span>{title}</span>
       </div>
@@ -116,8 +116,8 @@ const KPICard: React.FC<KPICardProps> = ({ title, value, icon, color, onClick })
 };
 
 /**
- * Componente separado para Distribución por Curso
- * Permite ver la distribución de expedientes por curso y filtrar al hacer click.
+ * Componente separado para Distribución por Curso (KPI Cards Moderno)
+ * Muestra estadísticas por curso en formato de cards visuales con KPIs.
  */
 export const DistribucionPorCurso: React.FC<{
   statsByCourse: Array<{ curso: string; total: number; leves: number; relevantes: number; graves: number }>;
@@ -125,45 +125,135 @@ export const DistribucionPorCurso: React.FC<{
   onFilterByCourse?: (course: string | null) => void;
 }> = ({ statsByCourse, currentFilter, onFilterByCourse }) => {
   if (statsByCourse.length === 0) return null;
-  
+
   return (
-    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">
-          Distribución por Curso
-        </h3>
+    <div className="bg-gradient-to-br from-slate-50 via-white to-blue-50 rounded-3xl border border-slate-200 shadow-sm p-4 md:p-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
+        <div>
+          <h3 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight">
+            Distribución por Curso
+          </h3>
+          <p className="text-xs text-slate-500 font-medium mt-1">
+            {statsByCourse.length} {statsByCourse.length === 1 ? 'curso' : 'cursos'} con expedientes activos
+          </p>
+        </div>
         {currentFilter && (
           <button
             onClick={() => onFilterByCourse?.(null)}
-            className="text-xs text-blue-600 hover:text-blue-700 font-bold uppercase"
+            className="px-4 py-2 bg-blue-100 text-blue-700 text-xs font-black rounded-xl hover:bg-blue-200 transition-all uppercase tracking-wide"
           >
-            Limpiar filtro
+            ✕ Limpiar filtro
           </button>
         )}
       </div>
 
-      <div className="space-y-3">
+      {/* Grid de Cursos como KPIs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {statsByCourse.map(({ curso, total, leves, relevantes, graves }) => {
           const isActive = currentFilter === curso;
+          const levesPct = total > 0 ? Math.round((leves / total) * 100) : 0;
+          const relevantesPct = total > 0 ? Math.round((relevantes / total) * 100) : 0;
+          const gravesPct = total > 0 ? Math.round((graves / total) * 100) : 0;
 
           return (
             <button
               key={curso}
               onClick={() => onFilterByCourse?.(isActive ? null : curso)}
-              className={`w-full text-left p-3 rounded-xl transition-all ${
-                isActive 
-                  ? 'bg-blue-50 border-2 border-blue-200' 
-                  : 'bg-slate-50 border border-slate-100 hover:border-slate-200'
+              className={`group relative overflow-hidden rounded-2xl transition-all duration-300 border-2 ${
+                isActive
+                  ? 'border-blue-500 bg-blue-50/50 shadow-lg shadow-blue-200/30 scale-105'
+                  : 'border-slate-200 bg-white hover:border-blue-300 hover:shadow-lg hover:shadow-blue-100/20'
               }`}
             >
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-black text-xs text-slate-700 uppercase">{curso}</span>
-                <span className="text-xs font-black text-slate-500">{total} expediente{total !== 1 ? 's' : ''}</span>
-              </div>
-              <div className="flex gap-1">
-                <span className={`h-1.5 rounded-full ${leves > 0 ? 'bg-emerald-400' : 'bg-slate-200'}`} style={{ width: `${leves > 0 ? Math.max(leves * 10, 10) : 0}%`, minWidth: leves > 0 ? '8px' : '0' }} />
-                <span className={`h-1.5 rounded-full ${relevantes > 0 ? 'bg-amber-400' : 'bg-slate-200'}`} style={{ width: `${relevantes > 0 ? Math.max(relevantes * 10, 10) : 0}%`, minWidth: relevantes > 0 ? '8px' : '0' }} />
-                <span className={`h-1.5 rounded-full ${graves > 0 ? 'bg-red-400' : 'bg-slate-200'}`} style={{ width: `${graves > 0 ? Math.max(graves * 10, 10) : 0}%`, minWidth: graves > 0 ? '8px' : '0' }} />
+              {/* Fondo decorativo */}
+              <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-blue-50/50 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+              <div className="relative p-5 md:p-6 space-y-4">
+                {/* Nombre del curso y total */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-black text-slate-900 text-sm md:text-base uppercase tracking-tight truncate">
+                      {curso}
+                    </h4>
+                  </div>
+                  <div className="flex-shrink-0 text-right">
+                    <p className="text-2xl md:text-3xl font-black text-blue-600">
+                      {total}
+                    </p>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                      expediente{total !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Barra de progreso de gravedad */}
+                <div className="space-y-2">
+                  <p className="text-xs font-black text-slate-600 uppercase tracking-widest">
+                    Composición por gravedad
+                  </p>
+                  <div className="flex h-2 gap-1 rounded-full overflow-hidden bg-slate-200">
+                    {leves > 0 && (
+                      <div
+                        className="bg-emerald-500 rounded-full transition-all"
+                        style={{ width: `${levesPct}%` }}
+                        title={`Leves: ${leves}`}
+                      />
+                    )}
+                    {relevantes > 0 && (
+                      <div
+                        className="bg-amber-500 rounded-full transition-all"
+                        style={{ width: `${relevantesPct}%` }}
+                        title={`Relevantes: ${relevantes}`}
+                      />
+                    )}
+                    {graves > 0 && (
+                      <div
+                        className="bg-red-500 rounded-full transition-all"
+                        style={{ width: `${gravesPct}%` }}
+                        title={`Graves: ${graves}`}
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* Mini KPIs de gravedad */}
+                <div className="grid grid-cols-3 gap-2 pt-2">
+                  <div className="bg-emerald-50 rounded-lg p-2 text-center border border-emerald-100">
+                    <p className="text-xs font-black text-emerald-700 leading-tight">
+                      {leves}
+                    </p>
+                    <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-tight">
+                      Leves
+                    </p>
+                  </div>
+                  <div className="bg-amber-50 rounded-lg p-2 text-center border border-amber-100">
+                    <p className="text-xs font-black text-amber-700 leading-tight">
+                      {relevantes}
+                    </p>
+                    <p className="text-[10px] text-amber-600 font-bold uppercase tracking-tight">
+                      Relevantes
+                    </p>
+                  </div>
+                  <div className="bg-red-50 rounded-lg p-2 text-center border border-red-100">
+                    <p className="text-xs font-black text-red-700 leading-tight">
+                      {graves}
+                    </p>
+                    <p className="text-[10px] text-red-600 font-bold uppercase tracking-tight">
+                      Graves
+                    </p>
+                  </div>
+                </div>
+
+                {/* Indicador de filtro activo */}
+                {isActive && (
+                  <div className="flex items-center justify-center gap-1 pt-2 border-t border-blue-100">
+                    <span className="inline-block w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                    <p className="text-xs font-black text-blue-600 uppercase tracking-wide">
+                      Filtro activo
+                    </p>
+                  </div>
+                )}
               </div>
             </button>
           );
@@ -174,3 +264,4 @@ export const DistribucionPorCurso: React.FC<{
 };
 
 export default EstadisticasConvivencia;
+
