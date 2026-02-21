@@ -18,7 +18,7 @@
     "test:e2e:security": "playwright test --project=security",
     "test:e2e:security:headed": "playwright test --project=security --headed",
     "test:all": "npm run test:run && npm run test:e2e:run",
-    "test:performance": "playwright test src/performance/ --project=chromium",
+    "test:performance": "playwright test --config=playwright.config.performance.ts --project=performance",
     "test:performance:ci": "lhci autorun",
     "test:regression": "npm run test:run && npm run test:e2e:run && npm run test:performance",
     "test:full-suite": "npm run lint:design && npm run security && npm run test:regression && npm run build",
