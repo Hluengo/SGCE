@@ -213,7 +213,7 @@ export const DocumentManager: React.FC<Props> = ({ documentos: initialDocs, onUp
       )}
 
       {selectedDoc && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-screen flex flex-col">
             <div className="flex items-center justify-between p-4 border-b">
               <div><h3 className="font-bold">{selectedDoc.titulo}</h3></div>
@@ -236,7 +236,7 @@ export const DocumentManager: React.FC<Props> = ({ documentos: initialDocs, onUp
       )}
 
       {uploading && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 flex items-center gap-3">
             <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
             <span>Subiendo...</span>
@@ -248,5 +248,4 @@ export const DocumentManager: React.FC<Props> = ({ documentos: initialDocs, onUp
 };
 
 export default DocumentManager;
-
 

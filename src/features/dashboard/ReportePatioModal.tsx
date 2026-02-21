@@ -173,7 +173,7 @@ const ReportePatioModal: React.FC<ReportePatioModalProps> = ({ isOpen, onClose, 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in">
       <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl p-6 max-h-screen overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-4">
@@ -308,5 +308,4 @@ const ReportePatioModal: React.FC<ReportePatioModalProps> = ({ isOpen, onClose, 
 };
 
 export default ReportePatioModal;
-
 

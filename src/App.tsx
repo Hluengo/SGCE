@@ -14,45 +14,27 @@ import RequirePermission from '@/shared/components/auth/RequirePermission';
 import useAuth from '@/shared/hooks/useAuth';
 import UnauthorizedPage from '@/features/UnauthorizedPage';
 
-/**
- * React.lazy wrapper that retries a failed dynamic import once after a short
- * delay. Covers the common "stale chunk hash" scenario where the browser
- * still references an old chunk filename after a new deployment.
- */
-function lazyWithRetry<T extends React.ComponentType<unknown>>(
-  factory: () => Promise<{ default: T }>,
-): React.LazyExoticComponent<T> {
-  return React.lazy(() =>
-    factory().catch((err) => {
-      console.warn('[lazyWithRetry] first attempt failed, retrying…', err);
-      return new Promise<{ default: T }>((resolve) => setTimeout(resolve, 1500)).then(() =>
-        factory(),
-      );
-    }),
-  );
-}
-
-const Dashboard = lazyWithRetry(() => import('@/features/dashboard/Dashboard'));
-const ExpedientesList = lazyWithRetry(() => import('@/features/expedientes/ExpedientesList'));
-const ExpedienteDetalle = lazyWithRetry(() => import('@/features/expedientes/ExpedienteDetalle'));
-const ExpedienteWizard = lazyWithRetry(() => import('@/features/expedientes/ExpedienteWizard'));
-const DashboardAuditoriaSIE = lazyWithRetry(() => import('@/features/dashboard/DashboardAuditoriaSIE'));
-const CentroMediacionGCC = lazyWithRetry(() => import('@/features/mediacion/CentroMediacionGCC'));
-const CalendarioPlazosLegales = lazyWithRetry(() => import('@/features/legal/CalendarioPlazosLegales'));
-const BitacoraPsicosocial = lazyWithRetry(() => import('@/features/bitacora/BitacoraPsicosocial'));
-const GestionEvidencias = lazyWithRetry(() => import('@/features/evidencias/GestionEvidencias'));
-const SeguimientoApoyo = lazyWithRetry(() => import('@/features/apoyo/SeguimientoApoyo'));
-const ArchivoDocumental = lazyWithRetry(() => import('@/features/archivo/ArchivoDocumental'));
-const ReportePatio = lazyWithRetry(() => import('@/features/patio/ReportePatio'));
-const ListaReportesPatio = lazyWithRetry(() => import('@/features/patio/ListaReportesPatio'));
-const LegalAssistant = lazyWithRetry(() => import('@/features/legal/LegalAssistant'));
-const PerfilUsuario = lazyWithRetry(() => import('@/features/perfil/PerfilUsuario'));
-const NuevaIntervencion = lazyWithRetry(() => import('@/features/intervencion/NuevaIntervencion'));
-const RegistrarDerivacion = lazyWithRetry(() => import('@/features/derivacion/RegistrarDerivacion'));
-const AuthPage = lazyWithRetry(() => import('@/features/auth/AuthPage'));
-const InicioPage = lazyWithRetry(() => import('@/features/home/InicioPage'));
-const SuperAdminPage = lazyWithRetry(() => import('@/features/admin/SuperAdminPage'));
-const AdminColegios = lazyWithRetry(() => import('@/features/admin/AdminColegios'));
+const Dashboard = React.lazy(() => import('@/features/dashboard/Dashboard'));
+const ExpedientesList = React.lazy(() => import('@/features/expedientes/ExpedientesList'));
+const ExpedienteDetalle = React.lazy(() => import('@/features/expedientes/ExpedienteDetalle'));
+const ExpedienteWizard = React.lazy(() => import('@/features/expedientes/ExpedienteWizard'));
+const DashboardAuditoriaSIE = React.lazy(() => import('@/features/dashboard/DashboardAuditoriaSIE'));
+const CentroMediacionGCC = React.lazy(() => import('@/features/mediacion/CentroMediacionGCC'));
+const CalendarioPlazosLegales = React.lazy(() => import('@/features/legal/CalendarioPlazosLegales'));
+const BitacoraPsicosocial = React.lazy(() => import('@/features/bitacora/BitacoraPsicosocial'));
+const GestionEvidencias = React.lazy(() => import('@/features/evidencias/GestionEvidencias'));
+const SeguimientoApoyo = React.lazy(() => import('@/features/apoyo/SeguimientoApoyo'));
+const ArchivoDocumental = React.lazy(() => import('@/features/archivo/ArchivoDocumental'));
+const ReportePatio = React.lazy(() => import('@/features/patio/ReportePatio'));
+const ListaReportesPatio = React.lazy(() => import('@/features/patio/ListaReportesPatio'));
+const LegalAssistant = React.lazy(() => import('@/features/legal/LegalAssistant'));
+const PerfilUsuario = React.lazy(() => import('@/features/perfil/PerfilUsuario'));
+const NuevaIntervencion = React.lazy(() => import('@/features/intervencion/NuevaIntervencion'));
+const RegistrarDerivacion = React.lazy(() => import('@/features/derivacion/RegistrarDerivacion'));
+const AuthPage = React.lazy(() => import('@/features/auth/AuthPage'));
+const InicioPage = React.lazy(() => import('@/features/home/InicioPage'));
+const SuperAdminPage = React.lazy(() => import('@/features/admin/SuperAdminPage'));
+const AdminColegios = React.lazy(() => import('@/features/admin/AdminColegios'));
 
 const LoadingView: React.FC = () => (
   <div className="flex items-center justify-center h-full" role="status" aria-label="Cargando contenido">
@@ -103,7 +85,6 @@ const AppRoutes: React.FC = () => {
             }
           />
           <Route path="mediacion" element={<SuspendedRoute><CentroMediacionGCC /></SuspendedRoute>} />
-          <Route path="mediacion/gcc" element={<SuspendedRoute><CentroMediacionGCC /></SuspendedRoute>} />
 
           <Route path="calendario" element={<SuspendedRoute><CalendarioPlazosLegales /></SuspendedRoute>} />
           <Route
@@ -131,16 +112,6 @@ const AppRoutes: React.FC = () => {
           <Route path="perfil" element={<SuspendedRoute><PerfilUsuario /></SuspendedRoute>} />
           <Route
             path="admin"
-            element={
-              <RequirePermission anyOf={['system:manage', 'tenants:gestionar']}>
-                <SuspendedRoute>
-                  <SuperAdminPage />
-                </SuspendedRoute>
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="admin/config"
             element={
               <RequirePermission anyOf={['system:manage', 'tenants:gestionar']}>
                 <SuspendedRoute>

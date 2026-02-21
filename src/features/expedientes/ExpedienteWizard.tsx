@@ -339,7 +339,7 @@ const ExpedienteWizard: React.FC = () => {
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
     >
       <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-screen">
         <ErrorBoundary>
@@ -424,5 +424,4 @@ const ExpedienteWizard: React.FC = () => {
 };
 
 export default ExpedienteWizard;
-
 

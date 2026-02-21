@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useReducer, useState, type CSSProperties } from 'react';
 import useAuth, { type Permiso, type RolUsuario } from '@/shared/hooks/useAuth';
 import { useTenant } from '@/shared/context/TenantContext';
-import { supabase } from '@/shared/lib/supabaseClient';
 import BackendConfigStudio from './configStudio/BackendConfigStudio';
 import { ConfirmActionModal, ProfilesTablePanel, ProfileAccessFormPanel, type ConfirmAction } from './components/SuperAdminProfilePanels';
 import { SelectedTenantPanel, TenantManagementPanel } from './components/SuperAdminOverviewPanels';
@@ -116,7 +115,7 @@ const SA_THEME_VARS: CSSProperties = {
 } as CSSProperties;
 
 const SA_UI = {
-  page: 'w-full min-h-full p-4 md:p-8 space-y-6 bg-[var(--sa-surface-muted)]',
+  page: 'min-h-full p-4 md:p-8 space-y-6 bg-[var(--sa-surface-muted)]',
   section: 'grid gap-6',
   card: 'rounded-[0.75rem] bg-[var(--sa-surface)] border border-[var(--sa-border)] shadow-[0_4px_6px_-1px_rgb(0_0_0_/_0.08)]',
   cardPadding: 'p-4 md:p-6',
@@ -149,18 +148,6 @@ interface RolePermissionUiState {
   resolvingEmail: boolean;
   status: string | null;
 }
-
-interface RolePermissionListState {
-  roleFilter: RolUsuario | 'ALL';
-  statusFilter: 'ALL' | 'ACTIVE' | 'INACTIVE';
-  permissionLevelFilter: 'Basico' | 'Operativo' | 'Critico';
-  currentPage: number;
-  confirmAction: ConfirmAction | null;
-}
-
-type RolePermissionListAction =
-  | { type: 'PATCH'; payload: Partial<RolePermissionListState> }
-  | { type: 'RESET_PAGE' };
 
 type RolePermissionUiAction =
   | { type: 'SET_FORM'; payload: RolePermissionFormState }
@@ -195,54 +182,6 @@ function rolePermissionUiReducer(state: RolePermissionUiState, action: RolePermi
   }
 }
 
-const initialRolePermissionListState: RolePermissionListState = {
-  roleFilter: 'ALL',
-  statusFilter: 'ALL',
-  permissionLevelFilter: 'Basico',
-  currentPage: 1,
-  confirmAction: null,
-};
-
-function rolePermissionListReducer(state: RolePermissionListState, action: RolePermissionListAction): RolePermissionListState {
-  switch (action.type) {
-    case 'PATCH':
-      return { ...state, ...action.payload };
-    case 'RESET_PAGE':
-      return { ...state, currentPage: 1 };
-    default:
-      return state;
-  }
-}
-
-interface SuperAdminFoldersState {
-  folders: Array<{ id: string; nombre: string; created_at: string }>;
-  foldersLoading: boolean;
-  folderName: string;
-  creatingFolder: boolean;
-}
-
-type SuperAdminFoldersAction =
-  | { type: 'PATCH'; payload: Partial<SuperAdminFoldersState> }
-  | { type: 'RESET_FOLDER_NAME' };
-
-const initialSuperAdminFoldersState: SuperAdminFoldersState = {
-  folders: [],
-  foldersLoading: false,
-  folderName: '',
-  creatingFolder: false,
-};
-
-function superAdminFoldersReducer(state: SuperAdminFoldersState, action: SuperAdminFoldersAction): SuperAdminFoldersState {
-  switch (action.type) {
-    case 'PATCH':
-      return { ...state, ...action.payload };
-    case 'RESET_FOLDER_NAME':
-      return { ...state, folderName: '' };
-    default:
-      return state;
-  }
-}
-
 
 const RolePermissionManagerPanel: React.FC<{
   tenantId: string | null;
@@ -263,8 +202,11 @@ const RolePermissionManagerPanel: React.FC<{
   onDeactivateProfile,
   onDeleteProfile,
 }) => {
-  const [listState, listDispatch] = useReducer(rolePermissionListReducer, initialRolePermissionListState);
-  const { roleFilter, statusFilter, permissionLevelFilter, currentPage, confirmAction } = listState;
+  const [roleFilter, setRoleFilter] = useState<RolUsuario | 'ALL'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+  const [permissionLevelFilter, setPermissionLevelFilter] = useState<'Basico' | 'Operativo' | 'Critico'>('Basico');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
   const [ui, uiDispatch] = useReducer(rolePermissionUiReducer, {
     form: createDefaultRoleForm(tenantId),
     emailLookup: '',
@@ -300,7 +242,7 @@ const RolePermissionManagerPanel: React.FC<{
   }, [currentPage, filteredProfiles]);
 
   useEffect(() => {
-    if (currentPage > totalPages) listDispatch({ type: 'PATCH', payload: { currentPage: totalPages } });
+    if (currentPage > totalPages) setCurrentPage(totalPages);
   }, [currentPage, totalPages]);
   const trimmedProfileId = form.profileId.trim();
   const profileIdLooksValid = isUuid(trimmedProfileId);
@@ -418,7 +360,7 @@ const RolePermissionManagerPanel: React.FC<{
         await onDeleteProfile(confirmAction.profile.id);
         uiDispatch({ type: 'SET_STATUS', payload: 'Perfil eliminado físicamente.' });
       }
-      listDispatch({ type: 'PATCH', payload: { confirmAction: null } });
+      setConfirmAction(null);
       uiDispatch({ type: 'RESET_FORM', payload: { tenantId } });
     } catch (error) {
       uiDispatch({ type: 'SET_STATUS', payload: error instanceof Error ? error.message : 'No se pudo ejecutar la acción.' });
@@ -490,19 +432,21 @@ const RolePermissionManagerPanel: React.FC<{
           currentPage={currentPage}
           totalPages={totalPages}
           onSearchChange={(value) => {
-            listDispatch({ type: 'RESET_PAGE' });
+            setCurrentPage(1);
             uiDispatch({ type: 'SET_SEARCH', payload: value });
           }}
           onRoleFilterChange={(value) => {
-            listDispatch({ type: 'PATCH', payload: { currentPage: 1, roleFilter: value } });
+            setCurrentPage(1);
+            setRoleFilter(value);
           }}
           onStatusFilterChange={(value) => {
-            listDispatch({ type: 'PATCH', payload: { currentPage: 1, statusFilter: value } });
+            setCurrentPage(1);
+            setStatusFilter(value);
           }}
           onLoadProfile={loadProfileInForm}
-          onOpenConfirm={(value) => listDispatch({ type: 'PATCH', payload: { confirmAction: value } })}
-          onPrevPage={() => listDispatch({ type: 'PATCH', payload: { currentPage: Math.max(1, currentPage - 1) } })}
-          onNextPage={() => listDispatch({ type: 'PATCH', payload: { currentPage: Math.min(totalPages, currentPage + 1) } })}
+          onOpenConfirm={setConfirmAction}
+          onPrevPage={() => setCurrentPage((page) => Math.max(1, page - 1))}
+          onNextPage={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
         />
 
         <ProfileAccessFormPanel
@@ -524,7 +468,7 @@ const RolePermissionManagerPanel: React.FC<{
           profileIdInputClassName={profileIdInputClassName}
           onEmailLookupChange={(value) => uiDispatch({ type: 'SET_EMAIL_LOOKUP', payload: value })}
           onFormPatch={(payload) => uiDispatch({ type: 'PATCH_FORM', payload })}
-          onPermissionLevelFilterChange={(value) => listDispatch({ type: 'PATCH', payload: { permissionLevelFilter: value } })}
+          onPermissionLevelFilterChange={setPermissionLevelFilter}
           onResolveByEmail={() => { void handleResolveByEmail(); }}
           onTogglePermission={togglePermission}
           onSubmit={() => { void handleSubmit(); }}
@@ -535,7 +479,7 @@ const RolePermissionManagerPanel: React.FC<{
       <ConfirmActionModal
         action={confirmAction}
         ui={SA_UI}
-        onCancel={() => listDispatch({ type: 'PATCH', payload: { confirmAction: null } })}
+        onCancel={() => setConfirmAction(null)}
         onConfirm={() => { void handleRowAction(); }}
       />
     </article>
@@ -547,8 +491,6 @@ const SuperAdminPage = () => {
   const { tenantId, setTenantId } = useTenant();
   const [activeTab, setActiveTab] = useState<SuperAdminTab>('overview');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const [foldersState, foldersDispatch] = useReducer(superAdminFoldersReducer, initialSuperAdminFoldersState);
-  const { folders, foldersLoading, folderName, creatingFolder } = foldersState;
   const {
     state,
     dispatch,
@@ -578,75 +520,6 @@ const SuperAdminPage = () => {
     pushToast('error', state.error);
   }, [state.error]);
 
-  useEffect(() => {
-    const loadFolders = async () => {
-      if (!supabase || !tenantId) {
-        foldersDispatch({ type: 'PATCH', payload: { folders: [] } });
-        return;
-      }
-      foldersDispatch({ type: 'PATCH', payload: { foldersLoading: true } });
-      const { data, error } = await supabase
-        .from('carpetas_documentales')
-        .select('id, nombre, created_at')
-        .eq('establecimiento_id', tenantId)
-        .order('nombre', { ascending: true });
-
-      if (error) {
-        foldersDispatch({ type: 'PATCH', payload: { folders: [] } });
-        pushToast('error', 'No se pudieron cargar las carpetas documentales.');
-      } else {
-        foldersDispatch({ type: 'PATCH', payload: { folders: (data as Array<{ id: string; nombre: string; created_at: string }>) ?? [] } });
-      }
-      foldersDispatch({ type: 'PATCH', payload: { foldersLoading: false } });
-    };
-
-    void loadFolders();
-  }, [tenantId]);
-
-  const handleCreateFolder = async () => {
-    const normalizedName = folderName.trim();
-    if (!tenantId) {
-      pushToast('error', 'Selecciona un colegio antes de crear carpetas.');
-      return;
-    }
-    if (normalizedName.length < 3) {
-      pushToast('error', 'El nombre debe tener al menos 3 caracteres.');
-      return;
-    }
-    if (!supabase) {
-      pushToast('error', 'Supabase no está configurado en este entorno.');
-      return;
-    }
-
-    foldersDispatch({ type: 'PATCH', payload: { creatingFolder: true } });
-    const { data, error } = await supabase
-      .from('carpetas_documentales')
-      .insert({
-        establecimiento_id: tenantId,
-        nombre: normalizedName,
-      })
-      .select('id, nombre, created_at')
-      .single();
-    foldersDispatch({ type: 'PATCH', payload: { creatingFolder: false } });
-
-    if (error) {
-      if ((error as { code?: string }).code === '23505') {
-        pushToast('error', 'Ya existe una carpeta con ese nombre para este colegio.');
-      } else {
-        pushToast('error', 'No se pudo crear la carpeta.');
-      }
-      return;
-    }
-
-    foldersDispatch({ type: 'PATCH', payload: { folders: 
-      [...folders, data as { id: string; nombre: string; created_at: string }].sort((a, b) =>
-        a.nombre.localeCompare(b.nombre, 'es')
-      )
-    } });
-    foldersDispatch({ type: 'RESET_FOLDER_NAME' });
-    pushToast('success', 'Carpeta creada correctamente.');
-  };
-
   const handleRetry = () => {
     void loadAdminData();
     pushToast('success', 'Recargando datos de administración...');
@@ -659,14 +532,14 @@ const SuperAdminPage = () => {
   }
 
   return (
-    <main data-testid="admin-config" className={SA_UI.page} style={SA_THEME_VARS}>
+    <main className={SA_UI.page} style={SA_THEME_VARS}>
       <SuperAdminToastStack
         toasts={toasts}
         onDismiss={(id) => {
           setToasts((prev) => prev.filter((toast) => toast.id !== id));
         }}
       />
-      <SuperAdminHero />
+      <SuperAdminHero usuario={usuario} />
 
       {state.error && (
         <SuperAdminErrorBanner
@@ -683,7 +556,7 @@ const SuperAdminPage = () => {
       />
 
       {activeTab === 'overview' && (
-        <section className="w-full space-y-6">
+        <section className={`${SA_UI.section} xl:grid-cols-3`}>
           <TenantManagementPanel
             ui={SA_UI}
             tenants={state.tenants}
@@ -703,19 +576,12 @@ const SuperAdminPage = () => {
             toggleFeature={toggleFeature}
             runMaintenance={runMaintenance}
             maintenanceLogs={state.maintenanceLogs}
-            grantorLabel={usuario ? `${usuario.nombre} ${usuario.apellido}`.trim() || usuario.email : 'Superadministrador actual'}
-            folders={folders}
-            foldersLoading={foldersLoading}
-            folderName={folderName}
-            creatingFolder={creatingFolder}
-            onFolderNameChange={(value) => foldersDispatch({ type: 'PATCH', payload: { folderName: value } })}
-            onCreateFolder={handleCreateFolder}
           />
         </section>
       )}
 
       {activeTab === 'profiles' && (
-        <section className="w-full">
+        <section>
           <RolePermissionManagerPanel
             tenantId={tenantId}
             tenants={state.tenants}
@@ -730,7 +596,7 @@ const SuperAdminPage = () => {
       )}
 
       {activeTab === 'backend' && (
-        <section className="w-full">
+        <section>
           <BackendConfigStudio />
         </section>
       )}

@@ -23,7 +23,6 @@ import { useTenant } from '@/shared/context/TenantContext';
 import { useLocalDraft } from '@/shared/utils/useLocalDraft';
 import { supabase } from '@/shared/lib/supabaseClient';
 import { AsyncState } from '@/shared/components/ui';
-import PageTitleHeader from '@/shared/components/PageTitleHeader';
 import FormularioNuevaEvidencia, { NuevaEvidenciaPayload } from './FormularioNuevaEvidencia';
 import { isUuid } from '@/shared/utils/expedienteRef';
 
@@ -344,16 +343,9 @@ const useGestionEvidenciasView = () => {
 
       {/* Área Central: Galería */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="px-4 pt-4 md:px-8 md:pt-6">
-          <PageTitleHeader
-            title="Gestión de Evidencias"
-            subtitle="Custodia, trazabilidad y resguardo del registro de convivencia · Circulares 781 y 782"
-            icon={FileCheck}
-          />
-        </div>
         
         {/* Barra de Búsqueda */}
-        <header className="min-h-20 bg-white border-b border-slate-200 mt-4 px-4 md:px-8 py-4 md:py-0 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
+        <header className="min-h-20 bg-white border-b border-slate-200 px-4 md:px-8 py-4 md:py-0 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
           <div className="relative w-full md:w-96">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
             <input 
@@ -474,7 +466,7 @@ const useGestionEvidenciasView = () => {
       {/* Columna Derecha: Panel de Detalles de Evidencia */}
       {selectedEvidenciaId && (
         <div
-          className="fixed inset-0 z-40 lg:hidden bg-slate-900/60 backdrop-blur-sm"
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
           onClick={() => setSelectedEvidenciaId(null)}
           onKeyDown={(e) => {
             if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {

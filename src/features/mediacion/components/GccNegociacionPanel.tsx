@@ -92,7 +92,7 @@ interface GccNegociacionPanelProps {
   onCerrarExpediente: () => void;
 }
 
-function useGccNegociacionPanelView({
+export const GccNegociacionPanel: React.FC<GccNegociacionPanelProps> = ({
   caso,
   estado,
   onEstadoChange,
@@ -126,7 +126,7 @@ function useGccNegociacionPanelView({
   onDetallesAcuerdoChange,
   onGenerarActa,
   onCerrarExpediente
-}: GccNegociacionPanelProps) {
+}) => {
   const isAddCompromisoDisabled = useMemo(
     () => !nuevoCompromiso.descripcion || !nuevoCompromiso.fecha,
     [nuevoCompromiso.descripcion, nuevoCompromiso.fecha]
@@ -180,9 +180,9 @@ function useGccNegociacionPanelView({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Estado del Proceso */}
           <div className="space-y-4">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest block">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">
               Estado Negociación
-            </p>
+            </label>
             <div className="grid grid-cols-3 gap-2">
               {['PROCESO', 'LOGRADO', 'NO_ACUERDO'].map((est) => (
                 <button
@@ -204,11 +204,10 @@ function useGccNegociacionPanelView({
 
           {/* Facilitador de Apoyo */}
           <div className="space-y-4">
-            <label htmlFor="gcc-negociacion-facilitador" className="text-xs font-black text-slate-400 uppercase tracking-widest block">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">
               Facilitador de Apoyo (Opcional)
             </label>
             <select
-              id="gcc-negociacion-facilitador"
               value={facilitadorApoyo}
               onChange={(e) => onFacilitadorApoyoChange(e.target.value)}
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-green-500/5 focus:border-green-300 focus:outline-none"
@@ -226,12 +225,11 @@ function useGccNegociacionPanelView({
         {/* Horas de Sesión */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 bg-slate-50 border border-slate-200 rounded-3xl">
           <div className="space-y-2">
-            <label htmlFor="gcc-negociacion-hora-inicio" className="text-xs font-black text-slate-400 uppercase tracking-widest block flex items-center">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-widest block flex items-center">
               <Clock className="w-4 h-4 mr-2 text-green-600" />
               Hora Inicio
             </label>
             <input
-              id="gcc-negociacion-hora-inicio"
               type="time"
               value={horaInicio}
               onChange={(e) => onHoraInicioChange(e.target.value)}
@@ -240,12 +238,11 @@ function useGccNegociacionPanelView({
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="gcc-negociacion-hora-cierre" className="text-xs font-black text-slate-400 uppercase tracking-widest block flex items-center">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-widest block flex items-center">
               <Clock className="w-4 h-4 mr-2 text-green-600" />
               Hora Cierre
             </label>
             <input
-              id="gcc-negociacion-hora-cierre"
               type="time"
               value={horaCierre}
               onChange={(e) => onHoraCierreChange(e.target.value)}
@@ -305,12 +302,11 @@ function useGccNegociacionPanelView({
         {/* Detalles del Acuerdo (si lo hay) */}
         {acuerdoAlcanzado && (
           <div className="space-y-4 p-6 bg-green-50 border border-green-200 rounded-3xl">
-            <label htmlFor="gcc-negociacion-detalles-acuerdo" className="text-xs font-black text-slate-400 uppercase tracking-widest block flex items-center">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-widest block flex items-center">
               <FileText className="w-4 h-4 mr-2 text-green-600" />
               Detalles del Acuerdo Alcanzado
             </label>
             <textarea
-              id="gcc-negociacion-detalles-acuerdo"
               value={detallesAcuerdo}
               onChange={(e) => onDetallesAcuerdoChange(e.target.value)}
               placeholder="Describa el acuerdo alcanzado por las partes..."
@@ -416,15 +412,25 @@ function useGccNegociacionPanelView({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-200">
           <button
             onClick={onGenerarActa}
-            className="py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center space-x-2 bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-600/30"
+            disabled={estado === 'PROCESO'}
+            className={`py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center space-x-2 ${
+              estado === 'PROCESO'
+                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                : 'bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-600/30'
+            }`}
           >
             <FileCheck className="w-5 h-5" />
-            <span>Generar Acta Estandar</span>
+            <span>Generar Acta</span>
           </button>
           
           <button
             onClick={onCerrarExpediente}
-            className="py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center space-x-2 bg-slate-600 text-white hover:bg-slate-700"
+            disabled={estado === 'PROCESO'}
+            className={`py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center space-x-2 ${
+              estado === 'PROCESO'
+                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                : 'bg-slate-600 text-white hover:bg-slate-700'
+            }`}
           >
             <CheckCircle className="w-5 h-5" />
             <span>Cerrar Expediente</span>
@@ -433,10 +439,7 @@ function useGccNegociacionPanelView({
       </div>
     </section>
   );
-}
-
-export const GccNegociacionPanel: React.FC<GccNegociacionPanelProps> = (props) =>
-  useGccNegociacionPanelView(props);
+};
 
 export default GccNegociacionPanel;
 

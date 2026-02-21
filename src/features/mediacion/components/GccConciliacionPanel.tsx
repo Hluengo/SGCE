@@ -24,6 +24,7 @@ import {
   AlertCircle,
   Handshake,
   Lightbulb,
+  User
 } from 'lucide-react';
 import type { Expediente } from '@/types';
 import { GccCircular782Section, type EscenarioProcedencia } from './GccCircular782Section';
@@ -91,7 +92,7 @@ interface GccConciliacionPanelProps {
   onEliminarCompromiso: (id: string) => void;
   onToggleMarcaCompromiso: (id: string) => void;
   
-  // Firmas (compatibilidad legacy, no bloquean acta)
+  // Firmas
   firmaEstudiante1: boolean;
   firmaEstudiante2: boolean;
   firmaConciliador: boolean;
@@ -101,7 +102,7 @@ interface GccConciliacionPanelProps {
   onCerrarExpediente: () => void;
 }
 
-function useGccConciliacionPanelView({
+export const GccConciliacionPanel: React.FC<GccConciliacionPanelProps> = ({
   caso,
   conciliador,
   onConciliadorChange,
@@ -135,9 +136,12 @@ function useGccConciliacionPanelView({
   onAgregarCompromiso,
   onEliminarCompromiso,
   onToggleMarcaCompromiso,
+  firmaEstudiante1,
+  firmaEstudiante2,
+  firmaConciliador,
   onGenerarActa,
   onCerrarExpediente
-}: GccConciliacionPanelProps) {
+}) => {
   const isAddCompromisoDisabled = useMemo(
     () => !nuevoCompromiso.descripcion || !nuevoCompromiso.fecha,
     [nuevoCompromiso.descripcion, nuevoCompromiso.fecha]
@@ -193,9 +197,9 @@ function useGccConciliacionPanelView({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Estado del Proceso */}
           <div className="space-y-4">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest block">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">
               Estado Conciliación
-            </p>
+            </label>
             <div className="grid grid-cols-3 gap-2">
               {['PROCESO', 'LOGRADO', 'NO_ACUERDO'].map((est) => (
                 <button
@@ -217,12 +221,11 @@ function useGccConciliacionPanelView({
 
           {/* Conciliador OBLIGATORIO */}
           <div className="space-y-4">
-            <label htmlFor="gcc-conciliacion-conciliador" className="text-xs font-black text-slate-400 uppercase tracking-widest block flex items-center">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-widest block flex items-center">
               <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
               Conciliador Asignado *
             </label>
             <select
-              id="gcc-conciliacion-conciliador"
               value={conciliador}
               onChange={(e) => onConciliadorChange(e.target.value)}
               className="w-full px-4 py-3 bg-slate-50 border border-purple-300 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-purple-500/5 focus:border-purple-300 focus:outline-none"
@@ -247,11 +250,10 @@ function useGccConciliacionPanelView({
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <label htmlFor="gcc-conciliacion-fecha" className="text-xs font-black text-slate-400 uppercase tracking-widest block">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">
                 Fecha
               </label>
               <input
-                id="gcc-conciliacion-fecha"
                 type="date"
                 value={fechaConciliacion}
                 onChange={(e) => onFechaConciliacionChange(e.target.value)}
@@ -260,11 +262,10 @@ function useGccConciliacionPanelView({
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="gcc-conciliacion-hora-inicio" className="text-xs font-black text-slate-400 uppercase tracking-widest block">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">
                 Hora Inicio
               </label>
               <input
-                id="gcc-conciliacion-hora-inicio"
                 type="time"
                 value={horaInicio}
                 onChange={(e) => onHoraInicioChange(e.target.value)}
@@ -273,11 +274,10 @@ function useGccConciliacionPanelView({
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="gcc-conciliacion-hora-cierre" className="text-xs font-black text-slate-400 uppercase tracking-widest block">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">
                 Hora Cierre
               </label>
               <input
-                id="gcc-conciliacion-hora-cierre"
                 type="time"
                 value={horaCierre}
                 onChange={(e) => onHoraCierreChange(e.target.value)}
@@ -451,14 +451,68 @@ function useGccConciliacionPanelView({
           </div>
         )}
 
+        {/* Firmas */}
+        {propuestaAceptada !== null && (
+          <div className="space-y-4 p-6 bg-slate-50 border border-slate-200 rounded-3xl">
+            <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center">
+              <User className="w-5 h-5 mr-3 text-purple-600" />
+              Firmas
+            </h4>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className={`p-4 rounded-xl border-2 ${firmaEstudiante1 ? 'bg-green-50 border-green-300' : 'bg-slate-50 border-slate-200'}`}>
+                <p className="text-xs font-black text-slate-600 uppercase tracking-widest">Estudiante 1</p>
+                <div className="mt-3 flex items-center space-x-2">
+                  {firmaEstudiante1 ? (
+                    <>
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <span className="text-xs font-bold text-green-700">Firmó</span>
+                    </>
+                  ) : (
+                    <span className="text-xs font-bold text-slate-400">Pendiente</span>
+                  )}
+                </div>
+              </div>
+
+              <div className={`p-4 rounded-xl border-2 ${firmaEstudiante2 ? 'bg-green-50 border-green-300' : 'bg-slate-50 border-slate-200'}`}>
+                <p className="text-xs font-black text-slate-600 uppercase tracking-widest">Estudiante 2</p>
+                <div className="mt-3 flex items-center space-x-2">
+                  {firmaEstudiante2 ? (
+                    <>
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <span className="text-xs font-bold text-green-700">Firmó</span>
+                    </>
+                  ) : (
+                    <span className="text-xs font-bold text-slate-400">Pendiente</span>
+                  )}
+                </div>
+              </div>
+
+              <div className={`p-4 rounded-xl border-2 ${firmaConciliador ? 'bg-green-50 border-green-300' : 'bg-slate-50 border-slate-200'}`}>
+                <p className="text-xs font-black text-slate-600 uppercase tracking-widest">Conciliador</p>
+                <div className="mt-3 flex items-center space-x-2">
+                  {firmaConciliador ? (
+                    <>
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <span className="text-xs font-bold text-green-700">Firmó</span>
+                    </>
+                  ) : (
+                    <span className="text-xs font-bold text-slate-400">Pendiente</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Info Final */}
         <div className="flex items-center space-x-4 p-4 bg-purple-50 border border-purple-200 rounded-2xl">
           <Info className="w-5 h-5 text-purple-600 flex-shrink-0" />
           <p className="text-xs font-bold text-purple-700">
             {propuestaAceptada === true
-              ? 'Propuesta ACEPTADA. El acta digital incluirá la propuesta y los compromisos derivados.'
+              ? 'Propuesta ACEPTADA. El acta incluirá la propuesta y los compromisos derivados.'
               : propuestaAceptada === false
-                ? 'Propuesta RECHAZADA. El acta digital dejará constancia de la conciliación realizada sin éxito.'
+                ? 'Propuesta RECHAZADA. El acta será constancia de la conciliación realizada sin éxito.'
                 : 'Seleccione si las partes aceptan o rechazan la propuesta.'}
           </p>
         </div>
@@ -467,20 +521,25 @@ function useGccConciliacionPanelView({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-200">
           <button
             onClick={onGenerarActa}
-            disabled={!isPropuestaFilled || propuestaAceptada === null}
+            disabled={estado === 'PROCESO' || !isPropuestaFilled || propuestaAceptada === null}
             className={`py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center space-x-2 ${
-              !isPropuestaFilled || propuestaAceptada === null
+              estado === 'PROCESO' || !isPropuestaFilled || propuestaAceptada === null
                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                 : 'bg-purple-600 text-white hover:bg-purple-700 shadow-lg shadow-purple-600/30'
             }`}
           >
             <FileCheck className="w-5 h-5" />
-            <span>Generar Acta Estandar</span>
+            <span>Generar Acta de Conciliación</span>
           </button>
           
           <button
             onClick={onCerrarExpediente}
-            className="py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center space-x-2 bg-slate-600 text-white hover:bg-slate-700"
+            disabled={estado === 'PROCESO'}
+            className={`py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center space-x-2 ${
+              estado === 'PROCESO'
+                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                : 'bg-slate-600 text-white hover:bg-slate-700'
+            }`}
           >
             <CheckCircle className="w-5 h-5" />
             <span>Cerrar Expediente</span>
@@ -489,10 +548,7 @@ function useGccConciliacionPanelView({
       </div>
     </section>
   );
-}
-
-export const GccConciliacionPanel: React.FC<GccConciliacionPanelProps> = (props) =>
-  useGccConciliacionPanelView(props);
+};
 
 export default GccConciliacionPanel;
 

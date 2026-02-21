@@ -8,7 +8,7 @@
  * 4. Fallback a demo para desarrollo
  */
 
-import { createContext, useContext, useEffect, useReducer, useCallback, type Dispatch, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useReducer, useCallback, type ReactNode } from 'react';
 import { supabase } from '@/shared/lib/supabaseClient';
 import { isUuid } from '@/shared/utils/expedienteRef';
 import { useAuth } from '@/shared/hooks/useAuth';
@@ -166,57 +166,6 @@ function normalizeRole(rawRole: string | null | undefined): string {
 
 function canSwitchTenantsByRole(role: string): boolean {
   return role === 'admin' || role === 'sostenedor' || role === 'superadmin';
-}
-
-function setTenantIdManually(
-  id: string | null,
-  loadEstablecimiento: (id: string) => Promise<Establecimiento | null>,
-  dispatch: Dispatch<TenantAction>
-) {
-  if (id && isUuid(id)) {
-    sessionStorage.setItem('tenant_id', id);
-    void (async () => {
-      try {
-        const nextEstablecimiento = await loadEstablecimiento(id);
-        dispatch({
-          type: 'SET_TENANT_MANUAL',
-          payload: {
-            tenantId: id,
-            establecimiento: nextEstablecimiento,
-            error: nextEstablecimiento ? null : 'No se encontraron datos del tenant seleccionado.',
-          },
-        });
-      } catch (err) {
-        console.error('Error cargando establecimiento manual:', err);
-        dispatch({
-          type: 'SET_TENANT_MANUAL',
-          payload: {
-            tenantId: id,
-            establecimiento: null,
-            error: 'Error al cargar los datos del establecimiento',
-          },
-        });
-      }
-    })();
-    return;
-  }
-
-  sessionStorage.removeItem('tenant_id');
-  localStorage.removeItem('tenant_id');
-  dispatch({
-    type: 'SET_TENANT_MANUAL',
-    payload: {
-      tenantId: null,
-      establecimiento: null,
-      error: id ? 'Tenant inválido: se esperaba UUID.' : null,
-    },
-  });
-}
-
-function canAccessTenant(state: TenantState, establecimientoId: string): boolean {
-  if (state.tenantId === establecimientoId) return true;
-  return state.establecimientosDisponibles.length > 0
-    && state.establecimientosDisponibles.some((e) => e.id === establecimientoId);
 }
 
 export function TenantProvider({ children }: { children: ReactNode }) {
@@ -436,43 +385,78 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     }
   }, [isAuthLoading, usuario]);
 
-  // Resolver el tenant: al iniciar, al cambiar auth state, y al cambiar sesión/perfil.
-  // Consolidado en un solo useEffect para evitar invocaciones redundantes.
+  // Resolver el tenant al iniciar
   useEffect(() => {
-    let cancelled = false;
+    void resolveTenant();
+    if (!supabase) return;
 
-    const resolve = () => {
-      if (cancelled) return;
-      // Sólo resolver si auth ya cargó y hay sesión o usuario
-      if (!isAuthLoading || session?.user || usuario) {
-        void resolveTenant();
-      }
-    };
-
-    resolve();
-
-    let authSubscription: { unsubscribe: () => void } | undefined;
-    if (supabase) {
-      const { data } = supabase.auth.onAuthStateChange((_event) => {
-        resolve();
-      });
-      authSubscription = data.subscription;
-    }
+    const { data: authSubscription } = supabase.auth.onAuthStateChange((_event) => {
+      void resolveTenant();
+    });
 
     return () => {
-      cancelled = true;
-      authSubscription?.unsubscribe();
+      authSubscription.subscription.unsubscribe();
     };
-  }, [resolveTenant, isAuthLoading, session?.user?.id, usuario?.establecimientoId, usuario?.id, usuario?.rol]);
+  }, [resolveTenant]);
+
+  // Reintento explícito cuando cambia sesión/perfil en AuthProvider.
+  useEffect(() => {
+    if (isAuthLoading) return;
+    if (!session?.user && !usuario) return;
+    void resolveTenant();
+  }, [isAuthLoading, resolveTenant, session?.user?.id, usuario?.establecimientoId, usuario?.id, usuario?.rol]);
 
   // Función para cambiar manualmente de tenant
   const setTenantId = (id: string | null) => {
-    setTenantIdManually(id, loadEstablecimiento, dispatch);
+    if (id && isUuid(id)) {
+      // Usar sessionStorage para mayor seguridad
+      sessionStorage.setItem('tenant_id', id);
+      void (async () => {
+        try {
+          const nextEstablecimiento = await loadEstablecimiento(id);
+          dispatch({
+            type: 'SET_TENANT_MANUAL',
+            payload: {
+              tenantId: id,
+              establecimiento: nextEstablecimiento,
+              error: nextEstablecimiento ? null : 'No se encontraron datos del tenant seleccionado.',
+            },
+          });
+        } catch (err) {
+          console.error('Error cargando establecimiento manual:', err);
+          dispatch({
+            type: 'SET_TENANT_MANUAL',
+            payload: {
+              tenantId: id,
+              establecimiento: null,
+              error: 'Error al cargar los datos del establecimiento',
+            },
+          });
+        }
+      })();
+    } else {
+      sessionStorage.removeItem('tenant_id');
+      localStorage.removeItem('tenant_id');
+      dispatch({
+        type: 'SET_TENANT_MANUAL',
+        payload: {
+          tenantId: null,
+          establecimiento: null,
+          error: id ? 'Tenant inválido: se esperaba UUID.' : null,
+        },
+      });
+    }
   };
 
   // Función para verificar acceso a establecimiento
-  const canAccessEstablecimiento = (establecimientoId: string): boolean =>
-    canAccessTenant(state, establecimientoId);
+  const canAccessEstablecimiento = (establecimientoId: string): boolean => {
+    // Si es el establecimiento actual, tiene acceso
+    if (state.tenantId === establecimientoId) return true;
+    
+    // Si es admin/sostenedor, puede acceder a cualquier establecimiento
+    return state.establecimientosDisponibles.length > 0 && 
+           state.establecimientosDisponibles.some(e => e.id === establecimientoId);
+  };
 
   return (
     <TenantContext.Provider

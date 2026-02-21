@@ -64,7 +64,7 @@ export type GccMetricsBaseSource = Pick<
 >;
 
 const useGccMetrics = (options: UseGccMetricsOptions = {}): UseGccMetricsResult => {
-  const { pollingMs = 60000, autoRefresh = true, enabled = true } = options;
+  const { pollingMs = 30000, autoRefresh = true, enabled = true } = options;
   const { tenantId } = useTenant();
   const [metrics, setMetrics] = useState<GccMetrics>(INITIAL_METRICS);
   const [isLoading, setIsLoading] = useState(false);
@@ -161,8 +161,8 @@ const useGccMetrics = (options: UseGccMetricsOptions = {}): UseGccMetricsResult 
 
   const freshness = useMemo<GccFreshness>(() => {
     if (secondsSinceUpdate === null) return 'unknown';
-    if (secondsSinceUpdate < 60) return 'fresh';
-    if (secondsSinceUpdate <= 120) return 'stale';
+    if (secondsSinceUpdate < 30) return 'fresh';
+    if (secondsSinceUpdate <= 90) return 'stale';
     return 'old';
   }, [secondsSinceUpdate]);
 

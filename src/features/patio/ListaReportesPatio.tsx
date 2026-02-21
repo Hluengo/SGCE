@@ -8,13 +8,11 @@ import {
   Clock,
   ArrowRight,
   Eye,
-  Plus,
-  ClipboardList
+  Plus
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { EstudianteBadge } from '@/shared/components/EstudianteBadge';
 import ReportePatioModal from '@/features/dashboard/ReportePatioModal';
-import PageTitleHeader from '@/shared/components/PageTitleHeader';
 
 interface ReportePatio {
   id: string;
@@ -444,22 +442,22 @@ const ListaReportesPatio: React.FC = () => {
 
   return (
     <main className="flex-1 p-4 md:p-8 bg-slate-50 overflow-y-auto">
-      <header className="mb-8">
-        <PageTitleHeader
-          className="w-full"
-          title="Registros de Patio"
-          subtitle="Incidentes de convivencia y trazabilidad de acciones · Circulares 781 y 782"
-          icon={ClipboardList}
-          actions={
-            <button
-              onClick={() => dispatch({ type: 'SET_SHOW_MODAL', payload: true })}
-              className="flex items-center gap-2 px-6 py-3 bg-amber-600 text-white rounded-xl font-bold text-sm hover:bg-amber-500 transition-all shadow-lg hover:shadow-xl active:scale-95"
-            >
-              <Plus className="w-5 h-5" />
-              <span className="hidden sm:inline">Nuevo Reporte</span>
-            </button>
-          }
-        />
+      <header className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">
+            Registros de Patio
+          </h2>
+          <p className="text-slate-500 text-sm font-bold uppercase tracking-widest">
+            Control de incidentes y acciones tomadas
+          </p>
+        </div>
+        <button
+          onClick={() => dispatch({ type: 'SET_SHOW_MODAL', payload: true })}
+          className="flex items-center gap-2 px-6 py-3 bg-amber-600 text-white rounded-xl font-bold text-sm hover:bg-amber-500 transition-all shadow-lg hover:shadow-xl active:scale-95"
+        >
+          <Plus className="w-5 h-5" />
+          <span className="hidden sm:inline">Nuevo Reporte</span>
+        </button>
       </header>
 
       {/* Filtros */}

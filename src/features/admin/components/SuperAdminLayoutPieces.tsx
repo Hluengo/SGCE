@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, Shield } from 'lucide-react';
+import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { AsyncState } from '@/shared/components/ui';
 
@@ -30,18 +30,25 @@ export interface ToastMessage {
   message: string;
 }
 
-export const SuperAdminHero: React.FC = () => (
-  <header className="flex items-center gap-4 rounded-[0.75rem] border border-slate-200 bg-white p-4 md:p-5 shadow-[0_2px_8px_-4px_rgba(15,23,42,0.18)]">
-    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-[0_8px_18px_-8px_rgba(79,70,229,0.65)]">
-      <Shield className="h-8 w-8" />
-    </div>
-    <div className="min-w-0">
-      <h1 className="truncate text-[2rem] leading-tight font-extrabold tracking-[-0.02em] text-slate-900">
-        Panel Integral Multi-Tenant
-      </h1>
-      <p className="truncate text-lg font-semibold text-indigo-700">
-        Gestión central de tenants, usuarios, permisos y operación
-      </p>
+export const SuperAdminHero: React.FC<{
+  usuario: {
+    nombre?: string | null;
+    apellido?: string | null;
+    rol?: string | null;
+  } | null;
+}> = ({ usuario }) => (
+  <header className="rounded-[0.75rem] bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-800 text-white p-6 md:p-8 shadow-[0_8px_20px_-8px_rgb(15_23_42_/_0.45)]">
+    <div className="flex flex-col md:flex-row gap-6 md:items-center md:justify-between">
+      <div>
+        <p className="text-xs uppercase tracking-widest text-cyan-200 font-black">Superadministracion</p>
+        <h1 className="text-2xl md:text-3xl font-black tracking-tight mt-2">Panel Integral Multi-Tenant</h1>
+        <p className="text-sm text-slate-200 mt-2">Gestion central de tenants, usuarios, permisos, backend y mantenimiento operativo.</p>
+      </div>
+      <div className="text-right">
+        <p className="text-xs uppercase tracking-widest text-cyan-200 font-black">Usuario actual</p>
+        <p className="text-sm font-bold mt-1">{usuario?.nombre} {usuario?.apellido}</p>
+        <p className="text-xs text-slate-300 mt-1">Rol: {usuario?.rol}</p>
+      </div>
     </div>
   </header>
 );
@@ -83,29 +90,7 @@ export const SuperAdminMetricsGrid: React.FC<{
   tenantMetrics: TenantMetrics;
   totalFlags: number;
   ui: Pick<UiClasses, 'card'>;
-}> = ({ tenantMetrics, totalFlags, ui }) => {
-  const tenantInactiveRate = tenantMetrics.totalTenants > 0
-    ? Math.round(((tenantMetrics.totalTenants - tenantMetrics.activeTenants) / tenantMetrics.totalTenants) * 100)
-    : 0;
-  const userInactiveRate = tenantMetrics.totalUsers > 0
-    ? Math.round((tenantMetrics.inactiveUsers / tenantMetrics.totalUsers) * 100)
-    : 0;
-  const criticalIncidents = tenantMetrics.deletedProfiles + tenantMetrics.deactivatedProfiles;
-
-  const status: 'SALUDABLE' | 'ATENCION' | 'CRITICO' =
-    tenantInactiveRate >= 40 || userInactiveRate >= 35
-      ? 'CRITICO'
-      : tenantInactiveRate >= 20 || userInactiveRate >= 20 || criticalIncidents >= 10
-        ? 'ATENCION'
-        : 'SALUDABLE';
-
-  const statusClass = status === 'SALUDABLE'
-    ? 'bg-emerald-100 text-emerald-700'
-    : status === 'ATENCION'
-      ? 'bg-amber-100 text-amber-700'
-      : 'bg-rose-100 text-rose-700';
-
-  return (
+}> = ({ tenantMetrics, totalFlags, ui }) => (
   <section className="grid md:grid-cols-2 xl:grid-cols-6 gap-4">
     <article className={`${ui.card} p-4`}>
       <p className="text-xs font-black uppercase tracking-widest text-slate-500">Tenants</p>
@@ -142,25 +127,15 @@ export const SuperAdminMetricsGrid: React.FC<{
       <p className="text-2xl font-black text-slate-900 mt-2">{tenantMetrics.enabledFeatures}</p>
       <p className="text-xs text-slate-500 mt-1">Sobre {totalFlags} configuradas por tenant</p>
     </article>
-    <article className={`${ui.card} p-4 md:col-span-2 xl:col-span-2`}>
-      <p className="text-xs font-black uppercase tracking-widest text-slate-500">Semáforo operativo</p>
-      <div className="mt-2 flex items-center gap-2">
-        <span className={`inline-flex rounded-full px-2 py-1 text-xs font-black uppercase ${statusClass}`}>{status}</span>
-      </div>
-      <p className="text-xs text-slate-500 mt-2">
-        Tenants inactivos: {tenantInactiveRate}% | Usuarios inactivos: {userInactiveRate}%
-      </p>
-    </article>
   </section>
-  );
-};
+);
 
 export const SuperAdminTabs: React.FC<{
   activeTab: SuperAdminTab;
   onChange: (tab: SuperAdminTab) => void;
   ui: Pick<UiClasses, 'card' | 'buttonAction' | 'buttonSecondary'>;
 }> = ({ activeTab, onChange, ui }) => (
-  <nav className={`${ui.card} p-2 flex flex-wrap gap-2 sticky top-2 z-20 backdrop-blur supports-[backdrop-filter]:bg-white/90`} aria-label="Secciones de administración">
+  <nav className={`${ui.card} p-2 flex flex-wrap gap-2`} aria-label="Secciones de administración">
     {[
       { id: 'overview', label: 'Vista general' },
       { id: 'profiles', label: 'Gestion de perfiles' },

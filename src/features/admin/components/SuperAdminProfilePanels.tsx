@@ -1,4 +1,4 @@
-import { type FC } from 'react';
+import type { FC } from 'react';
 import type { Permiso, RolUsuario } from '@/shared/hooks/useAuth';
 import type { ProfileRow, RolePermissionFormState, TenantRow } from '../types';
 
@@ -227,8 +227,7 @@ export const ProfileAccessFormPanel: FC<{
   onDeactivate,
   onHardDelete,
   grantorLabel,
-}) => {
-  return (
+}) => (
   <section className={`xl:col-span-3 ${ui.card} p-4 space-y-4`}>
     <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-3">
       <p className="text-[11px] font-black uppercase tracking-widest text-indigo-700">Resumen de autorización</p>
@@ -364,7 +363,6 @@ export const ProfileAccessFormPanel: FC<{
                 return (
                   <label
                     key={permission}
-                    aria-label={`Permiso ${descriptor.label}`}
                     className={`rounded-[0.75rem] border px-2.5 py-2 text-xs transition-all duration-200 ease-in-out cursor-pointer ${
                       enabled
                         ? 'border-emerald-300 bg-emerald-50'
@@ -421,7 +419,6 @@ export const ProfileAccessFormPanel: FC<{
     </div>
   </section>
 );
-};
 
 export const ConfirmActionModal: FC<{
   action: ConfirmAction | null;
@@ -431,7 +428,7 @@ export const ConfirmActionModal: FC<{
 }> = ({ action, ui, onCancel, onConfirm }) => {
   if (!action) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
       <div className={`${ui.card} w-full max-w-md p-5 space-y-3`}>
         <h3 className={ui.cardTitle}>Confirmar acción crítica</h3>
         <p className="text-sm text-slate-700">
@@ -450,4 +447,3 @@ export const ConfirmActionModal: FC<{
 };
 
 export type { ConfirmAction };
-

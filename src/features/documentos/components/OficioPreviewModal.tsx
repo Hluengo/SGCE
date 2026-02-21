@@ -5,7 +5,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Download, Printer, FileText, Loader2 } from 'lucide-react';
-import DOMPurify from 'dompurify';
 import { oficioDerivacionTemplate, OficioDerivacionData } from '../templates/oficioDerivacionTemplate';
 import { DocumentBranding } from '../templates/baseTemplate';
 
@@ -22,7 +21,7 @@ const OficioPreviewModal: React.FC<OficioPreviewModalProps> = ({
   data,
   branding
 }) => {
-  const previewFrameRef = useRef<HTMLIFrameElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [htmlContent, setHtmlContent] = useState<string>('');
 
@@ -32,32 +31,31 @@ const OficioPreviewModal: React.FC<OficioPreviewModalProps> = ({
       setHtmlContent(html);
     }
   }, [isOpen, data, branding]);
-  const sanitizedHtmlContent = DOMPurify.sanitize(htmlContent, {
-    WHOLE_DOCUMENT: true,
-    ADD_TAGS: ['style'],
-    ADD_ATTR: ['style']
-  });
 
   const handlePrint = () => {
-    const frameWindow = previewFrameRef.current?.contentWindow;
-    if (!frameWindow) return;
-    frameWindow.focus();
-    frameWindow.print();
+    const printContent = containerRef.current;
+    if (!printContent) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Por favor permita ventanas emergentes para imprimir');
+      return;
+    }
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+    };
   };
 
   const handleDownloadPdf = async () => {
+    if (!containerRef.current) return;
+    
     setIsGenerating(true);
-    let element: HTMLDivElement | null = null;
     try {
       const { default: html2pdf } = await import('html2pdf.js');
-      element = document.createElement('div');
-      element.style.width = '210mm';
-      element.style.background = '#ffffff';
-      element.style.position = 'fixed';
-      element.style.left = '-99999px';
-      element.style.top = '0';
-      element.innerHTML = sanitizedHtmlContent;
-      document.body.appendChild(element);
+      const element = containerRef.current;
       const filename = `Oficio_${data.numeroOficio || 'derivacion'}.pdf`;
       
       const opt = {
@@ -73,9 +71,6 @@ const OficioPreviewModal: React.FC<OficioPreviewModalProps> = ({
       console.error('Error generating PDF:', error);
       alert('Error al generar el PDF');
     } finally {
-      if (element && element.parentNode) {
-        element.parentNode.removeChild(element);
-      }
       setIsGenerating(false);
     }
   };
@@ -83,7 +78,7 @@ const OficioPreviewModal: React.FC<OficioPreviewModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in">
       <div className="bg-white w-full max-w-5xl max-h-screen rounded-3xl shadow-2xl flex flex-col overflow-hidden">
         
         {/* Header */}
@@ -134,13 +129,7 @@ const OficioPreviewModal: React.FC<OficioPreviewModalProps> = ({
         {/* Preview Area */}
         <div className="flex-1 overflow-auto bg-slate-200 p-8">
           <div className="bg-white mx-auto shadow-lg" style={{ width: '210mm', minHeight: '297mm', transform: 'scale(0.85)', transformOrigin: 'top center' }}>
-            <iframe
-              ref={previewFrameRef}
-              title="Vista previa del oficio"
-              srcDoc={sanitizedHtmlContent}
-              className="w-full border-0"
-              style={{ minHeight: '297mm' }}
-            />
+            <div ref={containerRef} dangerouslySetInnerHTML={{ __html: htmlContent }} />
           </div>
         </div>
 
@@ -162,3 +151,4 @@ const OficioPreviewModal: React.FC<OficioPreviewModalProps> = ({
 };
 
 export default OficioPreviewModal;
+

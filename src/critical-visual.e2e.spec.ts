@@ -14,13 +14,6 @@ test.describe('@visual Critical Screens', () => {
     test(`snapshot ${route.name}`, async ({ page }) => {
       await ensureAuthenticated(page, route.path);
       await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(400);
-
-      if (route.name === 'dashboard') {
-        await expect(page.getByRole('heading', { name: /panel de gestión normativa/i })).toBeVisible({ timeout: 10000 });
-        await expect(page.getByRole('heading', { name: /panel general de expedientes/i })).toBeVisible({ timeout: 10000 });
-        await page.waitForTimeout(1000);
-      }
 
       const dynamicMasks = [
         page.locator('text=/Actualizado|hace\\s+\\d+[smh]/i'),

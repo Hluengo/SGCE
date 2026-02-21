@@ -32,8 +32,6 @@ export interface MaintenanceLog {
   action: string;
   created_at: string;
   entity_type?: string | null;
-  actor_user_id?: string | null;
-  actor_name?: string | null;
   status: 'ok' | 'in_progress';
 }
 

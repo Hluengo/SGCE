@@ -118,7 +118,7 @@ describe('Dashboard', () => {
         expect(distributionSection).toBeInTheDocument();
     });
 
-    it('debe mostrar la sección de expedientes en seguimiento', () => {
+    it('debe abrir el wizard al hacer clic en Nuevo Proceso Legal', () => {
         render(
             <BrowserRouter>
                 <UIProvider>
@@ -128,7 +128,9 @@ describe('Dashboard', () => {
                 </UIProvider>
             </BrowserRouter>
         );
-        expect(screen.getByText(/Expedientes en Seguimiento/i)).toBeInTheDocument();
+        const button = screen.getByText(/Nuevo Expediente/i);
+        fireEvent.click(button);
+        expect(mockSetIsWizardOpen).toHaveBeenCalledWith(true);
     });
 
     it('debe filtrar expedientes por término de búsqueda', async () => {

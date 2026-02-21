@@ -5,7 +5,6 @@ import { useLocalDraft } from '@/shared/utils/useLocalDraft';
 import { useConvivencia } from '@/shared/context/ConvivenciaContext';
 import { useTenant } from '@/shared/context/TenantContext';
 import { supabase } from '@/shared/lib/supabaseClient';
-import PageTitleHeader from '@/shared/components/PageTitleHeader';
 
 interface FormDataDerivacion {
   estudianteId: string | null;
@@ -171,18 +170,14 @@ const RegistrarDerivacion: React.FC = () => {
   };
 
   return (
-    <main className="flex-1 p-4 md:p-10 bg-slate-50 overflow-y-auto animate-in fade-in duration-700">
-      <div className="mx-auto w-full max-w-5xl space-y-6">
-        <PageTitleHeader
-          title="Derivación Externa"
-          subtitle="Detección, derivación y seguimiento de redes de apoyo · Circulares 781 y 782"
-          icon={ArrowRightCircle}
-        />
-
-        <div className="bg-white w-full max-w-2xl mx-auto rounded-3xl border border-slate-200 shadow-2xl p-6 md:p-12 space-y-8">
+    <main className="flex-1 p-4 md:p-10 bg-slate-50 flex justify-center items-center overflow-y-auto animate-in fade-in duration-700">
+      <div className="bg-white w-full max-w-2xl rounded-3xl border border-slate-200 shadow-2xl p-6 md:p-12 space-y-8">
         <header className="text-center space-y-2">
-          <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">Formulario de derivación</h2>
-          <p className="text-slate-400 font-bold text-xs md:text-xs uppercase tracking-widest">Canalización formal a red especializada</p>
+          <div className="w-16 h-16 md:w-20 md:h-20 bg-violet-100 text-violet-600 rounded-3xl flex items-center justify-center mx-auto mb-4">
+            <ArrowRightCircle className="w-8 h-8 md:w-10 md:h-10" />
+          </div>
+          <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">Registrar Derivación</h2>
+          <p className="text-slate-400 font-bold text-xs md:text-xs uppercase tracking-widest">Derivación a Especialista</p>
         </header>
 
         {ui.enviado ? (
@@ -311,7 +306,6 @@ const RegistrarDerivacion: React.FC = () => {
             </button>
           </form>
         )}
-        </div>
       </div>
     </main>
   );
