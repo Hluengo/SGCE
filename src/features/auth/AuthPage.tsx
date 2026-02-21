@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ShieldCheck, Building2, KeyRound, AlertCircle, MailCheck } from 'lucide-react';
+import { AlertCircle, LockKeyhole, MailCheck, ShieldCheck } from 'lucide-react';
 import useAuth from '@/shared/hooks/useAuth';
 import { useTenant } from '@/shared/context/TenantContext';
+import praxiaNovusLogo from '@/assets/praxia-novus-logo-auth.png';
+import FeatureList from '@/features/auth/components/FeatureList';
+import InfoCardGrid from '@/features/auth/components/InfoCardGrid';
+import { AUTH_FEATURES, AUTH_INFO_CARDS } from '@/features/auth/content';
 
 const loginSchema = z.object({
   email: z.string().trim().email('Ingresa un correo valido'),
@@ -39,10 +43,15 @@ const resetSchema = z
 type LoginValues = z.infer<typeof loginSchema>;
 type ForgotValues = z.infer<typeof forgotSchema>;
 type ResetValues = z.infer<typeof resetSchema>;
-
 type AuthTab = 'login' | 'forgot' | 'reset';
 
-const AuthPage = () => {
+const authTabs: ReadonlyArray<{ id: AuthTab; label: string }> = [
+  { id: 'login', label: 'Ingreso' },
+  { id: 'forgot', label: 'Recuperar' },
+  { id: 'reset', label: 'Nueva clave' },
+];
+
+const AuthPage: React.FC = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const { signIn, requestPasswordReset, updatePassword, isAuthenticated, isPasswordRecovery } = useAuth();
@@ -50,10 +59,7 @@ const AuthPage = () => {
 
   const nextPath = useMemo(() => {
     const value = params.get('next');
-    if (!value) {
-      return '/';
-    }
-
+    if (!value) return '/';
     return value.startsWith('/') ? value : '/';
   }, [params]);
 
@@ -95,32 +101,27 @@ const AuthPage = () => {
 
   const handleLoginSubmit = loginForm.handleSubmit(async (values) => {
     resetMessages();
-
     const { error } = await signIn(values.email, values.password);
     if (error) {
       setGlobalError(error.message || 'No fue posible iniciar sesion');
       return;
     }
-
     navigate(nextPath, { replace: true });
   });
 
   const handleForgotSubmit = forgotForm.handleSubmit(async (values) => {
     resetMessages();
-
     const { error } = await requestPasswordReset(values.email);
     if (error) {
       setGlobalError(error.message || 'No se pudo enviar el correo de recuperacion');
       return;
     }
-
     setGlobalSuccess('Te enviamos un enlace seguro para recuperar tu cuenta.');
     forgotForm.reset();
   });
 
   const handleResetSubmit = resetForm.handleSubmit(async (values) => {
     resetMessages();
-
     try {
       await updatePassword(values.password);
       setGlobalSuccess('Contrasena actualizada correctamente. Inicia sesion nuevamente.');
@@ -133,122 +134,179 @@ const AuthPage = () => {
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#0f172a_0%,_#111827_40%,_#020617_100%)] text-slate-100">
-      <div className="min-h-screen grid lg:grid-cols-2">
-        <section className="relative overflow-hidden p-8 lg:p-14 border-b lg:border-b-0 lg:border-r border-white/10">
-          <div className="absolute -top-24 -left-20 w-72 h-72 rounded-full bg-cyan-400/20 blur-3xl" />
-          <div className="absolute -bottom-20 right-0 w-80 h-80 rounded-full bg-sky-500/20 blur-3xl" />
+      <div className="min-h-screen w-full grid lg:grid-cols-[1.15fr_0.85fr]">
+        <section className="relative overflow-hidden p-5 lg:p-8 border-b lg:border-b-0 lg:border-r border-white/10">
+          <div className="absolute -top-24 -left-20 w-72 h-72 rounded-full bg-cyan-400/20 blur-3xl" aria-hidden="true" />
+          <div className="absolute -bottom-20 right-0 w-80 h-80 rounded-full bg-sky-500/20 blur-3xl" aria-hidden="true" />
 
-          <div className="relative z-10 max-w-xl space-y-8">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-cyan-300/40 bg-cyan-400/10 text-cyan-100 text-xs font-black uppercase tracking-widest">
-              <ShieldCheck className="w-4 h-4" />
-              Motor de Cumplimiento Normativo • Circulares 781 y 782
+          <div className="relative z-10 space-y-4">
+            <img src={praxiaNovusLogo} alt="Praxia Novus" className="h-28 sm:h-32 lg:h-36 w-auto object-contain rounded-2xl" />
+
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-300/40 bg-cyan-400/10 text-cyan-100 text-[10px] font-black uppercase tracking-widest">
+              <ShieldCheck className="w-4 h-4" aria-hidden="true" />
+              Procedimiento correcto. Respaldo institucional.
             </div>
 
-            <div>
-              <h1 className="text-3xl lg:text-5xl font-black leading-tight tracking-tight">
-                Gestor Integral de Convivencia Escolar
-              </h1>
-              <p className="mt-4 text-sm lg:text-base text-slate-300 leading-relaxed">
-                Plataforma multi-tenant que asegura el cumplimiento del "Justo y Racional Procedimiento" exigido por la Superintendencia de Educación. Automatiza investigaciones, medidas formativas y gestión colaborativa de conflictos.
+            <div className="space-y-2">
+              <h1 className="text-4xl lg:text-5xl xl:text-6xl font-black leading-[1.05] tracking-tight">Gestion y Cumplimiento Escolar</h1>
+              <p className="text-base lg:text-lg text-cyan-100 leading-relaxed max-w-[95%]">
+                Plataforma de gobernanza que transforma la convivencia escolar en un proceso trazable, defendible y alineado a las Circulares 781 y 782.
               </p>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-4 text-xs">
-              <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="font-black uppercase tracking-widest text-cyan-200">Establecimientos Conectados</p>
-                <p className="mt-2 text-sm font-bold">{establecimiento?.nombre ?? 'Colegio Demo Convivencia'}</p>
-                <p className="text-slate-400 mt-1">Datos aislados y seguros</p>
-              </article>
-              <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="font-black uppercase tracking-widest text-cyan-200">Estado Legal</p>
-                <p className="mt-2 text-sm font-bold">Vigente para 2026</p>
-                <p className="text-slate-400 mt-1">Conforme Circulares 781/782</p>
-              </article>
-            </div>
-
-            <ul className="space-y-4 text-sm text-slate-300">
-              <li className="flex gap-4 items-start"><ShieldCheck className="w-4 h-4 mt-0.5 text-cyan-300" />Workflow de 4 niveles: faltas leves, relevantes, expulsión y cancelación.</li>
-              <li className="flex gap-4 items-start"><Building2 className="w-4 h-4 mt-0.5 text-cyan-300" />Gestión Colaborativa de Conflictos (GCC) y mediación obligatoria.</li>
-              <li className="flex gap-4 items-start"><KeyRound className="w-4 h-4 mt-0.5 text-cyan-300" />Registro documental íntegro, derecho a defensa y recursos de reconsideración.</li>
-            </ul>
+            <InfoCardGrid cards={AUTH_INFO_CARDS} firstValue={establecimiento?.nombre ?? 'Colegio Demo Convivencia'} />
+            <FeatureList items={AUTH_FEATURES} />
           </div>
         </section>
 
-        <section className="p-6 sm:p-10 lg:p-14 flex items-center justify-center">
-          <div className="w-full max-w-md rounded-3xl border border-white/15 bg-slate-900/60 backdrop-blur-xl p-6 sm:p-8 shadow-2xl shadow-black/40">
-            <div className="grid grid-cols-3 gap-2 bg-slate-800/70 p-1.5 rounded-2xl text-xs font-black uppercase tracking-wider">
-              <button onClick={() => { resetMessages(); setActiveTab('login'); }} className={`py-2 rounded-xl ${activeTab === 'login' ? 'bg-cyan-400 text-slate-900' : 'text-slate-300'}`}>Ingreso</button>
-              <button onClick={() => { resetMessages(); setActiveTab('forgot'); }} className={`py-2 rounded-xl ${activeTab === 'forgot' ? 'bg-cyan-400 text-slate-900' : 'text-slate-300'}`}>Recuperar</button>
-              <button onClick={() => { resetMessages(); setActiveTab('reset'); }} className={`py-2 rounded-xl ${activeTab === 'reset' ? 'bg-cyan-400 text-slate-900' : 'text-slate-300'}`}>Nueva clave</button>
+        <section className="p-6 sm:p-8 lg:p-10 flex items-center justify-center lg:justify-start">
+          <div className="w-full max-w-lg rounded-3xl border border-white/15 bg-slate-900/60 backdrop-blur-xl p-6 sm:p-8 shadow-2xl shadow-black/40">
+            <div className="flex items-center justify-between mb-5">
+              <p className="text-xs uppercase tracking-widest font-black text-cyan-200">Acceso seguro</p>
+              <Link to="/inicio" className="text-xs font-bold text-slate-300 hover:text-cyan-200 transition-colors">
+                Ver inicio
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 bg-slate-800/70 p-1.5 rounded-2xl text-xs font-black uppercase tracking-wider" role="tablist" aria-label="Opciones de acceso">
+              {authTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === tab.id}
+                  aria-pressed={activeTab === tab.id}
+                  onClick={() => {
+                    resetMessages();
+                    setActiveTab(tab.id);
+                  }}
+                  className={`py-2 rounded-xl transition-colors ${activeTab === tab.id ? 'bg-cyan-400 text-slate-900' : 'text-slate-300 hover:bg-slate-700/70'}`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
 
             <div className="mt-6 space-y-4">
               {activeTab === 'login' && (
-                <form className="space-y-4" onSubmit={handleLoginSubmit}>
+                <form className="space-y-4" onSubmit={handleLoginSubmit} noValidate>
                   <div>
-                    <label className="text-xs uppercase tracking-wider font-black text-slate-300">Correo institucional
-                    <input type="email" {...loginForm.register('email')} className="mt-1 w-full rounded-xl border border-slate-600 bg-slate-950 px-4 py-3 text-sm focus:outline-none focus:border-cyan-300" />
+                    <label htmlFor="auth-login-email" className="text-xs uppercase tracking-wider font-black text-slate-300">
+                      Correo institucional
                     </label>
+                    <input
+                      id="auth-login-email"
+                      type="email"
+                      autoComplete="username"
+                      {...loginForm.register('email')}
+                      className="mt-1 w-full rounded-xl border border-slate-600 bg-slate-950 px-4 py-3 text-sm focus:outline-none focus:border-cyan-300"
+                    />
                     {loginForm.formState.errors.email && <p className="text-xs text-rose-300 mt-1">{loginForm.formState.errors.email.message}</p>}
                   </div>
                   <div>
-                    <label className="text-xs uppercase tracking-wider font-black text-slate-300">Contrasena
-                    <input type="password" {...loginForm.register('password')} className="mt-1 w-full rounded-xl border border-slate-600 bg-slate-950 px-4 py-3 text-sm focus:outline-none focus:border-cyan-300" />
+                    <label htmlFor="auth-login-password" className="text-xs uppercase tracking-wider font-black text-slate-300">
+                      Contrasena
                     </label>
+                    <input
+                      id="auth-login-password"
+                      type="password"
+                      autoComplete="current-password"
+                      {...loginForm.register('password')}
+                      className="mt-1 w-full rounded-xl border border-slate-600 bg-slate-950 px-4 py-3 text-sm focus:outline-none focus:border-cyan-300"
+                    />
                     {loginForm.formState.errors.password && <p className="text-xs text-rose-300 mt-1">{loginForm.formState.errors.password.message}</p>}
                   </div>
-                  <button type="submit" disabled={loginForm.formState.isSubmitting} className="w-full py-3 rounded-xl bg-cyan-400 text-slate-900 text-xs font-black uppercase tracking-widest disabled:opacity-50">
+                  <button
+                    type="submit"
+                    disabled={loginForm.formState.isSubmitting}
+                    className="w-full py-3 rounded-xl bg-cyan-400 text-slate-900 text-xs font-black uppercase tracking-widest disabled:opacity-50"
+                  >
                     {loginForm.formState.isSubmitting ? 'Validando...' : 'Ingresar'}
                   </button>
                 </form>
               )}
 
               {activeTab === 'forgot' && (
-                <form className="space-y-4" onSubmit={handleForgotSubmit}>
+                <form className="space-y-4" onSubmit={handleForgotSubmit} noValidate>
                   <p className="text-xs text-slate-300">Enviaremos un enlace temporal con validez limitada para restablecer tu acceso.</p>
                   <div>
-                    <label className="text-xs uppercase tracking-wider font-black text-slate-300">Correo de recuperacion
-                    <input type="email" {...forgotForm.register('email')} className="mt-1 w-full rounded-xl border border-slate-600 bg-slate-950 px-4 py-3 text-sm focus:outline-none focus:border-cyan-300" />
+                    <label htmlFor="auth-forgot-email" className="text-xs uppercase tracking-wider font-black text-slate-300">
+                      Correo de recuperacion
                     </label>
+                    <input
+                      id="auth-forgot-email"
+                      type="email"
+                      autoComplete="email"
+                      {...forgotForm.register('email')}
+                      className="mt-1 w-full rounded-xl border border-slate-600 bg-slate-950 px-4 py-3 text-sm focus:outline-none focus:border-cyan-300"
+                    />
                     {forgotForm.formState.errors.email && <p className="text-xs text-rose-300 mt-1">{forgotForm.formState.errors.email.message}</p>}
                   </div>
-                  <button type="submit" disabled={forgotForm.formState.isSubmitting} className="w-full py-3 rounded-xl bg-cyan-400 text-slate-900 text-xs font-black uppercase tracking-widest disabled:opacity-50">
+                  <button
+                    type="submit"
+                    disabled={forgotForm.formState.isSubmitting}
+                    className="w-full py-3 rounded-xl bg-cyan-400 text-slate-900 text-xs font-black uppercase tracking-widest disabled:opacity-50"
+                  >
                     {forgotForm.formState.isSubmitting ? 'Enviando...' : 'Enviar enlace'}
                   </button>
                 </form>
               )}
 
               {activeTab === 'reset' && (
-                <form className="space-y-4" onSubmit={handleResetSubmit}>
+                <form className="space-y-4" onSubmit={handleResetSubmit} noValidate>
                   <p className="text-xs text-slate-300">Define una nueva contrasena robusta para proteger tu sesion.</p>
                   <div>
-                    <label className="text-xs uppercase tracking-wider font-black text-slate-300">Nueva contrasena
-                    <input type="password" {...resetForm.register('password')} className="mt-1 w-full rounded-xl border border-slate-600 bg-slate-950 px-4 py-3 text-sm focus:outline-none focus:border-cyan-300" />
+                    <label htmlFor="auth-reset-password" className="text-xs uppercase tracking-wider font-black text-slate-300">
+                      Nueva contrasena
                     </label>
+                    <input
+                      id="auth-reset-password"
+                      type="password"
+                      autoComplete="new-password"
+                      {...resetForm.register('password')}
+                      className="mt-1 w-full rounded-xl border border-slate-600 bg-slate-950 px-4 py-3 text-sm focus:outline-none focus:border-cyan-300"
+                    />
                     {resetForm.formState.errors.password && <p className="text-xs text-rose-300 mt-1">{resetForm.formState.errors.password.message}</p>}
                   </div>
                   <div>
-                    <label className="text-xs uppercase tracking-wider font-black text-slate-300">Confirmar contrasena
-                    <input type="password" {...resetForm.register('confirmPassword')} className="mt-1 w-full rounded-xl border border-slate-600 bg-slate-950 px-4 py-3 text-sm focus:outline-none focus:border-cyan-300" />
+                    <label htmlFor="auth-reset-confirm-password" className="text-xs uppercase tracking-wider font-black text-slate-300">
+                      Confirmar contrasena
                     </label>
-                    {resetForm.formState.errors.confirmPassword && <p className="text-xs text-rose-300 mt-1">{resetForm.formState.errors.confirmPassword.message}</p>}
+                    <input
+                      id="auth-reset-confirm-password"
+                      type="password"
+                      autoComplete="new-password"
+                      {...resetForm.register('confirmPassword')}
+                      className="mt-1 w-full rounded-xl border border-slate-600 bg-slate-950 px-4 py-3 text-sm focus:outline-none focus:border-cyan-300"
+                    />
+                    {resetForm.formState.errors.confirmPassword && (
+                      <p className="text-xs text-rose-300 mt-1">{resetForm.formState.errors.confirmPassword.message}</p>
+                    )}
                   </div>
-                  <button type="submit" disabled={resetForm.formState.isSubmitting} className="w-full py-3 rounded-xl bg-cyan-400 text-slate-900 text-xs font-black uppercase tracking-widest disabled:opacity-50">
+                  <button
+                    type="submit"
+                    disabled={resetForm.formState.isSubmitting}
+                    className="w-full py-3 rounded-xl bg-cyan-400 text-slate-900 text-xs font-black uppercase tracking-widest disabled:opacity-50"
+                  >
                     {resetForm.formState.isSubmitting ? 'Actualizando...' : 'Guardar nueva clave'}
                   </button>
                 </form>
               )}
 
               {globalError && (
-                <div className="rounded-xl border border-rose-400/50 bg-rose-400/10 p-4 text-xs text-rose-100 flex gap-2 items-start">
-                  <AlertCircle className="w-4 h-4 mt-0.5" />
+                <div role="alert" aria-live="assertive" className="rounded-xl border border-rose-400/50 bg-rose-400/10 p-4 text-xs text-rose-100 flex gap-2 items-start">
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
                   <p>{globalError}</p>
                 </div>
               )}
 
               {globalSuccess && (
-                <div className="rounded-xl border border-emerald-400/50 bg-emerald-400/10 p-4 text-xs text-emerald-100 flex gap-2 items-start">
-                  <MailCheck className="w-4 h-4 mt-0.5" />
+                <div role="status" aria-live="polite" className="rounded-xl border border-emerald-400/50 bg-emerald-400/10 p-4 text-xs text-emerald-100 flex gap-2 items-start">
+                  {activeTab === 'login' ? (
+                    <LockKeyhole className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+                  ) : (
+                    <MailCheck className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+                  )}
                   <p>{globalSuccess}</p>
                 </div>
               )}
@@ -261,5 +319,3 @@ const AuthPage = () => {
 };
 
 export default AuthPage;
-
-

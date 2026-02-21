@@ -9,9 +9,11 @@ import { EstudianteBadge } from '@/shared/components/EstudianteBadge';
 import { AsyncState } from '@/shared/components/ui';
 import type { GravedadFalta } from '@/types';
 import { EstadisticasConvivencia, DistribucionPorCurso } from './EstadisticasConvivencia';
-import { ArrowRight, Files, Search, FilterX, Eye, History, FileText } from 'lucide-react';
+import { ArrowRight, Files, Search, FilterX, Eye, History, FileText, LayoutDashboard } from 'lucide-react';
 import { ExpedienteResumenModal } from '@/features/expedientes/ExpedienteResumenModal';
 import { GccDashboard } from '@/features/mediacion/components';
+import PageTitleHeader from '@/shared/components/PageTitleHeader';
+import useGccMetrics from '@/shared/hooks/useGccMetrics';
 
 const isSeguimientoScc = (etapa?: string | null): boolean => {
   const value = (etapa ?? '').toUpperCase();
@@ -273,6 +275,7 @@ const SeguimientoExpedientesSection: React.FC<{
 const Dashboard: React.FC = () => {
   const { expedientes } = useConvivencia();
   const { filteredExpedientes, searchTerm, setSearchTerm } = useExpedientes(expedientes);
+  const gccBaseMetrics = useGccMetrics({ pollingMs: 60000, autoRefresh: true, enabled: true });
   const navigate = useNavigate();
   const [courseFilter, setCourseFilter] = useState<string | null>(null);
   
@@ -306,12 +309,11 @@ const Dashboard: React.FC = () => {
   return (
     <main className="flex-1 p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 bg-slate-50 overflow-y-auto custom-scrollbar">
       {/* Header */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Panel de Gestión Normativa</h2>
-          <p className="text-slate-500 font-medium text-xs md:text-sm">Control Operativo de Circulares 781 & 782</p>
-        </div>
-      </header>
+      <PageTitleHeader
+        title="Panel de Gestión Normativa"
+        subtitle="Convivencia educativa y disciplina escolar · Circulares 781 y 782"
+        icon={LayoutDashboard}
+      />
 
       {/* Panel General de Expedientes */}
       <EstadisticasConvivencia
@@ -324,7 +326,7 @@ const Dashboard: React.FC = () => {
         <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
           Panel de Gestión Colaborativa de Conflictos
         </h3>
-        <GccDashboard />
+        <GccDashboard baseMetrics={gccBaseMetrics} />
       </section>
 
       <SeguimientoExpedientesSection

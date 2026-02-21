@@ -128,6 +128,7 @@ const PROCESS_STATUS_LABELS: Record<EstadoProcesoGCC, string> = {
 export const GCC_PROCESS_STATUS_LABELS = PROCESS_STATUS_LABELS;
 
 const BACKEND_MECANISMOS: ReadonlyArray<MecanismoGCC> = ['MEDIACION', 'CONCILIACION', 'ARBITRAJE_PEDAGOGICO'];
+const DASHBOARD_CACHE_TTL_MS = 3 * 60 * 1000;
 
 const isMecanismoGCC = (value: string | null): value is MecanismoGCC =>
   value !== null && BACKEND_MECANISMOS.includes(value as MecanismoGCC);
@@ -146,11 +147,54 @@ interface UseGccDashboardMetricsResult {
   lastUpdatedAt: string | null;
 }
 
+type DashboardCachePayload = {
+  createdAt: string;
+  baseMetrics: GccMetrics;
+  dashboardData: Omit<GccDashboardMetrics, keyof GccMetrics>;
+  lastUpdatedAt: string | null;
+};
+
+const buildCacheKey = (tenantId: string) => `gcc:dashboard:metrics:${tenantId}`;
+
+const readDashboardCache = (tenantId: string): DashboardCachePayload | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(buildCacheKey(tenantId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as DashboardCachePayload;
+    const age = Date.now() - new Date(parsed.createdAt).getTime();
+    if (Number.isNaN(age) || age > DASHBOARD_CACHE_TTL_MS) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const writeDashboardCache = (
+  tenantId: string,
+  payload: Omit<DashboardCachePayload, 'createdAt'>
+): void => {
+  if (typeof window === 'undefined') return;
+  try {
+    const value: DashboardCachePayload = {
+      ...payload,
+      createdAt: new Date().toISOString(),
+    };
+    window.sessionStorage.setItem(buildCacheKey(tenantId), JSON.stringify(value));
+  } catch {
+    // Ignore cache failures to avoid blocking metrics flow.
+  }
+};
+
 export const useGccDashboardMetrics = (
   options: UseGccDashboardMetricsOptions = {}
 ): UseGccDashboardMetricsResult => {
   const { baseMetrics: externalBaseMetrics } = options;
   const { tenantId } = useTenant();
+  const cachedPayload = useMemo(
+    () => (tenantId && isUuid(tenantId) ? readDashboardCache(tenantId) : null),
+    [tenantId]
+  );
   const [internalBaseMetrics, setInternalBaseMetrics] = useState<GccMetrics>(INITIAL_BASE_METRICS);
   const [internalBaseLoading, setInternalBaseLoading] = useState(false);
   const [internalBaseError, setInternalBaseError] = useState<string | null>(null);
@@ -160,6 +204,15 @@ export const useGccDashboardMetrics = (
   );
   const [isLoadingExtended, setIsLoadingExtended] = useState(false);
   const [extendedError, setExtendedError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!cachedPayload) return;
+    if (!externalBaseMetrics) {
+      setInternalBaseMetrics(cachedPayload.baseMetrics);
+      setInternalLastUpdatedAt(cachedPayload.lastUpdatedAt);
+    }
+    setDashboardData(cachedPayload.dashboardData);
+  }, [cachedPayload, externalBaseMetrics]);
 
   const refreshExtendedMetrics = useCallback(async () => {
     if (!supabase || !tenantId || !isUuid(tenantId)) return;
@@ -173,7 +226,7 @@ export const useGccDashboardMetrics = (
     try {
       const { data: rpcData, error: rpcError } = await supabase.rpc('gcc_dashboard_metrics_v2', {
         p_establecimiento_id: tenantId,
-        p_limit_registros: 90,
+        p_limit_registros: 60,
       });
 
       const rpcPayload = (Array.isArray(rpcData) ? rpcData[0] : rpcData) as GccDashboardRpcPayload | null;
@@ -220,6 +273,47 @@ export const useGccDashboardMetrics = (
               estadoProceso: row.estadoProceso,
               createdAt: row.createdAt,
             })),
+        });
+
+        const nextBaseMetrics = !externalBaseMetrics
+          ? {
+              activos: Number(rpcPayload.base?.activos ?? 0),
+              t2: Number(rpcPayload.base?.t2 ?? 0),
+              t1: Number(rpcPayload.base?.t1 ?? 0),
+              vencidos: Number(rpcPayload.base?.vencidos ?? 0),
+              acuerdoTotalPct: Number(rpcPayload.base?.acuerdoTotalPct ?? 0),
+              acuerdoParcialPct: Number(rpcPayload.base?.acuerdoParcialPct ?? 0),
+              sinAcuerdoPct: Number(rpcPayload.base?.sinAcuerdoPct ?? 0),
+            }
+          : externalBaseMetrics.metrics;
+
+        writeDashboardCache(tenantId, {
+          baseMetrics: nextBaseMetrics,
+          dashboardData: {
+            mecanismos: Array.isArray(rpcPayload.mecanismos) ? rpcPayload.mecanismos : [],
+            totalMecanismosAdoptados: Number(rpcPayload.totalMecanismosAdoptados ?? 0),
+            mecanismoMasUsado: rpcPayload.mecanismoMasUsado ?? null,
+            tasaAdopcionMecanismos: Number(rpcPayload.tasaAdopcionMecanismos ?? 0),
+            comparacionPeriodoAnterior: {
+              activos: Number(rpcPayload.comparacionPeriodoAnterior?.activos ?? 0),
+              vencidos: Number(rpcPayload.comparacionPeriodoAnterior?.vencidos ?? 0),
+              mecanismos: Number(rpcPayload.comparacionPeriodoAnterior?.mecanismos ?? 0),
+            },
+            registrosMecanismos: rpcRecords
+              .filter((row) => isMecanismoGCC(row.mecanismo))
+              .map((row) => ({
+                casoId: row.casoId,
+                mecanismo: row.mecanismo,
+                descripcion: MECHANISM_META[row.mecanismo].descripcion,
+                clasificacion: MECHANISM_META[row.mecanismo].clasificacion,
+                estadoImplementacion: isEstadoProcesoGCC(row.estadoProceso)
+                  ? PROCESS_STATUS_LABELS[row.estadoProceso]
+                  : 'Estado no clasificado',
+                estadoProceso: row.estadoProceso,
+                createdAt: row.createdAt,
+              })),
+          },
+          lastUpdatedAt: new Date().toISOString(),
         });
 
         return;
@@ -385,6 +479,37 @@ export const useGccDashboardMetrics = (
               createdAt: row.created_at,
             })),
         });
+
+        writeDashboardCache(tenantId, {
+          baseMetrics: externalBaseMetrics?.metrics ?? internalBaseMetrics,
+          dashboardData: {
+            mecanismos,
+            totalMecanismosAdoptados: totalConMecanismo,
+            mecanismoMasUsado,
+            tasaAdopcionMecanismos: Math.round((totalConMecanismo / totalCurrent) * 100),
+            comparacionPeriodoAnterior: {
+              activos: activosPrevious > 0 ? Math.round(((activosCurrent - activosPrevious) / activosPrevious) * 100) : 0,
+              vencidos: vencidosPrevious > 0 ? Math.round(((vencidosCurrent - vencidosPrevious) / vencidosPrevious) * 100) : 0,
+              mecanismos: totalConMecanismoPrevious > 0
+                ? Math.round(((totalConMecanismo - totalConMecanismoPrevious) / totalConMecanismoPrevious) * 100)
+                : 0,
+            },
+            registrosMecanismos: currentRows
+              .filter((row): row is GccRowExtended & { tipo_mecanismo: MecanismoGCC } => isMecanismoGCC(row.tipo_mecanismo))
+              .map((row) => ({
+                casoId: row.id,
+                mecanismo: row.tipo_mecanismo,
+                descripcion: MECHANISM_META[row.tipo_mecanismo].descripcion,
+                clasificacion: MECHANISM_META[row.tipo_mecanismo].clasificacion,
+                estadoImplementacion: isEstadoProcesoGCC(row.estado_proceso)
+                  ? PROCESS_STATUS_LABELS[row.estado_proceso]
+                  : 'Estado no clasificado',
+                estadoProceso: row.estado_proceso,
+                createdAt: row.created_at,
+              })),
+          },
+          lastUpdatedAt: new Date().toISOString(),
+        });
       } else if (error) {
         setExtendedError('No se pudieron cargar las métricas avanzadas GCC.');
         if (!externalBaseMetrics) {
@@ -403,7 +528,7 @@ export const useGccDashboardMetrics = (
         setInternalBaseLoading(false);
       }
     }
-  }, [externalBaseMetrics, tenantId]);
+  }, [externalBaseMetrics, internalBaseMetrics, tenantId]);
 
   useEffect(() => {
     void refreshExtendedMetrics();

@@ -32,6 +32,7 @@ const PerfilUsuario = React.lazy(() => import('@/features/perfil/PerfilUsuario')
 const NuevaIntervencion = React.lazy(() => import('@/features/intervencion/NuevaIntervencion'));
 const RegistrarDerivacion = React.lazy(() => import('@/features/derivacion/RegistrarDerivacion'));
 const AuthPage = React.lazy(() => import('@/features/auth/AuthPage'));
+const InicioPage = React.lazy(() => import('@/features/home/InicioPage'));
 const SuperAdminPage = React.lazy(() => import('@/features/admin/SuperAdminPage'));
 const AdminColegios = React.lazy(() => import('@/features/admin/AdminColegios'));
 
@@ -59,6 +60,7 @@ const AppRoutes: React.FC = () => {
   return (
     <>
       <Routes>
+        <Route path="/inicio" element={<SuspendedRoute><InicioPage /></SuspendedRoute>} />
         <Route path="/auth" element={<SuspendedRoute><AuthPage /></SuspendedRoute>} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
