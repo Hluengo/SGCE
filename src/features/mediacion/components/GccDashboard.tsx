@@ -176,18 +176,6 @@ export const GccDashboard: React.FC<GccDashboardProps> = ({ baseMetrics }) => {
     URL.revokeObjectURL(url);
   };
 
-  const exportFilteredRecordsXlsx = async () => {
-    const { utils, writeFile } = await import('xlsx');
-    const rows = getExportRows();
-    const worksheet = utils.aoa_to_sheet([
-      ['Caso', 'Mecanismo', 'Descripcion', 'Clasificacion', 'Estado implementacion', 'Estado proceso', 'Fecha registro'],
-      ...rows,
-    ]);
-    const workbook = utils.book_new();
-    utils.book_append_sheet(workbook, worksheet, 'Métricas GCC');
-    writeFile(workbook, `gcc-metricas-${new Date().toISOString().slice(0, 10)}.xlsx`);
-  };
-
   const formatTime = (iso: string | null): string => {
     if (!iso) return 'Sin actualización';
     const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -372,23 +360,17 @@ export const GccDashboard: React.FC<GccDashboardProps> = ({ baseMetrics }) => {
                 <Download className="w-4 h-4" />
                 Exportar CSV
               </button>
-              <button
-                onClick={() => { void exportFilteredRecordsXlsx(); }}
-                className="inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-xs font-black uppercase tracking-wide text-blue-700 hover:bg-blue-100"
-              >
-                <Download className="w-4 h-4" />
-                Exportar XLSX
-              </button>
             </div>
           </div>
 
           <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
             <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-              <label className="mb-1 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-slate-500">
+              <label htmlFor="gcc-dashboard-filter-mecanismo" className="mb-1 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-slate-500">
                 <Filter className="w-3 h-3" />
                 Mecanismo
               </label>
               <select
+                id="gcc-dashboard-filter-mecanismo"
                 value={mecanismoFilter}
                 onChange={(event) => setMecanismoFilter(event.target.value as MecanismoGCC | 'ALL')}
                 className="w-full rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
@@ -401,11 +383,12 @@ export const GccDashboard: React.FC<GccDashboardProps> = ({ baseMetrics }) => {
             </div>
 
             <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-              <label className="mb-1 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-slate-500">
+              <label htmlFor="gcc-dashboard-filter-estado" className="mb-1 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-slate-500">
                 <Filter className="w-3 h-3" />
                 Estado
               </label>
               <select
+                id="gcc-dashboard-filter-estado"
                 value={estadoFilter}
                 onChange={(event) => setEstadoFilter(event.target.value as ProcessStatusOption | 'ALL')}
                 className="w-full rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700"

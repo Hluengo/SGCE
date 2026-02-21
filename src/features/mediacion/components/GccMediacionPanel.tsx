@@ -11,7 +11,7 @@
  * ✓ Mediador facilita conversación (pero NO propone soluciones)
  * ✓ Las partes deciden el acuerdo
  * ✓ 5 días hábiles (formal)
- * ✓ Acta con firma de mediador
+ * ✓ Acta con constancia digital en plataforma
  */
 
 import React, { useMemo } from 'react';
@@ -25,8 +25,7 @@ import {
   FileCheck,
   CheckCircle,
   AlertCircle,
-  Handshake,
-  User
+  Handshake
 } from 'lucide-react';
 import type { Expediente } from '@/types';
 import { GccCircular782Section, type EscenarioProcedencia } from './GccCircular782Section';
@@ -92,7 +91,7 @@ interface GccMediacionPanelProps {
   detallesAcuerdo: string;
   onDetallesAcuerdoChange: (value: string) => void;
   
-  // Firmas
+  // Firmas (compatibilidad legacy, no bloquean acta)
   firmaEstudiante1: boolean;
   firmaEstudiante2: boolean;
   firmaMediador: boolean;
@@ -102,7 +101,7 @@ interface GccMediacionPanelProps {
   onCerrarExpediente: () => void;
 }
 
-export const GccMediacionPanel: React.FC<GccMediacionPanelProps> = ({
+function useGccMediacionPanelView({
   caso,
   mediador,
   onMediadorChange,
@@ -136,12 +135,9 @@ export const GccMediacionPanel: React.FC<GccMediacionPanelProps> = ({
   onAcuerdoChange,
   detallesAcuerdo,
   onDetallesAcuerdoChange,
-  firmaEstudiante1,
-  firmaEstudiante2,
-  firmaMediador,
   onGenerarActa,
   onCerrarExpediente
-}) => {
+}: GccMediacionPanelProps) {
   const isAddCompromisoDisabled = useMemo(
     () => !nuevoCompromiso.descripcion || !nuevoCompromiso.fecha,
     [nuevoCompromiso.descripcion, nuevoCompromiso.fecha]
@@ -195,9 +191,9 @@ export const GccMediacionPanel: React.FC<GccMediacionPanelProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Estado del Proceso */}
           <div className="space-y-4">
-            <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest block">
               Estado Mediación
-            </label>
+            </p>
             <div className="grid grid-cols-3 gap-2">
               {['PROCESO', 'LOGRADO', 'NO_ACUERDO'].map((est) => (
                 <button
@@ -219,11 +215,12 @@ export const GccMediacionPanel: React.FC<GccMediacionPanelProps> = ({
 
           {/* Mediador OBLIGATORIO */}
           <div className="space-y-4">
-            <label className="text-xs font-black text-slate-400 uppercase tracking-widest block flex items-center">
+            <label htmlFor="gcc-mediacion-mediador" className="text-xs font-black text-slate-400 uppercase tracking-widest block flex items-center">
               <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
               Mediador Asignado *
             </label>
             <select
+              id="gcc-mediacion-mediador"
               value={mediador}
               onChange={(e) => onMediadorChange(e.target.value)}
               className="w-full px-4 py-3 bg-slate-50 border border-blue-300 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-blue-500/5 focus:border-blue-300 focus:outline-none"
@@ -248,10 +245,11 @@ export const GccMediacionPanel: React.FC<GccMediacionPanelProps> = ({
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">
+              <label htmlFor="gcc-mediacion-fecha" className="text-xs font-black text-slate-400 uppercase tracking-widest block">
                 Fecha
               </label>
               <input
+                id="gcc-mediacion-fecha"
                 type="date"
                 value={fechaMediacion}
                 onChange={(e) => onFechaMediacionChange(e.target.value)}
@@ -260,10 +258,11 @@ export const GccMediacionPanel: React.FC<GccMediacionPanelProps> = ({
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">
+              <label htmlFor="gcc-mediacion-hora-inicio" className="text-xs font-black text-slate-400 uppercase tracking-widest block">
                 Hora Inicio
               </label>
               <input
+                id="gcc-mediacion-hora-inicio"
                 type="time"
                 value={horaInicio}
                 onChange={(e) => onHoraInicioChange(e.target.value)}
@@ -272,10 +271,11 @@ export const GccMediacionPanel: React.FC<GccMediacionPanelProps> = ({
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">
+              <label htmlFor="gcc-mediacion-hora-cierre" className="text-xs font-black text-slate-400 uppercase tracking-widest block">
                 Hora Cierre
               </label>
               <input
+                id="gcc-mediacion-hora-cierre"
                 type="time"
                 value={horaCierre}
                 onChange={(e) => onHoraCierreChange(e.target.value)}
@@ -336,11 +336,12 @@ export const GccMediacionPanel: React.FC<GccMediacionPanelProps> = ({
         {/* Detalles del Acuerdo (si lo hay) */}
         {acuerdoAlcanzado && (
           <div className="space-y-4 p-6 bg-blue-50 border border-blue-200 rounded-3xl">
-            <label className="text-xs font-black text-slate-400 uppercase tracking-widest block flex items-center">
+            <label htmlFor="gcc-mediacion-detalles-acuerdo" className="text-xs font-black text-slate-400 uppercase tracking-widest block flex items-center">
               <FileText className="w-4 h-4 mr-2 text-blue-600" />
               Detalles del Acuerdo
             </label>
             <textarea
+              id="gcc-mediacion-detalles-acuerdo"
               value={detallesAcuerdo}
               onChange={(e) => onDetallesAcuerdoChange(e.target.value)}
               placeholder="Describa el acuerdo alcanzado a través de la mediación..."
@@ -432,63 +433,11 @@ export const GccMediacionPanel: React.FC<GccMediacionPanelProps> = ({
           </div>
         )}
 
-        {/* Firmas */}
-        <div className="space-y-4 p-6 bg-slate-50 border border-slate-200 rounded-3xl">
-          <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center">
-            <User className="w-5 h-5 mr-3 text-blue-600" />
-            Firmas
-          </h4>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className={`p-4 rounded-xl border-2 ${firmaEstudiante1 ? 'bg-green-50 border-green-300' : 'bg-slate-50 border-slate-200'}`}>
-              <p className="text-xs font-black text-slate-600 uppercase tracking-widest">Estudiante 1</p>
-              <div className="mt-3 flex items-center space-x-2">
-                {firmaEstudiante1 ? (
-                  <>
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                    <span className="text-xs font-bold text-green-700">Firmó</span>
-                  </>
-                ) : (
-                  <span className="text-xs font-bold text-slate-400">Pendiente</span>
-                )}
-              </div>
-            </div>
-
-            <div className={`p-4 rounded-xl border-2 ${firmaEstudiante2 ? 'bg-green-50 border-green-300' : 'bg-slate-50 border-slate-200'}`}>
-              <p className="text-xs font-black text-slate-600 uppercase tracking-widest">Estudiante 2</p>
-              <div className="mt-3 flex items-center space-x-2">
-                {firmaEstudiante2 ? (
-                  <>
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                    <span className="text-xs font-bold text-green-700">Firmó</span>
-                  </>
-                ) : (
-                  <span className="text-xs font-bold text-slate-400">Pendiente</span>
-                )}
-              </div>
-            </div>
-
-            <div className={`p-4 rounded-xl border-2 ${firmaMediador ? 'bg-green-50 border-green-300' : 'bg-slate-50 border-slate-200'}`}>
-              <p className="text-xs font-black text-slate-600 uppercase tracking-widest">Mediador</p>
-              <div className="mt-3 flex items-center space-x-2">
-                {firmaMediador ? (
-                  <>
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                    <span className="text-xs font-bold text-green-700">Firmó</span>
-                  </>
-                ) : (
-                  <span className="text-xs font-bold text-slate-400">Pendiente</span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Info Final */}
         <div className="flex items-center space-x-4 p-4 bg-blue-50 border border-blue-200 rounded-2xl">
           <Info className="w-5 h-5 text-blue-600 flex-shrink-0" />
           <p className="text-xs font-bold text-blue-700">
-            El acta de mediación requiere firmas de AMBAS PARTES y del MEDIADOR.
+            El acta se genera como constancia digital del proceso y queda registrada en el expediente.
           </p>
         </div>
 
@@ -496,25 +445,15 @@ export const GccMediacionPanel: React.FC<GccMediacionPanelProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-200">
           <button
             onClick={onGenerarActa}
-            disabled={estado === 'PROCESO'}
-            className={`py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center space-x-2 ${
-              estado === 'PROCESO'
-                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/30'
-            }`}
+            className="py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center space-x-2 bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/30"
           >
             <FileCheck className="w-5 h-5" />
-            <span>Generar Acta de Mediación</span>
+            <span>Generar Acta Estandar</span>
           </button>
           
           <button
             onClick={onCerrarExpediente}
-            disabled={estado === 'PROCESO'}
-            className={`py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center space-x-2 ${
-              estado === 'PROCESO'
-                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                : 'bg-slate-600 text-white hover:bg-slate-700'
-            }`}
+            className="py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center space-x-2 bg-slate-600 text-white hover:bg-slate-700"
           >
             <CheckCircle className="w-5 h-5" />
             <span>Cerrar Expediente</span>
@@ -523,7 +462,10 @@ export const GccMediacionPanel: React.FC<GccMediacionPanelProps> = ({
       </div>
     </section>
   );
-};
+}
+
+export const GccMediacionPanel: React.FC<GccMediacionPanelProps> = (props) =>
+  useGccMediacionPanelView(props);
 
 export default GccMediacionPanel;
 

@@ -111,7 +111,7 @@ const Modal: React.FC<ModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
       onClick={handleOverlayClick}
       onKeyDown={handleOverlayKeyDown}
       role="button"
@@ -149,4 +149,5 @@ const Modal: React.FC<ModalProps> = ({
 };
 
 export default Modal;
+
 

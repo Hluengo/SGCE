@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { useDebounce } from '@/shared/hooks/useDebounce';
 import { useNavigate } from 'react-router-dom';
 import { useConvivencia } from '@/shared/context/ConvivenciaContext';
 import { useToast } from '@/shared/components/Toast/ToastProvider';
@@ -33,6 +34,7 @@ import { EtapaProceso, GravedadFalta } from '@/types';
 import { calcularDiasRestantes, esPlazoProximoVencer, AlertaPlazo } from '@/shared/utils/plazos';
 import { AsyncState } from '@/shared/components/ui';
 import { ExpedienteResumenModal } from './ExpedienteResumenModal';
+import PageTitleHeader from '@/shared/components/PageTitleHeader';
 
 /**
  * Opciones de filtrado
@@ -72,37 +74,31 @@ const ExpedientesToolbar: React.FC<{
   onExport: () => void;
   onCreate: () => void;
 }> = ({ hasResultados, onExport, onCreate }) => (
-  <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-    <div className="flex items-center flex-wrap gap-4">
-      <div className="p-4 bg-indigo-600 text-white rounded-2xl shadow-xl shadow-indigo-200">
-        <FileText className="w-8 h-8" />
-      </div>
-      <div>
-        <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
-          Gestión de Expedientes
-        </h2>
-        <p className="text-indigo-700 font-bold text-xs md:text-sm">
-          Listado y Filtrado - Circular 781/782
-        </p>
-      </div>
-    </div>
-    <div className="flex items-center space-x-3">
-      <button
-        onClick={onExport}
-        disabled={!hasResultados}
-        className="px-4 py-3 bg-white border-2 border-slate-200 text-slate-600 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <Download className="w-4 h-4" />
-        <span>Exportar</span>
-      </button>
-      <button
-        onClick={onCreate}
-        className="px-6 py-3 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 shadow-xl shadow-indigo-600/20 transition-all flex items-center space-x-2"
-      >
-        <Plus className="w-4 h-4" />
-        <span>Nuevo Expediente</span>
-      </button>
-    </div>
+  <header>
+    <PageTitleHeader
+      title="Gestión de Expedientes"
+      subtitle="Procedimiento disciplinario y medidas formativas · Circulares 781 y 782"
+      icon={FileText}
+      actions={(
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={onExport}
+            disabled={!hasResultados}
+            className="px-4 py-3 bg-white border-2 border-slate-200 text-slate-600 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download className="w-4 h-4" />
+            <span>Exportar</span>
+          </button>
+          <button
+            onClick={onCreate}
+            className="px-6 py-3 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 shadow-xl shadow-indigo-600/20 transition-all flex items-center space-x-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Nuevo Expediente</span>
+          </button>
+        </div>
+      )}
+    />
   </header>
 );
 
@@ -531,13 +527,16 @@ const ExpedientesList: React.FC = () => {
     setUiState((prev) => ({ ...prev, alertasPlazo: nuevasAlertas }));
   }, [expedientes]);
 
+  // Debounce del término de búsqueda para evitar re-filtrado excesivo
+  const debouncedBusqueda = useDebounce(filtros.busqueda, 300);
+
   // Filtrar expedientes
   const filteredExpedientes = useMemo(() => {
     let result = [...expedientes];
 
-    // Filtro de búsqueda
-    if (filtros.busqueda) {
-      const term = filtros.busqueda.toLowerCase();
+    // Filtro de búsqueda (debounced)
+    if (debouncedBusqueda) {
+      const term = debouncedBusqueda.toLowerCase();
       result = result.filter(exp =>
         exp.id.toLowerCase().includes(term) ||
         exp.nnaNombre.toLowerCase().includes(term) ||
@@ -605,7 +604,7 @@ const ExpedientesList: React.FC = () => {
     });
 
     return result;
-  }, [expedientes, filtros, sortConfig]);
+  }, [expedientes, filtros, debouncedBusqueda, sortConfig]);
 
   // Paginación
   const totalPaginas = Math.ceil(filteredExpedientes.length / EXPEDIENTES_POR_PAGINA);

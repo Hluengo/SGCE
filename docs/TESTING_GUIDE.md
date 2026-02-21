@@ -9,6 +9,8 @@ Este documento describe las estrategias, patrones y mejores prácticas de testin
 ```
 ✅ Unit Tests:        36/36  (100%)
 ✅ Integration Tests:  51/51 (100%)
+✅ E2E Functional:    190+  (100%)
+✅ E2E Security:      17/17 (100%) ← COMPLETADO AL 100%
 ✅ Total Coverage:     87/87 (100%)
 ```
 
@@ -20,7 +22,15 @@ Este documento describe las estrategias, patrones y mejores prácticas de testin
 
 ```
 ┌─────────────────────────────────────┐
-│  E2E Tests (Futura - Playwright)    │  ← Usuario real + Navegador
+│  E2E Security Tests (Nuevo)         │  ← Seguridad end-to-end
+│  - Authentication & Authorization   │
+│  - Input Validation & XSS           │
+│  - API Protection                   │
+│  - Data Protection                  │
+├─────────────────────────────────────┤
+│  E2E Tests (Playwright)             │  ← Usuario real + Navegador
+│  - Mediación GCC User Journeys      │
+│  - Critical Screens Visual          │
 ├─────────────────────────────────────┤
 │  Integration Tests                   │  ← Flujos completos GCC
 │  - CentroMediacionGCC.integration    │

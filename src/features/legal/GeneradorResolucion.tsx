@@ -45,7 +45,7 @@ const ResolucionPreviewModal: React.FC<{
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/90 p-4 md:p-10 overflow-y-auto">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 md:p-10 overflow-y-auto">
       <div className="relative w-full max-w-4xl min-h-screen bg-white p-6 font-serif text-slate-900 shadow-2xl md:p-24">
         <button
           onClick={onClose}
@@ -153,7 +153,7 @@ const GeneradorResolucion: React.FC<GeneradorResolucionProps> = ({ onClose }) =>
   const isValid = sections.resolucion.length > 20 && hasReconsideration;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 overflow-hidden">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-hidden">
       <div className="flex h-5/6 w-full max-w-7xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
         
         {/* Header del Editor */}
@@ -358,6 +358,7 @@ const GeneradorResolucion: React.FC<GeneradorResolucionProps> = ({ onClose }) =>
 };
 
 export default GeneradorResolucion;
+
 
 
 

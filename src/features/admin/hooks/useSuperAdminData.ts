@@ -100,7 +100,7 @@ const parseNumberValue = (raw: unknown, fallback: number) => {
 };
 
 export const useSuperAdminData = (
-  usuario: { id?: string | null } | null,
+  usuario: { id?: string | null; nombre?: string | null; apellido?: string | null; email?: string | null } | null,
   tenantId: string | null,
   dbRoleMap: Record<RolUsuario, string>,
 ) => {
@@ -134,7 +134,8 @@ export const useSuperAdminData = (
         supabase.from('platform_settings').select('setting_key, setting_value'),
         supabase
           .from('superadmin_audit_logs')
-          .select('id, action, entity_type, created_at')
+          .select('id, action, entity_type, created_at, actor_user_id, actor_profile:perfiles!superadmin_audit_logs_actor_user_id_fkey(nombre, apellido)')
+          .eq('entity_type', 'maintenance')
           .order('created_at', { ascending: false })
           .limit(10),
         supabase.from('superadmin_audit_logs').select('id', { count: 'exact', head: true }).eq('action', 'profile_delete'),
@@ -162,13 +163,26 @@ export const useSuperAdminData = (
       };
 
       const nextLogs: MaintenanceLog[] = (
-        ((logResult.data ?? []) as Array<{ id: string; action: string; entity_type?: string; created_at: string }>).map((log) => ({
+        ((logResult.data ?? []) as Array<{
+          id: string;
+          action: string;
+          entity_type?: string;
+          created_at: string;
+          actor_user_id?: string | null;
+          actor_profile?: { nombre?: string | null; apellido?: string | null } | { nombre?: string | null; apellido?: string | null }[] | null;
+        }>).map((log) => {
+          const actorProfile = Array.isArray(log.actor_profile) ? log.actor_profile[0] : log.actor_profile;
+          const actorName = `${actorProfile?.nombre ?? ''} ${actorProfile?.apellido ?? ''}`.trim();
+          return ({
           id: log.id,
           action: log.action,
           entity_type: log.entity_type,
           created_at: log.created_at,
+          actor_user_id: log.actor_user_id ?? null,
+          actor_name: actorName || log.actor_user_id || null,
           status: 'ok' as const,
-        }))
+          });
+        })
       );
 
       dispatch({
@@ -465,12 +479,15 @@ export const useSuperAdminData = (
   };
 
   const runMaintenance = async (action: string) => {
+    const fallbackActor = `${usuario?.nombre ?? ''} ${usuario?.apellido ?? ''}`.trim() || usuario?.email || 'Usuario actual';
     const optimistic: MaintenanceLog = {
       id: crypto.randomUUID(),
       action,
       created_at: new Date().toISOString(),
       status: 'in_progress',
       entity_type: 'maintenance',
+      actor_user_id: usuario?.id ?? null,
+      actor_name: fallbackActor,
     };
 
     dispatch({ type: 'MAINT_PREPEND', payload: optimistic });

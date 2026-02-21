@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/shared/lib/supabaseClient';
+import { UserCircle2 } from 'lucide-react';
+import PageTitleHeader from '@/shared/components/PageTitleHeader';
 
 const ROLE_OPTIONS = [
   'admin',
@@ -98,9 +100,15 @@ const PerfilUsuario: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 md:px-8 py-8">
+      <PageTitleHeader
+        title="Perfil de Usuario"
+        subtitle="Identidad, rol y permisos vigentes en el colegio activo"
+        icon={UserCircle2}
+        className="mb-6"
+      />
       <div className="bg-white border border-slate-200 rounded-3xl shadow-xl p-6 md:p-8">
-        <h1 className="text-xl font-black text-slate-900 uppercase tracking-widest">Perfil</h1>
-        <p className="text-xs text-slate-500 font-bold mt-1">Informacion de usuario</p>
+        <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest">Datos de cuenta</h2>
+        <p className="text-xs text-slate-500 font-bold mt-1">Información de usuario</p>
 
         {state.isLoading ? (
           <div className="mt-6 text-slate-400 text-sm font-semibold">Cargando...</div>

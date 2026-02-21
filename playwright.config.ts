@@ -25,13 +25,19 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:3001',
+    baseURL: 'http://localhost:3000',
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
     /* Screenshot on failure */
     screenshot: 'only-on-failure',
     /* Video on failure */
     video: 'retain-on-failure',
+    /* Security: Block external resources that could compromise tests */
+    permissions: [],
+    /* Security: Disable geolocation and other potentially sensitive APIs */
+    geolocation: undefined,
+    /* Security: Use clean browser context for each test */
+    storageState: undefined,
   },
 
   /* Configure projects for major browsers */
@@ -56,21 +62,52 @@ export default defineConfig({
       name: 'Mobile Chrome',
       use: { ...devices['Pixel 5'] },
     },
+
     {
       name: 'Mobile Safari',
       use: { ...devices['iPhone 12'] },
+    },
+
+    /* Security-focused test project with stricter settings */
+    {
+      name: 'security',
+      testMatch: '**/*security*.e2e.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        /* Additional security settings for security tests */
+        bypassCSP: false, // Respect Content Security Policy
+        ignoreHTTPSErrors: false, // Fail on HTTPS errors
+        /* Record all network activity for security analysis */
+        recordHar: {
+          path: 'test-results/security/',
+          mode: 'full',
+          content: 'embed',
+        },
+      },
     },
   ],
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'npm run dev -- --port 3001 --host 127.0.0.1',
-    url: 'http://localhost:3001',
+    command: 'npm run dev -- --port 3000 --host 127.0.0.1 --strictPort',
+    url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 120000,
+    timeout: 120 * 1000,
     env: {
       ...process.env,
       VITE_E2E_MOCK_AUTH: 'true',
     },
   },
+
+  /* Global test timeout */
+  timeout: 30 * 1000,
+
+  /* Expect timeout */
+  expect: {
+    timeout: 10 * 1000,
+  },
+
+  /* Global setup and teardown */
+  globalSetup: './src/e2e/global-setup.ts',
+  globalTeardown: './src/e2e/global-teardown.ts',
 });

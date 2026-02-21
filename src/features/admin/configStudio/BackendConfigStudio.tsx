@@ -33,6 +33,12 @@ interface ChangesetRow {
   status: 'draft' | 'validated' | 'applied' | 'failed' | 'reverted';
   created_at: string;
   error_text: string | null;
+  created_by?: string | null;
+  applied_by?: string | null;
+  reverted_by?: string | null;
+  created_by_profile?: { nombre?: string | null; apellido?: string | null } | null;
+  applied_by_profile?: { nombre?: string | null; apellido?: string | null } | null;
+  reverted_by_profile?: { nombre?: string | null; apellido?: string | null } | null;
 }
 
 type StudioView = 'colegio' | 'seguridad' | 'infra' | 'avanzado' | 'historial';
@@ -73,11 +79,11 @@ const statusBadge: Record<ChangesetRow['status'], string> = {
 };
 
 const statusLabel: Record<ChangesetRow['status'], string> = {
-  draft: 'borrador',
-  validated: 'validado',
-  applied: 'aplicado',
-  failed: 'fallido',
-  reverted: 'revertido',
+  draft: 'borrador (sin autorización)',
+  validated: 'listo para autorizar',
+  applied: 'autorizado y activo',
+  failed: 'rechazado por error',
+  reverted: 'autorización retirada',
 };
 
 const tabClass = (active: boolean) =>
@@ -90,7 +96,7 @@ const wizardHelp: Record<StudioView, string> = {
   seguridad: 'Ajusta password, MFA, sesión y límites API para el colegio.',
   infra: 'Configura buckets y edge functions sin entrar al dashboard de Supabase.',
   avanzado: 'Revisa SQL generado e impacto antes de aplicar.',
-  historial: 'Aplica, revierte y audita cambiosets guardados.',
+  historial: 'Autoriza cambios, retira autorizaciones y revisa la trazabilidad.',
 };
 
 const wizardRequirements: Record<StudioView, string[]> = {
@@ -112,7 +118,7 @@ const wizardRequirements: Record<StudioView, string[]> = {
     'SQL generado disponible para revisión',
   ],
   historial: [
-    'Al menos un changeset guardado',
+    'Al menos un cambio guardado',
   ],
 };
 
@@ -207,19 +213,19 @@ const fieldGuides: Record<StudioView, FieldGuideItem[]> = {
   historial: [
     {
       field: 'Borrador',
-      what: 'Cambio guardado, aún no ejecutado en base de datos.',
+      what: 'Cambio preparado para revisión, todavía sin autorización final.',
       format: 'Estado de changeset',
       example: 'borrador',
     },
     {
       field: 'Validado',
-      what: 'SQL revisado por reglas del sistema, listo para aplicar.',
+      what: 'SQL revisado por reglas del sistema; listo para autorizar.',
       format: 'Estado de changeset',
       example: 'validado',
     },
     {
       field: 'Aplicado/Revertido',
-      what: 'Cambio ya ejecutado o deshecho en entorno real.',
+      what: 'Cambio autorizado y activo, o autorización retirada.',
       format: 'Estado de changeset',
       example: 'aplicado | revertido',
     },
@@ -237,6 +243,71 @@ const toSafeNumber = (value: unknown, fallback: number, min = 0) => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
   return Math.max(min, Math.round(parsed));
+};
+
+const normalizeAiText = (text: string): string => {
+  if (!/[ÃÂâ]/.test(text)) return text;
+
+  const replacements: Array<[RegExp, string]> = [
+    [/Ã¡/g, 'á'],
+    [/Ã©/g, 'é'],
+    [/Ã­/g, 'í'],
+    [/Ã³/g, 'ó'],
+    [/Ãº/g, 'ú'],
+    [/Ã/g, 'Á'],
+    [/Ã‰/g, 'É'],
+    [/Ã/g, 'Í'],
+    [/Ã“/g, 'Ó'],
+    [/Ãš/g, 'Ú'],
+    [/Ã±/g, 'ñ'],
+    [/Ã‘/g, 'Ñ'],
+    [/Â¿/g, '¿'],
+    [/Â¡/g, '¡'],
+    [/â/g, "'"],
+    [/â/g, '"'],
+    [/â/g, '"'],
+    [/â/g, '-'],
+    [/â/g, '-'],
+    [/Â/g, ''],
+  ];
+
+  let normalized = text;
+  for (const [pattern, replacement] of replacements) {
+    normalized = normalized.replace(pattern, replacement);
+  }
+
+  return normalized;
+};
+
+const toAsciiSpanish = (text: string): string => {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\x20-\x7E\n\r\t]/g, '');
+};
+
+const sanitizeAiResponse = (raw: string): string => {
+  const fixed = normalizeAiText(raw);
+  if (/[ÃÂâ�]/.test(fixed)) {
+    return toAsciiSpanish(fixed);
+  }
+  return fixed;
+};
+
+const formatActorLabel = (profile: { nombre?: string | null; apellido?: string | null } | null | undefined, fallbackId?: string | null) => {
+  const fullName = `${profile?.nombre ?? ''} ${profile?.apellido ?? ''}`.trim();
+  if (fullName) return fullName;
+  return fallbackId || 'Sin registro';
+};
+
+const getChangesetActorText = (row: ChangesetRow): string => {
+  if (row.status === 'applied') {
+    return `Autorizó: ${formatActorLabel(row.applied_by_profile, row.applied_by)}`;
+  }
+  if (row.status === 'reverted') {
+    return `Retiró autorización: ${formatActorLabel(row.reverted_by_profile, row.reverted_by)}`;
+  }
+  return `Creó borrador: ${formatActorLabel(row.created_by_profile, row.created_by)}`;
 };
 
 const useBackendConfigStudioState = () => {
@@ -501,7 +572,22 @@ const useBackendConfigStudioView = () => {
     try {
       const { data, error } = await supabase
         .from('admin_changesets')
-        .select('id, scope, tenant_id, title, summary, status, created_at, error_text')
+        .select(`
+          id,
+          scope,
+          tenant_id,
+          title,
+          summary,
+          status,
+          created_at,
+          error_text,
+          created_by,
+          applied_by,
+          reverted_by,
+          created_by_profile:perfiles!admin_changesets_created_by_fkey(nombre, apellido),
+          applied_by_profile:perfiles!admin_changesets_applied_by_fkey(nombre, apellido),
+          reverted_by_profile:perfiles!admin_changesets_reverted_by_fkey(nombre, apellido)
+        `)
         .order('created_at', { ascending: false })
         .limit(25);
       if (error) throw error;
@@ -600,9 +686,10 @@ const useBackendConfigStudioView = () => {
       if (error) throw error;
       if (!(data as { ok?: boolean })?.ok) throw new Error((data as { error?: string }).error ?? 'No se pudo aplicar el changeset');
       await loadHistory();
+      setSaveSuccess('Cambio autorizado y activado correctamente.');
     } catch (error) {
       console.error('[ConfigStudio] Error applying changeset:', error);
-      setUiError(error instanceof Error ? error.message : 'No se pudo aplicar el changeset.');
+      setUiError(error instanceof Error ? error.message : 'No se pudo autorizar el cambio.');
     } finally {
       setExecuting(false);
     }
@@ -617,9 +704,10 @@ const useBackendConfigStudioView = () => {
       if (error) throw error;
       if (!(data as { ok?: boolean })?.ok) throw new Error((data as { error?: string }).error ?? 'No se pudo revertir el changeset');
       await loadHistory();
+      setSaveSuccess('Autorización retirada y cambio revertido correctamente.');
     } catch (error) {
       console.error('[ConfigStudio] Error reverting changeset:', error);
-      setUiError(error instanceof Error ? error.message : 'No se pudo revertir el changeset.');
+      setUiError(error instanceof Error ? error.message : 'No se pudo retirar la autorización del cambio.');
     } finally {
       setExecuting(false);
     }
@@ -708,7 +796,7 @@ ${prompt}`;
         { retries: 2, baseDelayMs: 600 },
       );
 
-      setAiResponse(response?.text ?? 'No hubo respuesta del modelo.');
+      setAiResponse(sanitizeAiResponse(response?.text ?? 'No hubo respuesta del modelo.'));
     } catch (error) {
       console.error('[ConfigStudio] Error copiloto IA:', error);
       setAiError('No fue posible generar guía con IA. Revisa clave API o conexión.');
@@ -881,7 +969,7 @@ ${context}`,
         }));
       }
 
-      setAiResponse(raw);
+      setAiResponse(sanitizeAiResponse(raw));
       setAiSuccess('Formulario actualizado con sugerencia IA. Revisa y ajusta antes de guardar.');
       return true;
     } catch (error) {
@@ -918,9 +1006,9 @@ ${context}`,
         <div>
           <h2 className="text-sm font-black uppercase tracking-widest text-slate-700 flex items-center gap-2">
             <Database className="w-4 h-4 text-cyan-600" />
-            Config Studio Supabase
+            Configuración de acceso y backend
           </h2>
-          <p className="text-xs text-slate-500 mt-1">Flujo guiado para configurar backend por colegio sin escribir SQL manualmente.</p>
+          <p className="text-xs text-slate-500 mt-1">Panel guiado para definir qué funciones se habilitan y cómo se protege el acceso por colegio.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -947,32 +1035,54 @@ ${context}`,
         </div>
       </header>
 
+      <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-4 text-xs">
+        <p className="font-black uppercase tracking-widest text-indigo-700 mb-2">Resumen de autorización</p>
+        <div className="grid gap-2 md:grid-cols-4">
+          <div className="rounded-lg border border-indigo-200 bg-white px-3 py-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Quién otorga</p>
+            <p className="font-semibold text-slate-800">{usuario ? `${usuario.nombre} ${usuario.apellido}`.trim() || usuario.email : 'Superadministrador actual'}</p>
+          </div>
+          <div className="rounded-lg border border-indigo-200 bg-white px-3 py-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">A quién aplica</p>
+            <p className="font-semibold text-slate-800">{scope === 'global' ? 'A todos los colegios' : 'Al colegio seleccionado'}</p>
+          </div>
+          <div className="rounded-lg border border-indigo-200 bg-white px-3 py-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Qué se está autorizando</p>
+            <p className="font-semibold text-slate-800">Cambios de configuración, seguridad e infraestructura</p>
+          </div>
+          <div className="rounded-lg border border-indigo-200 bg-white px-3 py-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Nivel de impacto</p>
+            <p className="font-semibold text-slate-800">{scope === 'global' ? 'Crítico (alto alcance)' : 'Operativo (por colegio)'}</p>
+          </div>
+        </div>
+      </div>
+
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-700">
         <p className="font-black uppercase tracking-widest text-xs text-slate-600 mb-1">Glosario rápido</p>
-        <p><span className="font-semibold">Alcance:</span> define si el cambio aplica a todos los colegios o solo al colegio activo.</p>
-        <p><span className="font-semibold">Borrador:</span> propuesta guardada de cambios, aún no aplicada a la base de datos.</p>
-        <p><span className="font-semibold">Política RLS:</span> regla de acceso por filas que limita qué datos puede ver/modificar cada usuario.</p>
+        <p><span className="font-semibold">Alcance:</span> decide si el permiso/cambio aplica a toda la plataforma o solo a un colegio.</p>
+        <p><span className="font-semibold">Borrador:</span> propuesta guardada para revisión; todavía no afecta a usuarios reales.</p>
+        <p><span className="font-semibold">Política RLS:</span> regla que define qué datos puede ver o editar cada usuario según su contexto.</p>
       </div>
 
       <div className="rounded-2xl border border-slate-200 p-4 bg-slate-50/70">
         <div className="grid lg:grid-cols-4 gap-4">
           <div className="text-xs space-y-1">
-            <span className="font-black uppercase tracking-wider text-slate-500">Alcance</span>
+            <span className="font-black uppercase tracking-wider text-slate-500">Nivel de aplicación</span>
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => setScope('global')} className={tabClass(scope === 'global')}>Global (todos)</button>
-              <button onClick={() => setScope('tenant')} className={tabClass(scope === 'tenant')}>Por colegio</button>
+              <button onClick={() => setScope('global')} className={tabClass(scope === 'global')}>Global (todos los colegios)</button>
+              <button onClick={() => setScope('tenant')} className={tabClass(scope === 'tenant')}>Solo 1 colegio</button>
             </div>
           </div>
           <div className="text-xs space-y-1">
-            <span className="font-black uppercase tracking-wider text-slate-500">Tenant Activo</span>
+            <span className="font-black uppercase tracking-wider text-slate-500">Colegio objetivo</span>
             <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700">{tenantId ?? 'No seleccionado'}</div>
           </div>
           <div className="text-xs space-y-1">
-            <label htmlFor="configstudio-title" className="font-black uppercase tracking-wider text-slate-500">Titulo</label>
+            <label htmlFor="configstudio-title" className="font-black uppercase tracking-wider text-slate-500">Nombre del cambio</label>
             <input id="configstudio-title" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2" />
           </div>
           <div className="text-xs space-y-1">
-            <label htmlFor="configstudio-summary" className="font-black uppercase tracking-wider text-slate-500">Resumen</label>
+            <label htmlFor="configstudio-summary" className="font-black uppercase tracking-wider text-slate-500">Qué habilita o restringe</label>
             <input id="configstudio-summary" value={summary} onChange={(e) => setSummary(e.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2" />
           </div>
         </div>
@@ -1078,11 +1188,11 @@ ${context}`,
       )}
 
       <div className="flex flex-wrap gap-2">
-        <button onClick={() => setView('colegio')} className={tabClass(view === 'colegio')}><School className="w-3.5 h-3.5 inline mr-1" />Colegio</button>
-        <button onClick={() => setView('seguridad')} className={tabClass(view === 'seguridad')}><Lock className="w-3.5 h-3.5 inline mr-1" />Seguridad</button>
-        <button onClick={() => setView('infra')} className={tabClass(view === 'infra')}><Wrench className="w-3.5 h-3.5 inline mr-1" />Infraestructura</button>
-        <button onClick={() => setView('avanzado')} className={tabClass(view === 'avanzado')}><SlidersHorizontal className="w-3.5 h-3.5 inline mr-1" />SQL avanzado</button>
-        <button onClick={() => setView('historial')} className={tabClass(view === 'historial')}><History className="w-3.5 h-3.5 inline mr-1" />Historial</button>
+        <button onClick={() => setView('colegio')} className={tabClass(view === 'colegio')}><School className="w-3.5 h-3.5 inline mr-1" />Datos del colegio</button>
+        <button onClick={() => setView('seguridad')} className={tabClass(view === 'seguridad')}><Lock className="w-3.5 h-3.5 inline mr-1" />Acceso y seguridad</button>
+        <button onClick={() => setView('infra')} className={tabClass(view === 'infra')}><Wrench className="w-3.5 h-3.5 inline mr-1" />Archivos e integraciones</button>
+        <button onClick={() => setView('avanzado')} className={tabClass(view === 'avanzado')}><SlidersHorizontal className="w-3.5 h-3.5 inline mr-1" />Revisión técnica (SQL)</button>
+        <button onClick={() => setView('historial')} className={tabClass(view === 'historial')}><History className="w-3.5 h-3.5 inline mr-1" />Registro de cambios</button>
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-4">
@@ -1250,12 +1360,12 @@ ${context}`,
       {view === 'historial' && (
         <div className="rounded-2xl border border-slate-200 p-4 space-y-4">
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-700">
-            <p className="font-black uppercase tracking-widest text-xs text-slate-600 mb-1">Estados explicados</p>
-            <p><span className="font-semibold">Borrador:</span> configuración guardada, aún no aplicada.</p>
-            <p><span className="font-semibold">Validado:</span> SQL revisado por reglas automáticas; listo para aplicar.</p>
-            <p><span className="font-semibold">Aplicado:</span> cambios ejecutados en base real.</p>
-            <p><span className="font-semibold">Fallido:</span> error al validar o ejecutar; revisar detalle.</p>
-            <p><span className="font-semibold">Revertido:</span> se ejecutó rollback para deshacer cambios.</p>
+            <p className="font-black uppercase tracking-widest text-xs text-slate-600 mb-1">Estado de cada autorización</p>
+            <p><span className="font-semibold">Borrador:</span> cambio guardado para revisión, todavía sin aplicar.</p>
+            <p><span className="font-semibold">Listo para autorizar:</span> validado técnicamente, pendiente de aprobación final.</p>
+            <p><span className="font-semibold">Autorizado y activo:</span> cambio aplicado en la plataforma.</p>
+            <p><span className="font-semibold">Rechazado por error:</span> no se pudo validar o ejecutar; revisar detalle.</p>
+            <p><span className="font-semibold">Autorización retirada:</span> cambio revertido para volver al estado anterior.</p>
           </div>
           {uiError && (
             <AsyncState
@@ -1269,7 +1379,7 @@ ${context}`,
             />
           )}
           <div className="flex items-center justify-between">
-            <p className="text-xs font-black uppercase tracking-widest text-slate-500">Historial</p>
+            <p className="text-xs font-black uppercase tracking-widest text-slate-500">Registro de autorizaciones</p>
             <button onClick={() => void loadHistory()} disabled={loadingHistory} className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100 disabled:opacity-50">
               {loadingHistory ? 'Cargando...' : 'Refrescar'}
             </button>
@@ -1279,8 +1389,8 @@ ${context}`,
               <div className="p-4">
                 <AsyncState
                   state="loading"
-                  title="Cargando historial"
-                  message="Recuperando changesets guardados."
+                  title="Cargando registro de autorizaciones"
+                  message="Recuperando cambios guardados y su estado."
                   compact
                 />
               </div>
@@ -1288,15 +1398,15 @@ ${context}`,
               <div className="p-4">
                 <AsyncState
                   state="empty"
-                  title="Sin changesets en historial"
-                  message="Guarda un borrador para comenzar el versionado técnico."
+                  title="Sin cambios guardados"
+                  message="Guarda un borrador para iniciar el registro de autorizaciones."
                   compact
                 />
               </div>
             ) : (
               <table className="w-full text-xs">
                 <thead className="bg-slate-50 text-slate-500 uppercase tracking-widest">
-                  <tr><th className="p-2 text-left">Selección</th><th className="p-2 text-left">Título</th><th className="p-2 text-left">Alcance</th><th className="p-2 text-left">Estado</th></tr>
+                  <tr><th className="p-2 text-left">Selección</th><th className="p-2 text-left">Cambio</th><th className="p-2 text-left">Alcance</th><th className="p-2 text-left">Quién lo hizo</th><th className="p-2 text-left">Estado</th></tr>
                 </thead>
                 <tbody>
                   {history.map((item) => (
@@ -1304,6 +1414,7 @@ ${context}`,
                       <td className="p-2"><input type="radio" checked={selectedChangesetId === item.id} onChange={() => setSelectedChangesetId(item.id)} /></td>
                       <td className="p-2"><p className="font-bold text-slate-700">{item.title}</p><p className="text-slate-500">{item.id}</p>{item.error_text && <p className="text-rose-600">{item.error_text}</p>}</td>
                       <td className="p-2 text-slate-600">{item.scope === 'global' ? 'Global (todos)' : 'Por colegio'}</td>
+                      <td className="p-2 text-slate-600">{getChangesetActorText(item)}</td>
                       <td className="p-2"><span className={`px-2 py-1 rounded-full font-black uppercase text-xs ${statusBadge[item.status]}`}>{statusLabel[item.status]}</span></td>
                     </tr>
                   ))}
@@ -1312,8 +1423,8 @@ ${context}`,
             )}
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => void applySelectedChangeset()} disabled={!selectedChangesetId || executing} className="px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-black uppercase tracking-widest disabled:opacity-50 flex items-center gap-2"><Play className="w-3.5 h-3.5" />Aplicar</button>
-            <button onClick={() => void revertSelectedChangeset()} disabled={!selectedChangesetId || executing} className="px-3 py-2 rounded-xl bg-amber-600 text-white text-xs font-black uppercase tracking-widest disabled:opacity-50 flex items-center gap-2"><RotateCcw className="w-3.5 h-3.5" />Revertir</button>
+            <button onClick={() => void applySelectedChangeset()} disabled={!selectedChangesetId || executing} className="px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-black uppercase tracking-widest disabled:opacity-50 flex items-center gap-2"><Play className="w-3.5 h-3.5" />Autorizar y activar</button>
+            <button onClick={() => void revertSelectedChangeset()} disabled={!selectedChangesetId || executing} className="px-3 py-2 rounded-xl bg-amber-600 text-white text-xs font-black uppercase tracking-widest disabled:opacity-50 flex items-center gap-2"><RotateCcw className="w-3.5 h-3.5" />Retirar autorización</button>
           </div>
         </div>
       )}

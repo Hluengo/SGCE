@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useReducer } from 'react';
 import { useConvivencia } from '@/shared/context/ConvivenciaContext';
 import { addBusinessDaysWithHolidays, BUSINESS_DAYS_EXPULSION, BUSINESS_DAYS_RELEVANTE } from '@/shared/utils/plazos';
 import { cargarFeriados, esFeriado, obtenerDescripcionFeriado, esFinDeSemana, obtenerFeriadosDelMes, type Feriado } from '@/shared/utils/feriadosChile';
@@ -15,6 +15,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { AsyncState } from '@/shared/components/ui';
+import PageTitleHeader from '@/shared/components/PageTitleHeader';
 
 interface Evento {
   date: string; // YYYY-MM-DD
@@ -46,6 +47,25 @@ type PreventiveAlertItem = {
   descripcion: string;
 };
 
+type CalendarioFiltersState = {
+  expulsion: boolean;
+  reconsideracion: boolean;
+  mediaciones: boolean;
+  internos: boolean;
+};
+
+type CalendarioState = {
+  currentDate: Date;
+  eventosState: { items: Evento[]; loading: boolean };
+  feriadosState: { items: Map<string, Feriado>; loading: boolean };
+  filters: CalendarioFiltersState;
+  eventTooltip: EventTooltipState | null;
+};
+
+type CalendarioAction =
+  | { type: 'PATCH'; payload: Partial<CalendarioState> }
+  | { type: 'PATCH_FILTERS'; payload: Partial<CalendarioFiltersState> };
+
 const OPEN_STAGES = new Set([
   'INICIO',
   'NOTIFICADO',
@@ -54,6 +74,36 @@ const OPEN_STAGES = new Set([
   'RESOLUCION_PENDIENTE',
   'RECONSIDERACION',
 ]);
+
+const initialCalendarioState: CalendarioState = {
+  currentDate: new Date(),
+  eventosState: {
+    items: [],
+    loading: true,
+  },
+  feriadosState: {
+    items: new Map(),
+    loading: true,
+  },
+  filters: {
+    expulsion: true,
+    reconsideracion: true,
+    mediaciones: true,
+    internos: true,
+  },
+  eventTooltip: null,
+};
+
+function calendarioReducer(state: CalendarioState, action: CalendarioAction): CalendarioState {
+  switch (action.type) {
+    case 'PATCH':
+      return { ...state, ...action.payload };
+    case 'PATCH_FILTERS':
+      return { ...state, filters: { ...state.filters, ...action.payload } };
+    default:
+      return state;
+  }
+}
 
 const toDateKeyLocal = (date: Date): string => {
   const year = date.getFullYear();
@@ -331,24 +381,10 @@ const UrgenciasSidebar: React.FC<{
   </aside>
 );
 
-const CalendarioPlazosLegales: React.FC = () => {
+function useCalendarioPlazosLegalesView() {
   const { expedientes, setExpedienteSeleccionado } = useConvivencia();
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [eventosState, setEventosState] = useState<{ items: Evento[]; loading: boolean }>({
-    items: [],
-    loading: true
-  });
-  const [feriadosState, setFeriadosState] = useState<{ items: Map<string, Feriado>; loading: boolean }>({
-    items: new Map(),
-    loading: true
-  });
-  const [filters, setFilters] = useState({
-    expulsion: true,
-    reconsideracion: true,
-    mediaciones: true,
-    internos: true
-  });
-  const [eventTooltip, setEventTooltip] = useState<EventTooltipState | null>(null);
+  const [state, dispatch] = useReducer(calendarioReducer, initialCalendarioState);
+  const { currentDate, eventosState, feriadosState, filters, eventTooltip } = state;
 
   const expedientesAbiertos = useMemo(
     () => expedientes.filter((exp) => OPEN_STAGES.has(exp.etapa)),
@@ -359,14 +395,14 @@ const CalendarioPlazosLegales: React.FC = () => {
   useEffect(() => {
     const loadFeriados = async () => {
       const feriadosMap = await cargarFeriados();
-      setFeriadosState({ items: feriadosMap, loading: false });
+      dispatch({ type: 'PATCH', payload: { feriadosState: { items: feriadosMap, loading: false } } });
     };
 
     loadFeriados();
   }, []);
 
   useEffect(() => {
-    setEventosState(prev => ({ ...prev, loading: true }));
+    dispatch({ type: 'PATCH', payload: { eventosState: { ...eventosState, loading: true } } });
   }, [expedientes, filters]);
 
   useEffect(() => {
@@ -469,7 +505,7 @@ const CalendarioPlazosLegales: React.FC = () => {
         }
       }
 
-      setEventosState(prev => ({ ...prev, items: list, loading: false }));
+      dispatch({ type: 'PATCH', payload: { eventosState: { items: list, loading: false } } });
 
       const endMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
       const elapsed = Math.round(endMs - startMs);
@@ -498,8 +534,8 @@ const CalendarioPlazosLegales: React.FC = () => {
   
   const monthName = currentDate.toLocaleString('es-CL', { month: 'long' });
 
-  const handlePrevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
-  const handleNextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+  const handlePrevMonth = () => dispatch({ type: 'PATCH', payload: { currentDate: new Date(year, month - 1, 1) } });
+  const handleNextMonth = () => dispatch({ type: 'PATCH', payload: { currentDate: new Date(year, month + 1, 1) } });
 
   const urgencias = useMemo<UrgenciaBucket>(() => {
     const todayStr = toDateKeyLocal(new Date());
@@ -569,14 +605,11 @@ const CalendarioPlazosLegales: React.FC = () => {
       <div className="flex-1 p-4 md:p-8 flex flex-col space-y-6 overflow-y-auto">
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <div className="flex items-center space-x-3 mb-1">
-              <CalendarIcon className="w-6 h-6 text-blue-600" />
-              <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">Calendario Normativo</h2>
-            </div>
-            <p className="text-slate-500 font-bold text-xs md:text-xs uppercase tracking-widest flex items-center">
-              <Clock className="w-4 h-4 mr-2 text-blue-400" />
-              Cálculo basado en días hábiles (feriados de Chile desde BD)
-            </p>
+            <PageTitleHeader
+              title="Calendario Normativo"
+              subtitle="Plazos disciplinarios en días hábiles · Circular 782"
+              icon={CalendarIcon}
+            />
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-slate-600">
                 Abiertos: {expedientesAbiertos.length}
@@ -630,19 +663,19 @@ const CalendarioPlazosLegales: React.FC = () => {
 
            <div className="flex items-center flex-wrap gap-4">
               <label className="flex items-center space-x-2 cursor-pointer group">
-                <input type="checkbox" checked={filters.expulsion} onChange={e => setFilters({...filters, expulsion: e.target.checked})} className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500" />
+                <input type="checkbox" checked={filters.expulsion} onChange={e => dispatch({ type: 'PATCH_FILTERS', payload: { expulsion: e.target.checked } })} className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500" />
                 <span className="text-xs font-black uppercase text-slate-400 group-hover:text-slate-600 transition-colors">Expulsiones</span>
               </label>
               <label className="flex items-center space-x-2 cursor-pointer group">
-                <input type="checkbox" checked={filters.reconsideracion} onChange={e => setFilters({...filters, reconsideracion: e.target.checked})} className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500" />
+                <input type="checkbox" checked={filters.reconsideracion} onChange={e => dispatch({ type: 'PATCH_FILTERS', payload: { reconsideracion: e.target.checked } })} className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500" />
                 <span className="text-xs font-black uppercase text-slate-400 group-hover:text-slate-600 transition-colors">Reconsideración</span>
               </label>
               <label className="flex items-center space-x-2 cursor-pointer group">
-                <input type="checkbox" checked={filters.mediaciones} onChange={e => setFilters({...filters, mediaciones: e.target.checked})} className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500" />
+                <input type="checkbox" checked={filters.mediaciones} onChange={e => dispatch({ type: 'PATCH_FILTERS', payload: { mediaciones: e.target.checked } })} className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500" />
                 <span className="text-xs font-black uppercase text-slate-400 group-hover:text-slate-600 transition-colors">Mediaciones</span>
               </label>
               <label className="flex items-center space-x-2 cursor-pointer group">
-                <input type="checkbox" checked={filters.internos} onChange={e => setFilters({...filters, internos: e.target.checked})} className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500" />
+                <input type="checkbox" checked={filters.internos} onChange={e => dispatch({ type: 'PATCH_FILTERS', payload: { internos: e.target.checked } })} className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500" />
                 <span className="text-xs font-black uppercase text-slate-400 group-hover:text-slate-600 transition-colors">Hitos internos / SIE</span>
               </label>
            </div>
@@ -700,8 +733,8 @@ const CalendarioPlazosLegales: React.FC = () => {
                   expedientes={expedientes}
                   setExpedienteSeleccionado={setExpedienteSeleccionado}
                   feriadosItems={feriadosState.items}
-                  onHoverEvent={(event, x, y) => setEventTooltip({ event, x, y })}
-                  onLeaveEvent={() => setEventTooltip(null)}
+                  onHoverEvent={(event, x, y) => dispatch({ type: 'PATCH', payload: { eventTooltip: { event, x, y } } })}
+                  onLeaveEvent={() => dispatch({ type: 'PATCH', payload: { eventTooltip: null } })}
                 />
               ))}
             </div>
@@ -745,7 +778,9 @@ const CalendarioPlazosLegales: React.FC = () => {
       )}
     </main>
   );
-};
+}
+
+const CalendarioPlazosLegales: React.FC = () => useCalendarioPlazosLegalesView();
 
 export default CalendarioPlazosLegales;
 

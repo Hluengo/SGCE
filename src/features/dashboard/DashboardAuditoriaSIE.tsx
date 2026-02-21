@@ -12,6 +12,7 @@ import {
   ArrowUpRight,
   Gavel
 } from 'lucide-react';
+import PageTitleHeader from '@/shared/components/PageTitleHeader';
 
 const DashboardAuditoriaSIE: React.FC = () => {
   const { expedientes, setExpedienteSeleccionado } = useConvivencia();
@@ -65,19 +66,20 @@ const DashboardAuditoriaSIE: React.FC = () => {
     <main className="flex-1 p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 bg-slate-50 overflow-y-auto">
       {/* Header Auditoría */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <div className="flex items-center space-x-2 mb-1">
-             <ShieldCheck className="w-5 h-5 text-blue-600" />
-             <h2 className="text-3xl font-black text-slate-900 tracking-tight">Auditoría Técnica SIE</h2>
-          </div>
-          <p className="text-slate-500 font-medium text-sm">Control de Calidad Normativa - Circulares 781 & 782</p>
-        </div>
-        <div className="flex space-x-4">
-          <button className="flex items-center space-x-2 bg-white border border-slate-200 text-slate-700 px-5 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-50 transition-all shadow-sm">
-            <Download className="w-4 h-4" />
-            <span>Exportar Informe de Brechas</span>
-          </button>
-        </div>
+        <PageTitleHeader
+          title="Auditoría Técnica SIE"
+          subtitle="Verificación normativa y control de riesgos · Circulares 781 y 782"
+          icon={ShieldCheck}
+          className="w-full"
+          actions={
+            <div className="flex w-full justify-end md:w-auto">
+              <button className="flex items-center space-x-2 bg-white border border-slate-200 text-slate-700 px-5 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-50 transition-all shadow-sm">
+                <Download className="w-4 h-4" />
+                <span>Exportar Informe de Brechas</span>
+              </button>
+            </div>
+          }
+        />
       </header>
 
       {/* Métricas de Auditoría */}

@@ -54,11 +54,11 @@ export const WizardModal: React.FC<WizardModalProps> = ({
       onComplete,
       mediacionId,
       caseName,
-  stageName,
+  stageName: _stageName,
   totalCompromisosRegistrados,
   totalCompromisosCompletados
 }) => {
-  const [currentStep, setCurrentStep] = useState<'validacion' | 'confirmacion' | 'acta' | 'final'>(stageName);
+  const [currentStep, setCurrentStep] = useState<WizardStep>('validacion');
   const [isProcessing, setIsProcessing] = useState(false);
 
   const steps: Array<{ id: WizardStep; title: string; icon: React.ReactNode }> = [
@@ -103,7 +103,7 @@ export const WizardModal: React.FC<WizardModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-2xl max-h-screen overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
         {/* Header */}
         <div className="flex justify-between items-center p-6 md:p-8 border-b border-slate-200 bg-gradient-to-r from-emerald-50 to-blue-50">
@@ -321,3 +321,4 @@ export const WizardModal: React.FC<WizardModalProps> = ({
 };
 
 export default React.memo(WizardModal);
+

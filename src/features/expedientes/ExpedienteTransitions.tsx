@@ -337,7 +337,7 @@ const TransitionConfirmDialog: React.FC<{
   if (!ui.showConfirmDialog || !ui.transicionSeleccionada) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
       <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
         <div className={`p-4 ${ui.transicionSeleccionada.color} text-white`}>
           <div className="flex items-center space-x-3">
@@ -621,4 +621,5 @@ const ExpedienteTransitions: React.FC<ExpedienteTransitionsProps> = ({
 };
 
 export default ExpedienteTransitions;
+
 

@@ -57,9 +57,10 @@ serve(async (req) => {
 
     if (estError) throw estError
 
-    const resultados = []
+    // Procesar un establecimiento: mediaciones por vencer + compromisos pendientes
+    async function processEstablecimiento(establecimiento: { id: string; nombre: string }) {
+      const results: any[] = []
 
-    for (const establecimiento of establecimientos || []) {
       // 1. Verificar mediaciones por vencer (próximos 3 días)
       const { data: mediacionesPorVencer } = await supabase.rpc(
         'gcc_obtener_mediaciones_por_vencer',
@@ -71,7 +72,6 @@ serve(async (req) => {
 
       if (mediacionesPorVencer && mediacionesPorVencer.length > 0) {
         for (const mediacion of mediacionesPorVencer) {
-          // Registrar notificación
           const { data: notificacion } = await supabase
             .from('gcc_notificaciones_log')
             .insert({
@@ -79,8 +79,8 @@ serve(async (req) => {
               mediacion_id: mediacion.id,
               tipo_notificacion: mediacion.dias_restantes <= 0 ? 'PLAZO_VENCIDO' : 'PLAZO_PROXIMO',
               mensaje: `La mediación ${mediacion.tipo_mecanismo} del expediente ${mediacion.expediente_id} ${
-                mediacion.dias_restantes <= 0 
-                  ? 'ha vencido' 
+                mediacion.dias_restantes <= 0
+                  ? 'ha vencido'
                   : `vence en ${mediacion.dias_restantes} días`
               }`,
               creada: false
@@ -88,7 +88,6 @@ serve(async (req) => {
             .select()
             .single()
 
-          // Obtener facilitador y enviar notificación
           if (mediacion.facilitador_id) {
             const { data: facilitador } = await supabase
               .from('usuarios')
@@ -102,15 +101,15 @@ serve(async (req) => {
                 facilitador.email,
                 'Alerta: Mediación por vencer',
                 `La mediación ${mediacion.tipo_mecanismo} del expediente ${mediacion.expediente_id} ${
-                  mediacion.dias_restantes <= 0 
-                    ? 'ha vencido' 
+                  mediacion.dias_restantes <= 0
+                    ? 'ha vencido'
                     : `vence en ${mediacion.dias_restantes} días`
                 }. Por favor revise el caso a la brevedad.`
               )
             }
           }
 
-          resultados.push({
+          results.push({
             establecimiento: establecimiento.nombre,
             tipo: 'MEDIACION_POR_VENCER',
             mediacion_id: mediacion.id,
@@ -130,7 +129,6 @@ serve(async (req) => {
 
       if (compromisosPendientes && compromisosPendientes.length > 0) {
         for (const compromiso of compromisosPendientes) {
-          // Registrar notificación
           await supabase
             .from('gcc_notificaciones_log')
             .insert({
@@ -138,14 +136,14 @@ serve(async (req) => {
               mediacion_id: compromiso.mediacion_id,
               tipo_notificacion: 'COMPROMISO_PENDIENTE',
               mensaje: `El compromiso "${compromiso.descripcion}" ${
-                compromiso.dias_restantes <= 0 
-                  ? 'ha vencido' 
+                compromiso.dias_restantes <= 0
+                  ? 'ha vencido'
                   : `vence en ${compromiso.dias_restantes} días`
               }`,
               creada: false
             })
 
-          resultados.push({
+          results.push({
             establecimiento: establecimiento.nombre,
             tipo: 'COMPROMISO_PENDIENTE',
             compromiso_id: compromiso.id,
@@ -153,6 +151,21 @@ serve(async (req) => {
           })
         }
       }
+
+      return results
+    }
+
+    // Procesar establecimientos en chunks paralelos (máx 5 concurrentes)
+    const CHUNK_SIZE = 5
+    const allEstablecimientos = establecimientos || []
+    const resultados: any[] = []
+
+    for (let i = 0; i < allEstablecimientos.length; i += CHUNK_SIZE) {
+      const chunk = allEstablecimientos.slice(i, i + CHUNK_SIZE)
+      const chunkResults = await Promise.all(
+        chunk.map((est) => processEstablecimiento(est))
+      )
+      resultados.push(...chunkResults.flat())
     }
 
     return new Response(

@@ -5,6 +5,7 @@ import { useLocalDraft } from '@/shared/utils/useLocalDraft';
 import { useConvivencia } from '@/shared/context/ConvivenciaContext';
 import { useTenant } from '@/shared/context/TenantContext';
 import { supabase } from '@/shared/lib/supabaseClient';
+import PageTitleHeader from '@/shared/components/PageTitleHeader';
 
 type GravedadType = 'LEVE' | 'RELEVANTE' | 'GRAVE';
 
@@ -281,14 +282,18 @@ const ReportePatio: React.FC = () => {
   };
 
   return (
-    <main className="flex-1 p-4 md:p-10 bg-slate-50 flex justify-center items-center overflow-y-auto animate-in fade-in duration-700">
-      <div className="bg-white w-full max-w-2xl rounded-3xl border border-slate-200 shadow-2xl p-6 md:p-12 space-y-8">
+    <main className="flex-1 p-4 md:p-10 bg-slate-50 overflow-y-auto animate-in fade-in duration-700">
+      <div className="mx-auto w-full max-w-5xl space-y-6">
+        <PageTitleHeader
+          title="Registro de Incidente en Patio"
+          subtitle="Registro inicial de hechos que afectan la convivencia escolar · Circulares 781 y 782"
+          icon={AlertCircle}
+        />
+
+        <div className="bg-white w-full max-w-2xl mx-auto rounded-3xl border border-slate-200 shadow-2xl p-6 md:p-12 space-y-8">
         <header className="text-center space-y-2">
-          <div className="w-16 h-16 md:w-20 md:h-20 bg-amber-100 text-amber-600 rounded-3xl flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-8 h-8 md:w-10 md:h-10" />
-          </div>
-          <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">Reporte de Incidente en Patio</h2>
-          <p className="text-slate-400 font-bold text-xs md:text-xs uppercase tracking-widest">Entrada Rápida - Vigilancia y Convivencia</p>
+          <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">Formulario de registro</h2>
+          <p className="text-slate-400 font-bold text-xs md:text-xs uppercase tracking-widest">Ingreso operativo para activar seguimiento de convivencia</p>
         </header>
 
         {enviado ? (
@@ -431,6 +436,7 @@ const ReportePatio: React.FC = () => {
             </button>
           </form>
         )}
+        </div>
       </div>
     </main>
   );

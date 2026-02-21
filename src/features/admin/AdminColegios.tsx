@@ -18,6 +18,7 @@ import {
 import { supabase } from '@/shared/lib/supabaseClient';
 import { useTenant } from '@/shared/context/TenantContext';
 import ImportarEstudiantes from '@/shared/components/ImportarEstudiantes';
+import PageTitleHeader from '@/shared/components/PageTitleHeader';
 import BrandingConfigForm from './BrandingConfigForm';
 
 interface Colegio {
@@ -71,7 +72,7 @@ const ColegioFormModal: React.FC<{
   if (!modalAbierto || modalAbierto === 'importar') return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-md max-h-5\/6 overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b border-slate-700">
           <h2 className="text-lg font-semibold text-white">
@@ -230,7 +231,7 @@ const ImportarEstudiantesModal: React.FC<{
 }> = ({ isOpen, colegioSeleccionado, onClose }) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-2xl max-h-5\/6 overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b border-slate-700">
           <div>
@@ -267,7 +268,7 @@ const ListaEstudiantesModal: React.FC<{
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-2xl max-h-5\/6 overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b border-slate-700">
           <div>
@@ -335,24 +336,20 @@ const ListaEstudiantesModal: React.FC<{
 const AdminColegiosHeader: React.FC<{
   onCrear: () => void;
 }> = ({ onCrear }) => (
-  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-    <div>
-      <h1 className="text-2xl font-bold text-white flex items-center gap-4">
-        <Building2 className="w-7 h-7 text-blue-400" />
-        Administracion de Colegios
-      </h1>
-      <p className="text-slate-400 mt-1">
-        Gestiona los establecimientos educacionales
-      </p>
-    </div>
-    <button
-      onClick={onCrear}
-      className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors"
-    >
-      <Plus className="w-4 h-4" />
-      Nuevo Colegio
-    </button>
-  </div>
+  <PageTitleHeader
+    title="Administración de Colegios"
+    subtitle="Gestión centralizada de establecimientos (tenants)"
+    icon={Building2}
+    actions={(
+      <button
+        onClick={onCrear}
+        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors"
+      >
+        <Plus className="w-4 h-4" />
+        Nuevo Colegio
+      </button>
+    )}
+  />
 );
 
 const AdminColegiosAlerts: React.FC<{
@@ -1117,6 +1114,7 @@ const AdminColegios: React.FC = () => {
 };
 
 export default AdminColegios;
+
 
 
 

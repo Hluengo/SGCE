@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useReducer } from 'react';
 import {
   HeartHandshake,
   ClipboardList,
@@ -6,6 +6,7 @@ import {
   User,
   FileText,
   Download,
+  Loader2,
   Search,
   Plus,
   ChevronRight,
@@ -21,6 +22,7 @@ import { useLocalDraft } from '@/shared/utils/useLocalDraft';
 import { supabase } from '@/shared/lib/supabaseClient';
 import AssistantHeaderButton from '@/shared/components/AssistantHeaderButton';
 import { AsyncState } from '@/shared/components/ui';
+import PageTitleHeader from '@/shared/components/PageTitleHeader';
 
 interface AccionApoyo {
   id: string;
@@ -55,32 +57,66 @@ interface AccionesLoadState {
   error: string | null;
 }
 
+interface SeguimientoUiState {
+  activeMobileTab: 'LIST' | 'AUDIT';
+  isModalOpen: boolean;
+  reloadKey: number;
+  isExportingPdf: boolean;
+}
+
+type SeguimientoUiAction =
+  | { type: 'PATCH'; payload: Partial<SeguimientoUiState> }
+  | { type: 'INCREMENT_RELOAD' };
+
+const initialSeguimientoUiState: SeguimientoUiState = {
+  activeMobileTab: 'LIST',
+  isModalOpen: false,
+  reloadKey: 0,
+  isExportingPdf: false,
+};
+
+function seguimientoUiReducer(state: SeguimientoUiState, action: SeguimientoUiAction): SeguimientoUiState {
+  switch (action.type) {
+    case 'PATCH':
+      return { ...state, ...action.payload };
+    case 'INCREMENT_RELOAD':
+      return { ...state, reloadKey: state.reloadKey + 1 };
+    default:
+      return state;
+  }
+}
+
 const SeguimientoHeader: React.FC<{
   onOpenModal: () => void;
-}> = ({ onOpenModal }) => (
+  onExportPdf: () => void;
+  isExportingPdf: boolean;
+}> = ({ onOpenModal, onExportPdf, isExportingPdf }) => (
   <header className="px-4 md:px-10 py-6 md:py-8 bg-white border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shrink-0 shadow-sm">
-    <div className="flex items-center flex-wrap gap-4">
-      <div className="p-4 bg-indigo-600 text-white rounded-2xl shadow-xl shadow-indigo-200">
-        <HeartHandshake className="w-7 h-7" />
-      </div>
-      <div>
-        <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight uppercase">Seguimiento de Apoyo Estudiantil</h2>
-        <p className="text-indigo-600 font-bold text-xs md:text-xs uppercase tracking-widest">Gradualidad y Acompañamiento - Circular 782</p>
-      </div>
-    </div>
-    <div className="flex items-center space-x-4">
-      <button className="flex items-center space-x-2 px-6 py-3 bg-white border-2 border-slate-100 text-slate-400 rounded-2xl text-xs font-black uppercase tracking-widest hover:border-indigo-300 hover:text-indigo-600 transition-all shadow-sm">
-        <Download className="w-4 h-4" />
-        <span>Exportar Historial PDF</span>
-      </button>
-      <button
-        onClick={onOpenModal}
-        className="flex items-center space-x-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 active:scale-95"
-      >
-        <Plus className="w-4 h-4" />
-        <span>Registrar Nueva Acción</span>
-      </button>
-    </div>
+    <PageTitleHeader
+      title="Seguimiento de Apoyo Estudiantil"
+      subtitle="Medidas formativas y de apoyo psicosocial · Circular 782"
+      icon={HeartHandshake}
+      className="w-full"
+      actions={
+        <div className="flex w-full flex-wrap justify-end gap-2 md:w-auto md:flex-nowrap">
+          <button
+            onClick={onExportPdf}
+            disabled={isExportingPdf}
+            className="flex items-center space-x-2 px-6 py-3 bg-white border-2 border-slate-100 text-slate-500 rounded-2xl text-xs font-black uppercase tracking-widest hover:border-indigo-300 hover:text-indigo-600 transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {isExportingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            <span>{isExportingPdf ? 'Generando PDF...' : 'Exportar Historial PDF'}</span>
+          </button>
+          <button
+            onClick={onOpenModal}
+            className="flex items-center space-x-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Registrar Nueva Acción</span>
+          </button>
+        </div>
+      }
+    />
   </header>
 );
 
@@ -388,12 +424,107 @@ const SeguimientoTimelinePanel: React.FC<{
   </div>
 );
 
+const SeguimientoPdfTemplate: React.FC<{
+  pdfContentRef: React.RefObject<HTMLDivElement | null>;
+  filteredAcciones: AccionApoyo[];
+  filterTipo: 'TODOS' | 'PEDAGOGICO' | 'PSICOSOCIAL';
+  searchTerm: string;
+}> = ({ pdfContentRef, filteredAcciones, filterTipo, searchTerm }) => (
+  <div className="fixed -left-[9999px] top-0 opacity-0 pointer-events-none" aria-hidden="true">
+    <div ref={pdfContentRef} className="w-[210mm] min-h-[297mm] bg-white p-8 text-slate-900">
+      <header className="border-b border-slate-300 pb-4 mb-6">
+        <h1 className="text-xl font-black uppercase">Seguimiento de Apoyo Estudiantil</h1>
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Medidas formativas y de apoyo psicosocial - Circular 782</p>
+        <p className="text-xs text-slate-500 mt-2">Fecha de emision: {new Date().toLocaleDateString('es-CL')}</p>
+      </header>
+      <section className="mb-6">
+        <p className="text-sm font-semibold text-slate-700">Acciones exportadas: {filteredAcciones.length}</p>
+        <p className="text-xs text-slate-500">Filtro tipo: {filterTipo}. Busqueda: {searchTerm || 'sin filtro de texto'}.</p>
+      </section>
+      <table className="w-full border-collapse text-xs">
+        <thead>
+          <tr>
+            <th className="border border-slate-300 px-2 py-2 text-left">Fecha</th>
+            <th className="border border-slate-300 px-2 py-2 text-left">Estudiante</th>
+            <th className="border border-slate-300 px-2 py-2 text-left">Tipo</th>
+            <th className="border border-slate-300 px-2 py-2 text-left">Accion</th>
+            <th className="border border-slate-300 px-2 py-2 text-left">Responsable</th>
+            <th className="border border-slate-300 px-2 py-2 text-left">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredAcciones.length === 0 ? (
+            <tr>
+              <td className="border border-slate-300 px-2 py-3 text-center text-slate-500" colSpan={6}>No hay acciones para exportar con los filtros actuales.</td>
+            </tr>
+          ) : (
+            filteredAcciones.map((acc) => (
+              <tr key={acc.id}>
+                <td className="border border-slate-300 px-2 py-2">{acc.fecha}</td>
+                <td className="border border-slate-300 px-2 py-2">{acc.nnaNombre}</td>
+                <td className="border border-slate-300 px-2 py-2">{acc.tipo}</td>
+                <td className="border border-slate-300 px-2 py-2">{acc.accion}</td>
+                <td className="border border-slate-300 px-2 py-2">{acc.responsable}</td>
+                <td className="border border-slate-300 px-2 py-2">{acc.estado}</td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
+
+const SeguimientoMainLayout: React.FC<{
+  activeMobileTab: 'LIST' | 'AUDIT';
+  searchTerm: string;
+  setSearchTerm: (value: string) => void;
+  filterTipo: 'TODOS' | 'PEDAGOGICO' | 'PSICOSOCIAL';
+  setFilterTipo: (value: 'TODOS' | 'PEDAGOGICO' | 'PSICOSOCIAL') => void;
+  accionesState: AccionesLoadState;
+  filteredAcciones: AccionApoyo[];
+  complianceSample: { count: number; total: number; pct: number };
+  expedientes: ReturnType<typeof useConvivencia>['expedientes'];
+  onSetActiveTab: (value: 'LIST' | 'AUDIT') => void;
+  onRetry: () => void;
+}> = ({
+  activeMobileTab,
+  searchTerm,
+  setSearchTerm,
+  filterTipo,
+  setFilterTipo,
+  accionesState,
+  filteredAcciones,
+  complianceSample,
+  expedientes,
+  onSetActiveTab,
+  onRetry,
+}) => (
+  <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+    <div className="lg:hidden flex border-b border-slate-200 bg-white shrink-0">
+      <button onClick={() => onSetActiveTab('LIST')} className={`flex-1 py-3 text-xs font-black uppercase tracking-widest ${activeMobileTab === 'LIST' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400'}`}>Listado</button>
+      <button onClick={() => onSetActiveTab('AUDIT')} className={`flex-1 py-3 text-xs font-black uppercase tracking-widest ${activeMobileTab === 'AUDIT' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400'}`}>Verificación SIE</button>
+    </div>
+    <SeguimientoTimelinePanel
+      activeMobileTab={activeMobileTab}
+      searchTerm={searchTerm}
+      setSearchTerm={setSearchTerm}
+      filterTipo={filterTipo}
+      setFilterTipo={setFilterTipo}
+      accionesState={accionesState}
+      filteredAcciones={filteredAcciones}
+      onRetry={onRetry}
+    />
+    <AuditSidebar activeMobileTab={activeMobileTab} complianceSample={complianceSample} expedientes={expedientes} />
+  </div>
+);
+
 const SeguimientoApoyo: React.FC = () => {
   const { expedientes, estudiantes, setIsAssistantOpen } = useConvivencia();
   const [searchTerm, setSearchTerm] = useLocalDraft('apoyo:search', '');
   const [filterTipo, setFilterTipo] = useLocalDraft<'TODOS' | 'PEDAGOGICO' | 'PSICOSOCIAL'>('apoyo:filter', 'TODOS');
-  const [activeMobileTab, setActiveMobileTab] = useState<'LIST' | 'AUDIT'>('LIST');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [ui, uiDispatch] = useReducer(seguimientoUiReducer, initialSeguimientoUiState);
+  const { activeMobileTab, isModalOpen, reloadKey, isExportingPdf } = ui;
 
   // Datos Mock de Acompañamiento
   const mockAcciones: AccionApoyo[] = [
@@ -427,7 +558,7 @@ const SeguimientoApoyo: React.FC = () => {
     isLoading: true,
     error: null
   });
-  const [reloadKey, setReloadKey] = useState(0);
+  const pdfContentRef = useRef<HTMLDivElement>(null);
 
   // Formulario nueva acción
   const [newAction, setNewAction, clearNewAction] = useLocalDraft('apoyo:new_action', {
@@ -542,7 +673,7 @@ const SeguimientoApoyo: React.FC = () => {
     }
 
     setAccionesState((prev) => ({ ...prev, items: [action, ...prev.items] }));
-    setIsModalOpen(false);
+    uiDispatch({ type: 'PATCH', payload: { isModalOpen: false } });
     clearNewAction();
   };
 
@@ -561,58 +692,67 @@ const SeguimientoApoyo: React.FC = () => {
     return { count, total: totalReq, pct: Math.min((count / totalReq) * 100, 100) };
   }, [accionesState.items]);
 
+  const handleExportPdf = async () => {
+    if (!pdfContentRef.current || isExportingPdf) {
+      return;
+    }
+
+    uiDispatch({ type: 'PATCH', payload: { isExportingPdf: true } });
+    try {
+      const { default: html2pdf } = await import('html2pdf.js');
+      const filename = `seguimiento_apoyo_${new Date().toISOString().slice(0, 10)}.pdf`;
+      await html2pdf()
+        .set({
+          margin: 10,
+          filename,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        })
+        .from(pdfContentRef.current)
+        .save();
+    } catch (error) {
+      console.error('Error al exportar historial de apoyo a PDF', error);
+      alert('No se pudo exportar el PDF. Intenta nuevamente.');
+    } finally {
+      uiDispatch({ type: 'PATCH', payload: { isExportingPdf: false } });
+    }
+  };
+
   return (
     <main className="flex-1 flex flex-col bg-slate-100 overflow-hidden animate-in fade-in duration-700 relative">
+      <SeguimientoPdfTemplate pdfContentRef={pdfContentRef} filteredAcciones={filteredAcciones} filterTipo={filterTipo} searchTerm={searchTerm} />
       <NuevaAccionModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => uiDispatch({ type: 'PATCH', payload: { isModalOpen: false } })}
         onSave={handleSaveAction}
         onOpenAssistant={() => setIsAssistantOpen(true)}
         estudiantes={estudiantes}
         newAction={newAction}
         setNewAction={setNewAction}
       />
-      <SeguimientoHeader onOpenModal={() => setIsModalOpen(true)} />
+      <SeguimientoHeader
+        onOpenModal={() => uiDispatch({ type: 'PATCH', payload: { isModalOpen: true } })}
+        onExportPdf={handleExportPdf}
+        isExportingPdf={isExportingPdf}
+      />
 
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-
-        {/* Mobile Tabs */}
-        <div className="lg:hidden flex border-b border-slate-200 bg-white shrink-0">
-          <button
-            onClick={() => setActiveMobileTab('LIST')}
-            className={`flex-1 py-3 text-xs font-black uppercase tracking-widest ${activeMobileTab === 'LIST' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400'}`}
-          >
-            Listado
-          </button>
-          <button
-            onClick={() => setActiveMobileTab('AUDIT')}
-            className={`flex-1 py-3 text-xs font-black uppercase tracking-widest ${activeMobileTab === 'AUDIT' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400'}`}
-          >
-            Verificación SIE
-          </button>
-        </div>
-
-        <SeguimientoTimelinePanel
-          activeMobileTab={activeMobileTab}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          filterTipo={filterTipo}
-          setFilterTipo={setFilterTipo}
-          accionesState={accionesState}
-          filteredAcciones={filteredAcciones}
-          onRetry={() => {
-            setAccionesState((prev) => ({ ...prev, isLoading: true, error: null }));
-            setReloadKey((current) => current + 1);
-          }}
-        />
-
-        <AuditSidebar
-          activeMobileTab={activeMobileTab}
-          complianceSample={complianceSample}
-          expedientes={expedientes}
-        />
-
-      </div>
+      <SeguimientoMainLayout
+        activeMobileTab={activeMobileTab}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        filterTipo={filterTipo}
+        setFilterTipo={setFilterTipo}
+        accionesState={accionesState}
+        filteredAcciones={filteredAcciones}
+        complianceSample={complianceSample}
+        expedientes={expedientes}
+        onSetActiveTab={(value) => uiDispatch({ type: 'PATCH', payload: { activeMobileTab: value } })}
+        onRetry={() => {
+          setAccionesState((prev) => ({ ...prev, isLoading: true, error: null }));
+          uiDispatch({ type: 'INCREMENT_RELOAD' });
+        }}
+      />
     </main>
   );
 };

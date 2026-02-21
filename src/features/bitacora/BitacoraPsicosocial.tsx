@@ -1,4 +1,4 @@
-import React, { useEffect, lazy, Suspense, useMemo, useReducer, useState } from 'react';
+import React, { useEffect, lazy, Suspense, useMemo, useReducer } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   Lock,
@@ -22,6 +22,7 @@ import { useLocalDraft } from '@/shared/utils/useLocalDraft';
 import { supabase } from '@/shared/lib/supabaseClient';
 import { useTenant } from '@/shared/context/TenantContext';
 import { useTenantBranding } from '@/shared/hooks/useTenantBranding';
+import PageTitleHeader from '@/shared/components/PageTitleHeader';
 
 // Lazy load modales pesados para reducir bundle size
 const NuevaIntervencionModal = lazy(() => import('@/features/dashboard/NuevaIntervencionModal'));
@@ -79,6 +80,19 @@ interface BitacoraUiState {
   selectedDerivacion: Derivacion | null;
 }
 
+interface BitacoraDataState {
+  intervenciones: Intervencion[];
+  derivaciones: Derivacion[];
+  isLoadingIntervenciones: boolean;
+  isLoadingDerivaciones: boolean;
+}
+
+type BitacoraDataAction =
+  | { type: 'SET_INTERVENCIONES'; payload: Intervencion[] }
+  | { type: 'SET_DERIVACIONES'; payload: Derivacion[] }
+  | { type: 'SET_LOADING_INTERVENCIONES'; payload: boolean }
+  | { type: 'SET_LOADING_DERIVACIONES'; payload: boolean };
+
 type BitacoraUiAction =
   | { type: 'OPEN_INTERVENCION_MODAL' }
   | { type: 'CLOSE_INTERVENCION_MODAL' }
@@ -92,6 +106,13 @@ const initialBitacoraUiState: BitacoraUiState = {
   showDerivacionModal: false,
   showOficioModal: false,
   selectedDerivacion: null
+};
+
+const initialBitacoraDataState: BitacoraDataState = {
+  intervenciones: [],
+  derivaciones: [],
+  isLoadingIntervenciones: true,
+  isLoadingDerivaciones: true,
 };
 
 function bitacoraUiReducer(state: BitacoraUiState, action: BitacoraUiAction): BitacoraUiState {
@@ -113,6 +134,21 @@ function bitacoraUiReducer(state: BitacoraUiState, action: BitacoraUiAction): Bi
   }
 }
 
+function bitacoraDataReducer(state: BitacoraDataState, action: BitacoraDataAction): BitacoraDataState {
+  switch (action.type) {
+    case 'SET_INTERVENCIONES':
+      return { ...state, intervenciones: action.payload };
+    case 'SET_DERIVACIONES':
+      return { ...state, derivaciones: action.payload };
+    case 'SET_LOADING_INTERVENCIONES':
+      return { ...state, isLoadingIntervenciones: action.payload };
+    case 'SET_LOADING_DERIVACIONES':
+      return { ...state, isLoadingDerivaciones: action.payload };
+    default:
+      return state;
+  }
+}
+
 const useBitacoraPsicosocialView = () => {
   const location = useLocation();
   const { tenantId } = useTenant();
@@ -121,6 +157,8 @@ const useBitacoraPsicosocialView = () => {
   const [searchTerm, setSearchTerm] = useLocalDraft('bitacora:search', '');
   const [activeTab, setActiveTab] = useLocalDraft<'REGISTRO' | 'DERIVACIONES' | 'PROTOCOLOS'>('bitacora:tab', 'REGISTRO');
   const [ui, dispatch] = useReducer(bitacoraUiReducer, initialBitacoraUiState);
+  const [dataState, dataDispatch] = useReducer(bitacoraDataReducer, initialBitacoraDataState);
+  const { intervenciones, derivaciones, isLoadingIntervenciones, isLoadingDerivaciones } = dataState;
 
   useEffect(() => {
     if (location.pathname === '/bitacora/intervencion') {
@@ -138,103 +176,84 @@ const useBitacoraPsicosocialView = () => {
     }
   }, [location.pathname, setActiveTab]);
 
-  // Datos Mock de Intervenciones
-  const mockIntervenciones: Intervencion[] = [
-    {
-      id: 'INT-001',
-      nnaId: 'EXP-2025-001',
-      nnaNombre: 'A. Rojas B.',
-      fecha: new Date().toISOString().split('T')[0],
-      tipo: 'ENTREVISTA',
-      participantes: 'NNA, Madre',
-      resumen: 'Se observa alta disposición al diálogo. Madre relata dificultades en el entorno familiar pero compromiso con el colegio.',
-      privado: true,
-      autor: 'Psicóloga Ana'
-    },
-    {
-      id: 'INT-002',
-      nnaId: 'EXP-2025-002',
-      nnaNombre: 'M. Soto L.',
-      fecha: new Date(Date.now() - 86400000).toISOString().split('T')[0],
-      tipo: 'OBSERVACION',
-      participantes: 'Curso 8°A',
-      resumen: 'Durante el recreo se observa aislamiento del NNA respecto al grupo de pares. No hay señales de conflicto activo hoy.',
-      privado: false,
-      autor: 'Trabajador Social'
-    }
-  ];
-  const [intervenciones, setIntervenciones] = useState<Intervencion[]>(mockIntervenciones);
-
-  const mockDerivaciones: Derivacion[] = [
-    { id: 'DER-01', nnaNombre: 'C. Vera P.', institucion: 'OPD', fechaEnvio: '2025-05-01', estado: 'PENDIENTE', numeroOficio: 'OF-123/2025' },
-    { id: 'DER-02', nnaNombre: 'D. Lopez M.', institucion: 'COSAM', fechaEnvio: '2025-04-20', estado: 'RESPONDIDO', numeroOficio: 'OF-098/2025' }
-  ];
-  const [derivaciones, setDerivaciones] = useState<Derivacion[]>(mockDerivaciones);
-
   useEffect(() => {
     const loadIntervenciones = async () => {
-      if (!supabase) return;
-      let query = supabase
-        .from('bitacora_psicosocial')
-        .select('id, estudiante_id, tipo, participantes, resumen, privado, autor, created_at, estudiantes(nombre_completo)')
-        .order('created_at', { ascending: false })
-        .limit(200);
-      if (tenantId) {
-        query = query.eq('establecimiento_id', tenantId);
-      }
-      const { data, error } = await query;
-
-      if (error || !data || data.length === 0) {
-        if (error) {
-          console.warn('Supabase: no se pudieron cargar intervenciones', error);
-        }
+      if (!supabase) {
+        dataDispatch({ type: 'SET_LOADING_INTERVENCIONES', payload: false });
         return;
       }
+      try {
+        let query = supabase
+          .from('bitacora_psicosocial')
+          .select('id, estudiante_id, tipo, participantes, resumen, privado, autor, created_at, estudiantes(nombre_completo)')
+          .order('created_at', { ascending: false })
+          .limit(200);
+        if (tenantId) {
+          query = query.eq('establecimiento_id', tenantId);
+        }
+        const { data, error } = await query;
 
-      const mapped = (data as BitacoraPsicosocialRow[]).map((row): Intervencion => ({
-        id: row.id,
-        nnaId: row.estudiante_id ?? '',
-        nnaNombre: Array.isArray(row.estudiantes) ? row.estudiantes[0]?.nombre_completo ?? 'Sin nombre' : row.estudiantes?.nombre_completo ?? 'Sin nombre',
-        fecha: row.created_at ? new Date(row.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-        tipo: row.tipo ?? 'ENTREVISTA',
-        participantes: row.participantes ?? '',
-        resumen: row.resumen ?? '',
-        privado: row.privado ?? true,
-        autor: row.autor ?? 'Sistema'
-      }));
+        if (error || !data || data.length === 0) {
+          if (error) {
+            console.warn('Supabase: no se pudieron cargar intervenciones', error);
+          }
+          return;
+        }
 
-      setIntervenciones(mapped);
+        const mapped = (data as BitacoraPsicosocialRow[]).map((row): Intervencion => ({
+          id: row.id,
+          nnaId: row.estudiante_id ?? '',
+          nnaNombre: Array.isArray(row.estudiantes) ? row.estudiantes[0]?.nombre_completo ?? 'Sin nombre' : row.estudiantes?.nombre_completo ?? 'Sin nombre',
+          fecha: row.created_at ? new Date(row.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          tipo: row.tipo ?? 'ENTREVISTA',
+          participantes: row.participantes ?? '',
+          resumen: row.resumen ?? '',
+          privado: row.privado ?? true,
+          autor: row.autor ?? 'Sistema'
+        }));
+
+        dataDispatch({ type: 'SET_INTERVENCIONES', payload: mapped });
+      } finally {
+        dataDispatch({ type: 'SET_LOADING_INTERVENCIONES', payload: false });
+      }
     };
 
     const loadDerivaciones = async () => {
-      if (!supabase) return;
-      let query = supabase
-        .from('derivaciones_externas')
-        .select('id, estudiante_id, nna_nombre, institucion, fecha_envio, estado, numero_oficio, estudiantes(nombre_completo)')
-        .order('fecha_envio', { ascending: false })
-        .limit(200);
-      if (tenantId) {
-        query = query.eq('establecimiento_id', tenantId);
-      }
-      const { data, error } = await query;
-
-      if (error || !data || data.length === 0) {
-        if (error) {
-          console.warn('Supabase: no se pudieron cargar derivaciones', error);
-        }
+      if (!supabase) {
+        dataDispatch({ type: 'SET_LOADING_DERIVACIONES', payload: false });
         return;
       }
+      try {
+        let query = supabase
+          .from('derivaciones_externas')
+          .select('id, estudiante_id, nna_nombre, institucion, fecha_envio, estado, numero_oficio, estudiantes(nombre_completo)')
+          .order('fecha_envio', { ascending: false })
+          .limit(200);
+        if (tenantId) {
+          query = query.eq('establecimiento_id', tenantId);
+        }
+        const { data, error } = await query;
 
-      const mapped = (data as DerivacionExternaRow[]).map((row): Derivacion => ({
-        id: row.id,
-        nnaNombre: row.nna_nombre ?? (Array.isArray(row.estudiantes) ? row.estudiantes[0]?.nombre_completo : row.estudiantes?.nombre_completo) ?? 'Sin nombre',
-        institucion: row.institucion ?? 'OPD',
-        fechaEnvio: row.fecha_envio ?? new Date().toISOString().split('T')[0],
-        estado: row.estado ?? 'PENDIENTE',
-        numeroOficio: row.numero_oficio ?? ''
-      }));
+        if (error || !data || data.length === 0) {
+          if (error) {
+            console.warn('Supabase: no se pudieron cargar derivaciones', error);
+          }
+          return;
+        }
 
-      setDerivaciones(mapped);
+        const mapped = (data as DerivacionExternaRow[]).map((row): Derivacion => ({
+          id: row.id,
+          nnaNombre: row.nna_nombre ?? (Array.isArray(row.estudiantes) ? row.estudiantes[0]?.nombre_completo : row.estudiantes?.nombre_completo) ?? 'Sin nombre',
+          institucion: row.institucion ?? 'OPD',
+          fechaEnvio: row.fecha_envio ?? new Date().toISOString().split('T')[0],
+          estado: row.estado ?? 'PENDIENTE',
+          numeroOficio: row.numero_oficio ?? ''
+        }));
+
+        dataDispatch({ type: 'SET_DERIVACIONES', payload: mapped });
+      } finally {
+        dataDispatch({ type: 'SET_LOADING_DERIVACIONES', payload: false });
+      }
     };
 
     loadIntervenciones();
@@ -250,6 +269,13 @@ const useBitacoraPsicosocialView = () => {
 
   return (
     <main className="flex-1 flex flex-col bg-slate-50 overflow-hidden animate-in fade-in duration-700">
+      <div className="px-4 md:px-8 py-4 border-b border-slate-200 bg-white">
+        <PageTitleHeader
+          title="Bitácora Psicosocial"
+          subtitle="Registro confidencial de intervenciones y derivaciones · Circulares 781 y 782"
+          icon={Heart}
+        />
+      </div>
 
       {/* Banner de Sesión Segura */}
       <div className="bg-indigo-900 text-indigo-100 px-4 md:px-8 py-2 flex flex-col md:flex-row items-start md:items-center justify-between text-xs font-black uppercase tracking-widest shrink-0 gap-4">
@@ -349,7 +375,26 @@ const useBitacoraPsicosocialView = () => {
               </header>
 
               <div className="space-y-6">
-                {filteredIntervenciones.map((int) => (
+                {isLoadingIntervenciones ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="bg-white rounded-3xl border border-slate-200 p-4 md:p-8 animate-pulse">
+                      <div className="flex items-center space-x-4 mb-4">
+                        <div className="w-14 h-14 bg-slate-200 rounded-2xl" />
+                        <div className="space-y-2 flex-1">
+                          <div className="h-4 bg-slate-200 rounded w-1/3" />
+                          <div className="h-3 bg-slate-100 rounded w-1/2" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="h-3 bg-slate-100 rounded w-full" />
+                        <div className="h-3 bg-slate-100 rounded w-4/5" />
+                      </div>
+                    </div>
+                  ))
+                ) : filteredIntervenciones.length === 0 ? (
+                  <div className="text-center py-12 text-slate-400 text-sm font-medium">No hay intervenciones registradas.</div>
+                ) : (
+                  filteredIntervenciones.map((int) => (
                   <div key={int.id} className="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/20 p-4 md:p-8 group relative">
                     <div className="flex flex-col md:flex-row items-start md:justify-between mb-4 gap-4">
                       <div className="flex items-center space-x-4">
@@ -395,7 +440,8 @@ const useBitacoraPsicosocialView = () => {
                       </div>
                     </div>
                   </div>
-                ))}
+                ))
+                )}
               </div>
             </div>
           )}
@@ -409,7 +455,23 @@ const useBitacoraPsicosocialView = () => {
               </header>
 
               <div className="grid gap-4">
-                {derivaciones.map((der) => (
+                {isLoadingDerivaciones ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="bg-white p-4 md:p-8 rounded-3xl border border-slate-200 animate-pulse">
+                      <div className="flex items-start gap-4">
+                        <div className="w-14 h-14 bg-slate-200 rounded-2xl" />
+                        <div className="space-y-2 flex-1">
+                          <div className="h-4 bg-slate-200 rounded w-1/4" />
+                          <div className="h-3 bg-slate-100 rounded w-1/3" />
+                          <div className="h-3 bg-slate-100 rounded w-1/5" />
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : derivaciones.length === 0 ? (
+                  <div className="text-center py-12 text-slate-400 text-sm font-medium">No hay derivaciones registradas.</div>
+                ) : (
+                  derivaciones.map((der) => (
                   <div key={der.id} className="bg-white p-4 md:p-8 rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/10">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                       <div className="flex items-start gap-4">
@@ -439,7 +501,8 @@ const useBitacoraPsicosocialView = () => {
                       <span>Ver Oficio Adjunto</span>
                     </button>
                   </div>
-                ))}
+                ))
+                )}
 
                 <button
                   onClick={() => dispatch({ type: 'OPEN_DERIVACION_MODAL' })}
@@ -553,7 +616,7 @@ const useBitacoraPsicosocialView = () => {
             autor: row.autor ?? 'Sistema'
           }));
 
-          setIntervenciones(mapped);
+          dataDispatch({ type: 'SET_INTERVENCIONES', payload: mapped });
         }}
       />
       </Suspense>
@@ -602,5 +665,3 @@ const useBitacoraPsicosocialView = () => {
 const BitacoraPsicosocial: React.FC = () => useBitacoraPsicosocialView();
 
 export default BitacoraPsicosocial;
-
-

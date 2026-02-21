@@ -173,7 +173,7 @@ const TransitionModal: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
         <h3 className="text-lg font-bold text-slate-800 mb-4">Acción</h3>
         <div className="flex gap-2 mb-4">
@@ -234,4 +234,5 @@ const TransitionModal: React.FC<{
 };
 
 export default WorkflowSystem;
+
 

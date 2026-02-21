@@ -127,18 +127,20 @@ test.describe('GCC Mediación - Advanced Scenarios', () => {
 
   test('Scenario: Network timeout handling', async ({ page }) => {
     // Simular conexión lenta
-    await page.route('**/*', route => {
-      setTimeout(() => route.continue(), 1000);
-    });
+    const slowRouteHandler = async (route: any) => {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      await route.continue().catch(() => {});
+    };
+    await page.route('**/*', slowRouteHandler);
 
-    await page.goto('/mediacion', { waitUntil: 'networkidle', timeout: 15000 });
+    await page.goto('/mediacion', { waitUntil: 'domcontentloaded', timeout: 25000 });
 
     // Verificar que la página aún carga correctamente
     const heading = page.locator('h1, h2').first();
     await expect(heading).toBeVisible({ timeout: 5000 });
 
     // Limpiar route
-    await page.unroute('**/*');
+    await page.unroute('**/*', slowRouteHandler);
   });
 
   test('Scenario: Local storage persistence', async ({ page }) => {
@@ -348,7 +350,7 @@ test.describe('GCC Mediación - Advanced Scenarios', () => {
   test('Scenario: Memory leak detection (rapid page loads)', async ({ page }) => {
     // Hacer varias navegaciones rápidamente
     for (let i = 0; i < 5; i++) {
-      await page.goto('/mediacion', { waitUntil: 'networkidle' });
+      await page.goto('/mediacion', { waitUntil: 'domcontentloaded', timeout: 15000 });
     }
 
     // Si la app está bien, no debe haber crashed

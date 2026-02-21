@@ -1,0 +1,137 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e4]: Colegio Demo Convivencia
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - complementary [ref=e7]:
+        - generic [ref=e8]:
+          - generic [ref=e9]:
+            - generic [ref=e11]: S
+            - generic [ref=e12]:
+              - heading "Gestion Convivencia" [level=1] [ref=e13]
+              - paragraph [ref=e14]: Convivencia Escolar
+          - button [ref=e15] [cursor=pointer]:
+            - img [ref=e16]
+        - navigation "Navegación principal" [ref=e19]:
+          - list [ref=e20]:
+            - listitem [ref=e21]: Principal
+            - listitem [ref=e22]:
+              - link "Dashboard" [ref=e23] [cursor=pointer]:
+                - /url: /
+                - img [ref=e24]
+                - generic [ref=e30]: Dashboard
+            - listitem [ref=e31]: Registro e Incidentes
+            - listitem [ref=e32]:
+              - link "Reportes Patio" [ref=e33] [cursor=pointer]:
+                - /url: /patio/lista
+                - img [ref=e34]
+                - generic [ref=e38]: Reportes Patio
+            - listitem [ref=e39]:
+              - link "Bitácora Psicosocial" [ref=e40] [cursor=pointer]:
+                - /url: /bitacora
+                - img [ref=e41]
+                - generic [ref=e44]: Bitácora Psicosocial
+            - listitem [ref=e45]: Gestión de Convivencia
+            - listitem [ref=e46]:
+              - link "Expedientes" [ref=e47] [cursor=pointer]:
+                - /url: /expedientes
+                - img [ref=e48]
+                - generic [ref=e53]: Expedientes
+            - listitem [ref=e54]:
+              - link "Evidencias" [ref=e55] [cursor=pointer]:
+                - /url: /evidencias
+                - img [ref=e56]
+                - generic [ref=e61]: Evidencias
+            - listitem [ref=e62]:
+              - link "Gestión Colaborativa (GCC)" [ref=e63] [cursor=pointer]:
+                - /url: /mediacion
+                - img [ref=e64]
+                - generic [ref=e70]: Gestión Colaborativa (GCC)
+            - listitem [ref=e71]: Administración
+            - listitem [ref=e72]:
+              - link "Calendario" [ref=e73] [cursor=pointer]:
+                - /url: /calendario
+                - img [ref=e74]
+                - generic [ref=e77]: Calendario
+            - listitem [ref=e78]:
+              - link "Acompañamiento" [ref=e79] [cursor=pointer]:
+                - /url: /apoyo
+                - img [ref=e80]
+                - generic [ref=e83]: Acompañamiento
+            - listitem [ref=e84]:
+              - link "Archivo Sostenedor" [ref=e85] [cursor=pointer]:
+                - /url: /archivo
+                - img [ref=e86]
+                - generic [ref=e89]: Archivo Sostenedor
+            - listitem [ref=e90]:
+              - link "Auditoría SIE" [ref=e91] [cursor=pointer]:
+                - /url: /auditoria
+                - img [ref=e92]
+                - generic [ref=e95]: Auditoría SIE
+            - listitem [ref=e96]:
+              - link "Superadmin" [ref=e97] [cursor=pointer]:
+                - /url: /admin
+                - img [ref=e98]
+                - generic [ref=e101]:
+                  - generic [ref=e102]: Superadmin
+                  - generic [ref=e103]: Gestión central
+            - listitem [ref=e104]:
+              - link "Colegios" [ref=e105] [cursor=pointer]:
+                - /url: /admin/colegios
+                - img [ref=e106]
+                - generic [ref=e110]:
+                  - generic [ref=e111]: Colegios
+                  - generic [ref=e112]: Gestionar establecimientos
+        - button "Colegio Demo Convivencia" [ref=e114] [cursor=pointer]:
+          - generic [ref=e115]:
+            - img [ref=e116]
+            - generic [ref=e120]: Colegio Demo Convivencia
+          - img [ref=e121]
+        - button "Super Admin E2E SUPERADMIN" [ref=e125] [cursor=pointer]:
+          - img [ref=e127]
+          - generic [ref=e130]:
+            - paragraph [ref=e131]: Super Admin E2E
+            - paragraph [ref=e132]: SUPERADMIN
+          - img [ref=e133]
+      - generic [ref=e135]:
+        - banner [ref=e136]:
+          - generic [ref=e137]:
+            - generic [ref=e138]: "Módulo:"
+            - generic [ref=e139]: Inicio
+          - generic [ref=e140]:
+            - generic [ref=e141]: Colegio Demo Convivencia
+            - link "Panel de Administración" [ref=e143] [cursor=pointer]:
+              - /url: /admin
+            - generic [ref=e144]: Super Admin E2E
+            - button "Cerrar sesión" [ref=e145] [cursor=pointer]
+        - main [ref=e146]:
+          - main [ref=e147]:
+            - generic [ref=e148]:
+              - generic [ref=e150]:
+                - img [ref=e152]
+                - generic [ref=e157]:
+                  - heading "Centro de Mediación Escolar (GCC)" [level=1] [ref=e158]
+                  - paragraph [ref=e159]: Gestión colaborativa de conflictos · Circular 782
+              - textbox "Buscar casos..." [ref=e161]
+              - generic [ref=e162]:
+                - generic [ref=e163]:
+                  - generic [ref=e164]:
+                    - heading "Casos en Proceso" [level=2] [ref=e165]
+                    - generic [ref=e166]: 0 total
+                  - generic [ref=e167]:
+                    - generic [ref=e168]:
+                      - heading "Casos GCC" [level=3] [ref=e169]
+                      - generic [ref=e170]:
+                        - generic [ref=e173]: Disponibles (0)
+                        - generic [ref=e176]: Activos (0)
+                    - paragraph [ref=e177]: No hay casos disponibles
+                - complementary [ref=e178]:
+                  - generic [ref=e179]:
+                    - paragraph [ref=e180]: Selecciona un caso
+                    - paragraph [ref=e181]: para habilitar controles
+    - button "ConsultorÃa IA Normativa" [ref=e182] [cursor=pointer]:
+      - img [ref=e183]
+      - generic: ConsultorÃa IA Normativa
+```
