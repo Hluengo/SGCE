@@ -15,26 +15,33 @@
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report",
+    "test:e2e:security": "playwright test --project=security",
+    "test:e2e:security:headed": "playwright test --project=security --headed",
     "test:all": "npm run test:run && npm run test:e2e:run",
-    "storybook": "storybook dev -p 6006",
+    "test:performance": "playwright test src/performance/ --project=chromium",
+    "test:performance:ci": "lhci autorun",
+    "test:regression": "npm run test:run && npm run test:e2e:run && npm run test:performance",
+    "test:full-suite": "npm run lint:design && npm run security && npm run test:regression && npm run build",
     "build-storybook": "storybook build",
     "lint:design": "node scripts/lint-design-system.mjs",
     "test:e2e:visual": "playwright test --grep \"@visual\" --project=\"chromium\" --project=\"Mobile Chrome\"",
-    "test:e2e:visual:update": "playwright test --grep \"@visual\" --project=\"chromium\" --project=\"Mobile Chrome\" --update-snapshots"
+    "test:e2e:visual:update": "playwright test --grep \"@visual\" --project=\"chromium\" --project=\"Mobile Chrome\" --update-snapshots",
+    "security:audit": "npm audit --audit-level=high",
+    "security:doctor": "npx -y react-doctor@latest . --verbose --diff",
+    "security": "npm run security:audit && npm run security:doctor"
   },
   "dependencies": {
-    "@google/genai": "^1.40.0",
+    "@google/genai": "^1.42.0",
     "@hookform/resolvers": "^5.2.2",
     "@supabase/supabase-js": "^2.95.3",
-    "dompurify": "^2.4.3",
+    "dompurify": "^3.3.1",
     "html2canvas": "^1.4.1",
-    "html2pdf.js": "^0.9.3",
+    "html2pdf.js": "^0.14.0",
     "lucide-react": "^0.563.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-hook-form": "^7.71.1",
     "react-router-dom": "^7.13.0",
-    "xlsx": "^0.18.5",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -59,10 +66,15 @@
     "playwright": "^1.58.2",
     "postcss": "^8.5.3",
     "storybook": "^10.2.7",
-    "supabase": "^2.76.4",
+    "supabase": "^2.76.12",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
     "vitest": "^4.0.18"
+  },
+  "overrides": {
+    "rimraf": "^6.1.3",
+    "glob": "^13.0.0",
+    "minimatch": "^10.2.2"
   }
 }
