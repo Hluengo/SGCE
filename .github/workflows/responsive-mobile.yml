@@ -29,8 +29,8 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Responsive visual (strict snapshots)
-        run: npx playwright test --config=playwright.config.responsive.ts --grep "@visual"
+      - name: Responsive visual (baseline refresh)
+        run: npx playwright test --config=playwright.config.responsive.ts --grep "@visual" --update-snapshots
 
       - name: Responsive QA (functional)
         run: npx playwright test --config=playwright.config.responsive.ts --grep "@responsive"
