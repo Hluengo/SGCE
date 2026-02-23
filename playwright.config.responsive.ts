@@ -11,6 +11,9 @@ export default defineConfig({
     storageState: './playwright/.auth/e2e-mock-auth.json',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    colorScheme: 'light',
+    locale: 'es-CL',
+    timezoneId: 'UTC',
   },
   projects: [
     {
