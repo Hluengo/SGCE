@@ -115,17 +115,17 @@ const SA_THEME_VARS: CSSProperties = {
 } as CSSProperties;
 
 const SA_UI = {
-  page: 'min-h-full p-4 md:p-8 space-y-6 bg-[var(--sa-surface-muted)]',
+  page: 'min-h-full p-3 sm:p-4 md:p-8 space-y-6 bg-[var(--sa-surface-muted)]',
   section: 'grid gap-6',
   card: 'rounded-[0.75rem] bg-[var(--sa-surface)] border border-[var(--sa-border)] shadow-[0_4px_6px_-1px_rgb(0_0_0_/_0.08)]',
   cardPadding: 'p-4 md:p-6',
   cardTitle: 'text-[0.875rem] font-black uppercase tracking-[0.12em] text-[var(--sa-text)] flex items-center gap-2',
   cardSubtitle: 'text-[0.75rem] text-[var(--sa-text-muted)] mt-1',
-  input: 'w-full rounded-[0.75rem] border border-[var(--sa-border)] px-3 py-2 text-[0.8125rem] text-[var(--sa-text)] bg-white transition-all duration-200 ease-in-out hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none',
-  buttonPrimary: 'inline-flex items-center justify-center gap-2 rounded-[0.75rem] bg-[var(--sa-primary)] px-4 py-2 text-[0.75rem] font-black uppercase tracking-[0.12em] text-white transition-all duration-200 ease-in-out hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-300 active:translate-y-[1px] disabled:opacity-50',
-  buttonSecondary: 'inline-flex items-center justify-center gap-2 rounded-[0.75rem] border border-[var(--sa-border)] px-3 py-2 text-[0.75rem] font-black uppercase tracking-[0.12em] text-slate-700 transition-all duration-200 ease-in-out hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-200 active:translate-y-[1px] disabled:opacity-50',
-  buttonAction: 'inline-flex items-center justify-center gap-2 rounded-[0.75rem] bg-[var(--sa-action)] px-3 py-2 text-[0.75rem] font-black uppercase tracking-[0.12em] text-white transition-all duration-200 ease-in-out hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-indigo-300 active:translate-y-[1px] disabled:opacity-50',
-  buttonDanger: 'inline-flex items-center justify-center gap-2 rounded-[0.75rem] bg-rose-600 px-3 py-2 text-[0.75rem] font-black uppercase tracking-[0.12em] text-white transition-all duration-200 ease-in-out hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-300 active:translate-y-[1px] disabled:opacity-50',
+  input: 'w-full min-h-11 rounded-[0.75rem] border border-[var(--sa-border)] px-3 py-2.5 text-[0.8125rem] text-[var(--sa-text)] bg-white transition-all duration-200 ease-in-out hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none',
+  buttonPrimary: 'inline-flex min-h-11 items-center justify-center gap-2 rounded-[0.75rem] bg-[var(--sa-primary)] px-4 py-2.5 text-[0.75rem] font-black uppercase tracking-[0.12em] text-white transition-all duration-200 ease-in-out hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-300 active:translate-y-[1px] disabled:opacity-50',
+  buttonSecondary: 'inline-flex min-h-11 items-center justify-center gap-2 rounded-[0.75rem] border border-[var(--sa-border)] px-3 py-2.5 text-[0.75rem] font-black uppercase tracking-[0.12em] text-slate-700 transition-all duration-200 ease-in-out hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-200 active:translate-y-[1px] disabled:opacity-50',
+  buttonAction: 'inline-flex min-h-11 items-center justify-center gap-2 rounded-[0.75rem] bg-[var(--sa-action)] px-3 py-2.5 text-[0.75rem] font-black uppercase tracking-[0.12em] text-white transition-all duration-200 ease-in-out hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-indigo-300 active:translate-y-[1px] disabled:opacity-50',
+  buttonDanger: 'inline-flex min-h-11 items-center justify-center gap-2 rounded-[0.75rem] bg-rose-600 px-3 py-2.5 text-[0.75rem] font-black uppercase tracking-[0.12em] text-white transition-all duration-200 ease-in-out hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-300 active:translate-y-[1px] disabled:opacity-50',
   tableHead: 'bg-slate-50 text-slate-500 uppercase tracking-[0.12em] text-[0.6875rem]',
   muted: 'text-[0.75rem] text-[var(--sa-text-muted)]',
 };

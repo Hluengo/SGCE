@@ -117,7 +117,13 @@ export const RealtimeNotification: FC<{ disabled?: boolean }> = ({ disabled = fa
   if (!notification) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded shadow-lg animate-slideIn">
+    <div
+      className="fixed bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded shadow-lg animate-slideIn max-w-[min(26rem,calc(100vw-1.5rem))]"
+      style={{
+        right: 'calc(env(safe-area-inset-right, 0px) + 0.75rem)',
+        bottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)',
+      }}
+    >
       {notification}
     </div>
   );

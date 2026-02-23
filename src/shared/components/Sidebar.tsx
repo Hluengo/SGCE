@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { SidebarNav } from './Sidebar/SidebarNav';
 import { SidebarProfile } from './Sidebar/SidebarProfile';
 import TenantSelector from './TenantSelector';
@@ -11,6 +12,7 @@ import { useTenantBranding } from '@/shared/hooks/useTenantBranding';
  */
 const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (typeof window === 'undefined') return false;
     try {
@@ -31,6 +33,29 @@ const Sidebar: React.FC = () => {
     }
   }, [isCollapsed]);
 
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isOpen]);
+
   // Toggle mobile
   const toggleMobile = () => setIsOpen(!isOpen);
 
@@ -44,7 +69,12 @@ const Sidebar: React.FC = () => {
       {/* Mobile Toggle Button */}
       <button
         onClick={toggleMobile}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-slate-800 rounded-lg text-white shadow-lg"
+        className="lg:hidden fixed z-50 h-11 w-11 inline-flex items-center justify-center bg-slate-800 rounded-lg text-white shadow-lg"
+        style={{
+          top: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
+          left: 'calc(env(safe-area-inset-left, 0px) + 0.75rem)',
+        }}
+        aria-label={isOpen ? 'Cerrar menú lateral' : 'Abrir menú lateral'}
       >
         {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </button>
@@ -52,7 +82,7 @@ const Sidebar: React.FC = () => {
       {/* Sidebar */}
       <aside
         className={`
-          fixed lg:sticky top-0 left-0 z-40 h-screen bg-slate-900 border-r border-slate-700
+          fixed lg:sticky top-0 left-0 z-40 h-[100dvh] bg-slate-900 border-r border-slate-700
           transition-all duration-300 ease-in-out flex flex-col
           ${isOpen ? 'w-64 translate-x-0' : 'w-64 -translate-x-full lg:translate-x-0'}
           ${isCollapsed ? 'lg:w-16' : 'lg:w-64'}
@@ -83,7 +113,8 @@ const Sidebar: React.FC = () => {
           </div>
           <button
             onClick={toggleCollapse}
-            className="hidden lg:flex p-1 rounded text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+            className="hidden lg:inline-flex items-center justify-center min-h-11 min-w-11 p-2 rounded text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+            aria-label={isCollapsed ? 'Expandir barra lateral' : 'Colapsar barra lateral'}
           >
             {isCollapsed ? (
               <ChevronsRight className="w-5 h-5" />
@@ -94,7 +125,7 @@ const Sidebar: React.FC = () => {
         </div>
 
         {/* Navigation */}
-        <SidebarNav isCollapsed={isCollapsed} />
+        <SidebarNav isCollapsed={isCollapsed} onNavigate={() => setIsOpen(false)} />
 
         {/* Tenant Selector */}
         <TenantSelector />

@@ -39,7 +39,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const style = {
     background: branding?.color_fondo || "#fff",
     color: branding?.color_texto || "#0f172a",
-    minHeight: "100vh",
+    minHeight: "100dvh",
   };
 
   return (

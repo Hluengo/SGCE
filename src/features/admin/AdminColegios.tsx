@@ -71,15 +71,15 @@ const ColegioFormModal: React.FC<{
   if (!modalAbierto || modalAbierto === 'importar') return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-md max-h-5\/6 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-md max-h-[92dvh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b border-slate-700">
           <h2 className="text-lg font-semibold text-white">
             {modalAbierto === 'crear' ? 'Nuevo Colegio' : 'Editar Colegio'}
           </h2>
           <button
             onClick={() => setModalAbierto(null)}
-            className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg"
+            className="min-h-11 min-w-11 inline-flex items-center justify-center p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg"
           >
             <X className="w-5 h-5" />
           </button>
@@ -128,7 +128,7 @@ const ColegioFormModal: React.FC<{
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="colegio-telefono" className="block text-sm font-medium text-slate-300 mb-1">
                 Telefono
@@ -230,8 +230,8 @@ const ImportarEstudiantesModal: React.FC<{
 }> = ({ isOpen, colegioSeleccionado, onClose }) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-2xl max-h-5\/6 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-2xl max-h-[92dvh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b border-slate-700">
           <div>
             <h2 className="text-lg font-semibold text-white">
@@ -243,7 +243,7 @@ const ImportarEstudiantesModal: React.FC<{
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg"
+            className="min-h-11 min-w-11 inline-flex items-center justify-center p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg"
           >
             <X className="w-5 h-5" />
           </button>
@@ -267,8 +267,8 @@ const ListaEstudiantesModal: React.FC<{
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-2xl max-h-5\/6 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-2xl max-h-[92dvh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b border-slate-700">
           <div>
             <h2 className="text-lg font-semibold text-white">
@@ -280,7 +280,7 @@ const ListaEstudiantesModal: React.FC<{
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg"
+            className="min-h-11 min-w-11 inline-flex items-center justify-center p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg"
           >
             <X className="w-5 h-5" />
           </button>
@@ -413,7 +413,7 @@ const AdminColegiosFilters: React.FC<{
         className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
       />
     </div>
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <select
         value={filtroEstado}
         onChange={(e) => setFiltroEstado(e.target.value as 'todos' | 'activos' | 'inactivos')}
@@ -1117,6 +1117,8 @@ const AdminColegios: React.FC = () => {
 };
 
 export default AdminColegios;
+
+
 
 
 

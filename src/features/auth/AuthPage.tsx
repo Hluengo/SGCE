@@ -56,6 +56,10 @@ const AuthPage: React.FC = () => {
   const [params] = useSearchParams();
   const { signIn, requestPasswordReset, updatePassword, isAuthenticated, isPasswordRecovery } = useAuth();
   const { establecimiento } = useTenant();
+  const [showVisualPanel, setShowVisualPanel] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(min-width: 1024px)').matches;
+  });
 
   const nextPath = useMemo(() => {
     const value = params.get('next');
@@ -82,6 +86,15 @@ const AuthPage: React.FC = () => {
     resolver: zodResolver(resetSchema),
     defaultValues: { password: '', confirmPassword: '' },
   });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const media = window.matchMedia('(min-width: 1024px)');
+    const update = () => setShowVisualPanel(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
 
   useEffect(() => {
     if (mode === 'reset' || isPasswordRecovery) {
@@ -133,9 +146,10 @@ const AuthPage: React.FC = () => {
   });
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#0f172a_0%,_#111827_40%,_#020617_100%)] text-slate-100">
-      <div className="min-h-screen w-full grid lg:grid-cols-[1.15fr_0.85fr]">
-        <section className="relative overflow-hidden p-5 lg:p-8 border-b lg:border-b-0 lg:border-r border-white/10">
+    <main className="min-h-[100dvh] bg-[radial-gradient(circle_at_top_left,_#0f172a_0%,_#111827_40%,_#020617_100%)] text-slate-100">
+      <div className="min-h-[100dvh] w-full grid lg:grid-cols-[1.15fr_0.85fr]">
+        {showVisualPanel && (
+        <section className="hidden lg:block relative overflow-hidden p-5 lg:p-8 border-b lg:border-b-0 lg:border-r border-white/10">
           <div className="absolute -top-24 -left-20 w-72 h-72 rounded-full bg-cyan-400/20 blur-3xl" aria-hidden="true" />
           <div className="absolute -bottom-20 right-0 w-80 h-80 rounded-full bg-sky-500/20 blur-3xl" aria-hidden="true" />
 
@@ -158,9 +172,14 @@ const AuthPage: React.FC = () => {
             <FeatureList items={AUTH_FEATURES} />
           </div>
         </section>
+        )}
 
-        <section className="p-6 sm:p-8 lg:p-10 flex items-center justify-center lg:justify-start">
+        <section className="p-6 sm:p-8 lg:p-10 flex items-center justify-center lg:justify-start min-h-[100dvh]">
           <div className="w-full max-w-lg rounded-3xl border border-white/15 bg-slate-900/60 backdrop-blur-xl p-6 sm:p-8 shadow-2xl shadow-black/40">
+            <div className="mb-5 lg:hidden">
+              <p className="text-xs uppercase tracking-widest font-black text-cyan-200">Gestion y Cumplimiento Escolar</p>
+              <p className="mt-2 text-sm text-slate-300">Ingreso seguro para gestionar convivencia, GCC y trazabilidad normativa.</p>
+            </div>
             <div className="flex items-center justify-between mb-5">
               <p className="text-xs uppercase tracking-widest font-black text-cyan-200">Acceso seguro</p>
               <Link to="/inicio" className="text-xs font-bold text-slate-300 hover:text-cyan-200 transition-colors">
@@ -168,7 +187,7 @@ const AuthPage: React.FC = () => {
               </Link>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 bg-slate-800/70 p-1.5 rounded-2xl text-xs font-black uppercase tracking-wider" role="tablist" aria-label="Opciones de acceso">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-slate-800/70 p-1.5 rounded-2xl text-xs font-black uppercase tracking-wider" role="tablist" aria-label="Opciones de acceso">
               {authTabs.map((tab) => (
                 <button
                   key={tab.id}
@@ -180,7 +199,7 @@ const AuthPage: React.FC = () => {
                     resetMessages();
                     setActiveTab(tab.id);
                   }}
-                  className={`py-2 rounded-xl transition-colors ${activeTab === tab.id ? 'bg-cyan-400 text-slate-900' : 'text-slate-300 hover:bg-slate-700/70'}`}
+                  className={`py-2 min-h-11 rounded-xl transition-colors ${activeTab === tab.id ? 'bg-cyan-400 text-slate-900' : 'text-slate-300 hover:bg-slate-700/70'}`}
                 >
                   {tab.label}
                 </button>
@@ -319,3 +338,4 @@ const AuthPage: React.FC = () => {
 };
 
 export default AuthPage;
+

@@ -65,8 +65,8 @@ const ResumenHeader: React.FC<{
   expedienteId: string;
   onClose: () => void;
 }> = ({ data, expedienteId, onClose }) => (
-  <div className="bg-gradient-to-r from-indigo-600 to-blue-600 p-6 text-white">
-    <div className="flex items-start justify-between">
+  <div className="bg-gradient-to-r from-indigo-600 to-blue-600 p-4 sm:p-6 text-white">
+    <div className="flex items-start justify-between gap-3">
       <div>
         <div className="flex items-center gap-4 mb-2">
           <span className="text-xs font-black uppercase tracking-widest opacity-80">Expediente</span>
@@ -85,7 +85,7 @@ const ResumenHeader: React.FC<{
       </div>
       <button
         onClick={onClose}
-        className="p-2 hover:bg-white/20 rounded-full transition-colors"
+        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 hover:bg-white/20 transition-colors"
       >
         <X className="w-5 h-5" />
       </button>
@@ -95,7 +95,7 @@ const ResumenHeader: React.FC<{
 
 const ResumenDataContent: React.FC<{ data: ResumenData; diasRestantes: number | null }> = ({ data, diasRestantes }) => (
   <div className="space-y-6">
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
         <div className="flex items-center gap-2 mb-2">
           <Clock className="w-4 h-4 text-slate-500" />
@@ -157,7 +157,7 @@ const ResumenDataContent: React.FC<{ data: ResumenData; diasRestantes: number | 
       </p>
     </div>
 
-    <div className="grid grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
       <div className="text-center p-4 bg-indigo-50 rounded-xl border border-indigo-100">
         <Activity className="w-5 h-5 text-indigo-600 mx-auto mb-1" />
         <p className="text-xl font-black text-indigo-600">{data.actualizaciones_count}</p>
@@ -186,7 +186,7 @@ const ResumenDataContent: React.FC<{ data: ResumenData; diasRestantes: number | 
           <Send className="w-4 h-4 text-slate-500" />
           <span className="text-xs font-bold text-slate-500 uppercase">Último Movimiento</span>
         </div>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-bold text-slate-700">{data.ultimo_movimiento.tipo}</p>
             <p className="text-xs text-slate-500">{data.ultimo_movimiento.descripcion}</p>
@@ -198,7 +198,7 @@ const ResumenDataContent: React.FC<{ data: ResumenData; diasRestantes: number | 
       </div>
     )}
 
-    <div className="grid grid-cols-2 gap-4 text-sm">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
       <div>
         <span className="text-slate-500">Fecha de inicio: </span>
         <span className="font-bold text-slate-700">{data.fecha_inicio ? formatearFecha(data.fecha_inicio) : '-'}</span>
@@ -386,7 +386,7 @@ export const ExpedienteResumenModal: React.FC<ExpedienteResumenProps> = ({
   const diasRestantes = data ? calcularDiasRestantes(data.plazo_fatal) : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-3 sm:px-4 pt-[var(--safe-area-inset-top)] pb-[var(--safe-area-inset-bottom)]">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
@@ -409,7 +409,7 @@ export const ExpedienteResumenModal: React.FC<ExpedienteResumenProps> = ({
         <ResumenHeader data={data} expedienteId={expedienteId} onClose={onClose} />
 
         {/* Content */}
-        <div className="p-6 max-h-screen overflow-y-auto">
+        <div className="p-4 sm:p-6 max-h-[92dvh] overflow-y-auto">
           {isLoading ? (
             <AsyncState
               state="loading"
@@ -436,7 +436,7 @@ export const ExpedienteResumenModal: React.FC<ExpedienteResumenProps> = ({
         <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
           <button
             onClick={onClose}
-            className="px-6 py-2 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 transition-colors"
+            className="min-h-11 px-6 py-2.5 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 transition-colors"
           >
             Cerrar
           </button>
@@ -461,4 +461,6 @@ function getDescripcionFromAccion(accion: string, detalle: Record<string, unknow
 }
 
 export default ExpedienteResumenModal;
+
+
 

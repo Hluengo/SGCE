@@ -103,7 +103,7 @@ const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
   const tipoColor = getTipoColor(documento.tipo).split(' ')[1];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4">
       <div className="bg-white w-full max-w-4xl h-5\/6 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -190,7 +190,7 @@ const UploadDocumentoModal: React.FC<UploadDocumentoModalProps> = ({
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4">
       <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           <h3 className="font-black text-slate-900 uppercase">Subir Documento</h3>

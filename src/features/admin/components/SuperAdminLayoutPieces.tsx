@@ -160,12 +160,18 @@ export const SuperAdminToastStack: React.FC<{
   toasts: ToastMessage[];
   onDismiss: (id: string) => void;
 }> = ({ toasts, onDismiss }) => (
-  <div className="fixed top-6 right-6 z-50 flex w-[min(92vw,24rem)] flex-col gap-2">
+  <div
+    className="fixed z-50 flex w-[min(92vw,24rem)] flex-col gap-2"
+    style={{
+      top: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
+      right: 'calc(env(safe-area-inset-right, 0px) + 1rem)',
+    }}
+  >
     {toasts.map((toast) => (
       <button
         key={toast.id}
         onClick={() => onDismiss(toast.id)}
-        className={`w-full rounded-[0.75rem] border px-4 py-3 text-left text-xs shadow-lg transition ${
+        className={`w-full min-h-11 rounded-[0.75rem] border px-4 py-3 text-left text-xs shadow-lg transition ${
           toast.tone === 'error'
             ? 'border-rose-200 bg-rose-50 text-rose-800'
             : 'border-emerald-200 bg-emerald-50 text-emerald-800'

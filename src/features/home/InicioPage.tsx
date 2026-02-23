@@ -7,13 +7,13 @@ import { AUTH_FEATURES, AUTH_INFO_CARDS } from '@/features/auth/content';
 
 const InicioPage: React.FC = () => {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#0f172a_0%,_#111827_40%,_#020617_100%)] text-slate-100">
+    <main className="min-h-[100dvh] bg-[radial-gradient(circle_at_top_left,_#0f172a_0%,_#111827_40%,_#020617_100%)] text-slate-100">
       <div className="w-full px-5 sm:px-8 lg:px-12 py-8 lg:py-10">
         <header className="flex items-center justify-between gap-4">
           <img src={praxiaNovusLogo} alt="Praxia Novus" className="h-20 sm:h-24 w-auto object-contain" />
           <Link
             to="/auth"
-            className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-4 py-2 text-xs sm:text-sm font-black uppercase tracking-widest text-slate-900 hover:bg-cyan-300 transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-4 py-2 min-h-11 text-xs sm:text-sm font-black uppercase tracking-widest text-slate-900 hover:bg-cyan-300 transition-colors"
           >
             Acceder
             <ArrowRight className="w-4 h-4" aria-hidden="true" />
@@ -47,7 +47,7 @@ const InicioPage: React.FC = () => {
             <div className="mt-5">
               <Link
                 to="/auth"
-                className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-300/40 bg-cyan-400/15 px-4 py-3 text-xs font-black uppercase tracking-widest text-cyan-100 hover:bg-cyan-400/25 transition-colors"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-300/40 bg-cyan-400/15 px-4 py-3 min-h-11 text-xs font-black uppercase tracking-widest text-cyan-100 hover:bg-cyan-400/25 transition-colors"
               >
                 Ir a acceso seguro
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
@@ -65,3 +65,4 @@ const InicioPage: React.FC = () => {
 };
 
 export default InicioPage;
+

@@ -12,7 +12,7 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900 text-slate-200">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-slate-900 text-slate-200 px-4">
         <p className="text-xs font-black uppercase tracking-wider">Validando sesion...</p>
       </div>
     );
@@ -27,3 +27,4 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
 };
 
 export default RequireAuth;
+

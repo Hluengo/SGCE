@@ -7,18 +7,29 @@ export const E2E_AUTH = {
 
 export async function ensureAuthenticated(page: Page, nextPath = '/mediacion'): Promise<void> {
   await page.goto(nextPath);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 
-  if (!new URL(page.url()).pathname.startsWith('/auth')) {
+  const loginEmailField = page.getByLabel(/correo institucional/i);
+  const loginPasswordField = page.getByLabel(/contrasena/i);
+  const loginButton = page.getByRole('button', { name: /ingresar/i });
+
+  const isAuthRoute = new URL(page.url()).pathname.startsWith('/auth');
+  const hasInlineLoginForm = await loginEmailField.isVisible().catch(() => false);
+
+  if (!isAuthRoute && !hasInlineLoginForm) {
     return;
   }
 
-  await page.goto(`/auth?next=${encodeURIComponent(nextPath)}`);
-  await page.waitForLoadState('networkidle');
+  if (isAuthRoute) {
+    await page.goto(`/auth?next=${encodeURIComponent(nextPath)}`);
+    await page.waitForLoadState('domcontentloaded');
+  }
 
-  await page.getByLabel(/correo institucional/i).fill(E2E_AUTH.email);
-  await page.getByLabel(/contrasena/i).fill(E2E_AUTH.password);
-  await page.getByRole('button', { name: /ingresar/i }).click();
-  await page.waitForLoadState('networkidle');
+  await loginEmailField.fill(E2E_AUTH.email);
+  await loginPasswordField.fill(E2E_AUTH.password);
+  await loginButton.click();
+  await page.waitForLoadState('domcontentloaded');
+  await page.goto(nextPath);
+  await page.waitForLoadState('domcontentloaded');
 }
 

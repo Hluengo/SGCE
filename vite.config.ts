@@ -19,16 +19,16 @@ export default defineConfig({
     },
   },
   build: {
-    // html2pdf.js is lazy-loaded in its own chunk (~525 kB minified).
-    // Keep warnings for unusually large chunks, but avoid noise for this known case.
-    chunkSizeWarningLimit: 550,
+    // Raise warning threshold to reduce noise while still surfacing oversized core chunks.
+    chunkSizeWarningLimit: 800,
     rollupOptions: {
       output: {
-        manualChunks: {
-          react: ['react', 'react-dom'],
-          ui: ['lucide-react'],
-          genai: ['@google/genai'],
-          pdf: ['html2pdf.js'],
+        manualChunks(id) {
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) return 'react';
+          if (id.includes('node_modules/lucide-react/')) return 'ui';
+          if (id.includes('node_modules/@google/genai/')) return 'genai';
+          if (id.includes('node_modules/xlsx/')) return 'xlsx';
+          return undefined;
         },
       },
     },

@@ -20,7 +20,7 @@ export function baseTemplate(branding: DocumentBranding | null, title: string, c
 <html>
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>${escapeHtml(title)}</title>
   <style>
     @page { size: A4; margin: 15mm; }

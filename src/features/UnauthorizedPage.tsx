@@ -7,7 +7,7 @@ export const UnauthorizedPage: React.FC = () => {
   const { tenantId, establecimiento } = useTenant();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-4">
+    <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-slate-50 p-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
         <div className="mb-6">
           <div className="text-6xl mb-4">🔒</div>
@@ -25,14 +25,14 @@ export const UnauthorizedPage: React.FC = () => {
         <div className="space-y-3">
           <button
             onClick={() => navigate("/")}
-            className="w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            className="w-full px-4 py-2 min-h-11 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
           >
             Volver al Dashboard
           </button>
 
           <button
             onClick={() => navigate(-1)}
-            className="w-full px-4 py-2 bg-slate-200 text-slate-900 font-medium rounded-lg hover:bg-slate-300 transition-colors"
+            className="w-full px-4 py-2 min-h-11 bg-slate-200 text-slate-900 font-medium rounded-lg hover:bg-slate-300 transition-colors"
           >
             Atrás
           </button>
@@ -47,3 +47,4 @@ export const UnauthorizedPage: React.FC = () => {
 };
 
 export default UnauthorizedPage;
+

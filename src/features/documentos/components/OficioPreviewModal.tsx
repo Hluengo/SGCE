@@ -7,6 +7,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { X, Download, Printer, FileText, Loader2 } from 'lucide-react';
 import { oficioDerivacionTemplate, OficioDerivacionData } from '../templates/oficioDerivacionTemplate';
 import { DocumentBranding } from '../templates/baseTemplate';
+import { useServerPdfGenerator } from '../hooks/useServerPdfGenerator';
 
 interface OficioPreviewModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ const OficioPreviewModal: React.FC<OficioPreviewModalProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [htmlContent, setHtmlContent] = useState<string>('');
+  const { generatePdfFromHtml } = useServerPdfGenerator();
 
   useEffect(() => {
     if (isOpen && data) {
@@ -50,26 +52,28 @@ const OficioPreviewModal: React.FC<OficioPreviewModalProps> = ({
   };
 
   const handleDownloadPdf = async () => {
-    if (!containerRef.current) return;
-    
+    if (!htmlContent) return;
+
     setIsGenerating(true);
     try {
-      const { default: html2pdf } = await import('html2pdf.js');
-      const element = containerRef.current;
       const filename = `Oficio_${data.numeroOficio || 'derivacion'}.pdf`;
-      
-      const opt = {
-        margin: 10,
-        filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
 
-      await html2pdf().set(opt).from(element).save();
+      const blob = await generatePdfFromHtml(htmlContent, {
+        filename,
+        jsPDF: { format: 'a4', orientation: 'portrait', unit: 'mm' },
+      });
+
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Error al generar el PDF');
+      alert('No se pudo generar el PDF en servidor. Intenta imprimir como respaldo.');
     } finally {
       setIsGenerating(false);
     }
@@ -78,8 +82,16 @@ const OficioPreviewModal: React.FC<OficioPreviewModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in">
-      <div className="bg-white w-full max-w-5xl max-h-screen rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-4 animate-in fade-in"
+      style={{
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
+        paddingRight: 'calc(env(safe-area-inset-right, 0px) + 0.75rem)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)',
+        paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 0.75rem)',
+      }}
+    >
+      <div className="bg-white w-full max-w-5xl max-h-[92dvh] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
         
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
@@ -96,7 +108,7 @@ const OficioPreviewModal: React.FC<OficioPreviewModalProps> = ({
             <button
               onClick={handleDownloadPdf}
               disabled={isGenerating}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold uppercase hover:bg-indigo-700 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 min-h-11 bg-indigo-600 text-white rounded-xl text-xs font-bold uppercase hover:bg-indigo-700 transition-colors disabled:opacity-50"
             >
               {isGenerating ? (
                 <>
@@ -112,14 +124,14 @@ const OficioPreviewModal: React.FC<OficioPreviewModalProps> = ({
             </button>
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-200 text-slate-700 rounded-xl text-xs font-bold uppercase hover:bg-slate-300 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 min-h-11 bg-slate-200 text-slate-700 rounded-xl text-xs font-bold uppercase hover:bg-slate-300 transition-colors"
             >
               <Printer className="w-4 h-4" />
               <span>Imprimir</span>
             </button>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-slate-200 rounded-xl transition-colors"
+              className="min-h-11 min-w-11 inline-flex items-center justify-center p-2 hover:bg-slate-200 rounded-xl transition-colors"
             >
               <X className="w-5 h-5 text-slate-400" />
             </button>
@@ -140,7 +152,7 @@ const OficioPreviewModal: React.FC<OficioPreviewModalProps> = ({
           </p>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-slate-200 text-slate-600 rounded-lg text-xs font-bold uppercase hover:bg-slate-300 transition-colors"
+            className="px-4 py-2 min-h-11 bg-slate-200 text-slate-600 rounded-lg text-xs font-bold uppercase hover:bg-slate-300 transition-colors"
           >
             Cerrar
           </button>
@@ -151,4 +163,5 @@ const OficioPreviewModal: React.FC<OficioPreviewModalProps> = ({
 };
 
 export default OficioPreviewModal;
+
 

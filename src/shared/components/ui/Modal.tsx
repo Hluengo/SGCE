@@ -111,7 +111,13 @@ const Modal: React.FC<ModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
+      style={{
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
+        paddingRight: 'calc(env(safe-area-inset-right, 0px) + 0.75rem)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)',
+        paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 0.75rem)',
+      }}
       onClick={handleOverlayClick}
       onKeyDown={handleOverlayKeyDown}
       role="button"
@@ -119,7 +125,7 @@ const Modal: React.FC<ModalProps> = ({
       aria-label="Cerrar modal"
     >
       <div className={`
-        bg-white w-full rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-screen
+        bg-white w-full rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[90dvh]
         ${sizes[size]}
       `}>
         {/* Header */}
@@ -132,7 +138,7 @@ const Modal: React.FC<ModalProps> = ({
             )}
             <button
               onClick={onClose}
-              className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-400 active:scale-95"
+              className="inline-flex items-center justify-center min-h-11 min-w-11 p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-400 active:scale-95"
             >
               <X className="w-5 h-5" />
             </button>

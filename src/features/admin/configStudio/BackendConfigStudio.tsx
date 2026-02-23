@@ -15,7 +15,6 @@ import {
   Wrench,
   SlidersHorizontal,
 } from 'lucide-react';
-import { GoogleGenAI } from '@google/genai';
 import { supabase } from '@/shared/lib/supabaseClient';
 import useAuth from '@/shared/hooks/useAuth';
 import { useTenant } from '@/shared/context/TenantContext';
@@ -81,7 +80,7 @@ const statusLabel: Record<ChangesetRow['status'], string> = {
 };
 
 const tabClass = (active: boolean) =>
-  `rounded-xl px-3 py-2 text-xs font-black uppercase tracking-widest ${active ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`;
+  `inline-flex min-h-11 items-center rounded-xl px-3 py-2.5 text-xs font-black uppercase tracking-widest ${active ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`;
 
 const wizardOrder: StudioView[] = ['colegio', 'seguridad', 'infra', 'avanzado', 'historial'];
 
@@ -673,6 +672,7 @@ const useBackendConfigStudioView = () => {
 
     setAiLoading(true);
     try {
+      const { GoogleGenAI } = await import('@google/genai');
       const ai = new GoogleGenAI({ apiKey });
       const systemInstruction = `Eres un copiloto de Config Studio para Supabase en una plataforma escolar multi-tenant.
 Responde en español, claro y accionable para usuarios no técnicos.
@@ -738,6 +738,7 @@ ${prompt}`;
 
     setAiLoading(true);
     try {
+      const { GoogleGenAI } = await import('@google/genai');
       const ai = new GoogleGenAI({ apiKey });
       const context = buildAiContext();
       const targetSchema =
@@ -1012,33 +1013,33 @@ ${context}`,
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => void runAiGuidance('Revisa esta plantilla y dime exactamente qué campos faltan completar para dejarla lista.')}
-              className="px-3 py-1.5 rounded-lg border border-violet-300 text-xs font-black uppercase tracking-widest text-violet-800 hover:bg-violet-100"
+              className="min-h-11 px-3 py-2 rounded-lg border border-violet-300 text-xs font-black uppercase tracking-widest text-violet-800 hover:bg-violet-100"
             >
               Diagnóstico rápido
             </button>
             <button
               onClick={() => void runAiGuidance('Dame un ejemplo completo y válido para esta plantilla, listo para copiar en los campos del formulario.')}
-              className="px-3 py-1.5 rounded-lg border border-violet-300 text-xs font-black uppercase tracking-widest text-violet-800 hover:bg-violet-100"
+              className="min-h-11 px-3 py-2 rounded-lg border border-violet-300 text-xs font-black uppercase tracking-widest text-violet-800 hover:bg-violet-100"
             >
               Ejemplo listo
             </button>
             <button
               onClick={() => void runAiGuidance('Explícame los términos técnicos de esta vista en palabras simples para un usuario no técnico.')}
-              className="px-3 py-1.5 rounded-lg border border-violet-300 text-xs font-black uppercase tracking-widest text-violet-800 hover:bg-violet-100"
+              className="min-h-11 px-3 py-2 rounded-lg border border-violet-300 text-xs font-black uppercase tracking-widest text-violet-800 hover:bg-violet-100"
             >
               Traducir términos
             </button>
             <button
               onClick={() => void runAiAutofill()}
               disabled={aiLoading || aiAutoValidating}
-              className="px-3 py-1.5 rounded-lg bg-violet-700 text-white text-xs font-black uppercase tracking-widest hover:bg-violet-800 disabled:opacity-50"
+              className="min-h-11 px-3 py-2 rounded-lg bg-violet-700 text-white text-xs font-black uppercase tracking-widest hover:bg-violet-800 disabled:opacity-50"
             >
               Autocompletar plantilla
             </button>
             <button
               onClick={() => void runAiAutofillAndValidate()}
               disabled={aiLoading || aiAutoValidating}
-              className="px-3 py-1.5 rounded-lg bg-cyan-700 text-white text-xs font-black uppercase tracking-widest hover:bg-cyan-800 disabled:opacity-50"
+              className="min-h-11 px-3 py-2 rounded-lg bg-cyan-700 text-white text-xs font-black uppercase tracking-widest hover:bg-cyan-800 disabled:opacity-50"
             >
               {aiAutoValidating ? 'Autocompletando...' : 'Autocompletar + validar'}
             </button>
@@ -1054,7 +1055,7 @@ ${context}`,
             <button
               onClick={() => void runAiGuidance()}
               disabled={aiLoading}
-              className="px-3 py-2 rounded-xl bg-violet-700 text-white text-xs font-black uppercase tracking-widest disabled:opacity-50 flex items-center gap-1.5 h-fit"
+              className="min-h-11 px-3 py-2 rounded-xl bg-violet-700 text-white text-xs font-black uppercase tracking-widest disabled:opacity-50 inline-flex items-center gap-1.5"
             >
               {aiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
               Guiar
@@ -1112,14 +1113,14 @@ ${context}`,
               <button
                 onClick={goPrevStep}
                 disabled={!canGoPrev}
-                className="px-3 py-1.5 rounded-lg border border-cyan-300 text-xs font-black uppercase tracking-widest disabled:opacity-40"
+                className="min-h-11 px-3 py-2 rounded-lg border border-cyan-300 text-xs font-black uppercase tracking-widest disabled:opacity-40"
               >
                 Anterior
               </button>
               <button
                 onClick={goNextStep}
                 disabled={!canGoNext || currentStepIssues.length > 0}
-                className="px-3 py-1.5 rounded-lg bg-cyan-700 text-white text-xs font-black uppercase tracking-widest disabled:opacity-40"
+                className="min-h-11 px-3 py-2 rounded-lg bg-cyan-700 text-white text-xs font-black uppercase tracking-widest disabled:opacity-40"
               >
                 Siguiente
               </button>
@@ -1179,7 +1180,7 @@ ${context}`,
           <article className="rounded-2xl border border-slate-200 p-4 space-y-4">
             <p className="text-xs font-black uppercase tracking-widest text-slate-500">Modelo de datos</p>
             <input value={tableDraft.tableName} onChange={(e) => setState((current) => ({ ...current, tables: [{ ...tableDraft, tableName: e.target.value }] }))} placeholder="Tabla" className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs" />
-            <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
               <label className="flex items-center gap-2"><input type="checkbox" checked={tableDraft.createIfMissing} onChange={(e) => setState((current) => ({ ...current, tables: [{ ...tableDraft, createIfMissing: e.target.checked }] }))} />Crear si no existe</label>
               <label className="flex items-center gap-2"><input type="checkbox" checked={tableDraft.enableRls} onChange={(e) => setState((current) => ({ ...current, tables: [{ ...tableDraft, enableRls: e.target.checked }] }))} />Habilitar RLS</label>
             </div>
@@ -1217,7 +1218,7 @@ ${context}`,
             <label className="space-y-1"><span>Timeout sesion</span><input type="number" min={30} value={state.auth.sessionTimeoutMinutes} onChange={(e) => setState((current) => ({ ...current, auth: { ...current.auth, sessionTimeoutMinutes: Number(e.target.value) || 30 } }))} className="w-full rounded-lg border border-slate-300 px-2 py-1.5" /></label>
             <label className="space-y-1"><span>Rate limit/min</span><input type="number" min={10} value={state.api.rateLimitPerMinute} onChange={(e) => setState((current) => ({ ...current, api: { ...current.api, rateLimitPerMinute: Number(e.target.value) || 10 } }))} className="w-full rounded-lg border border-slate-300 px-2 py-1.5" /></label>
           </div>
-          <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={state.auth.requireMfaAdmins} onChange={(e) => setState((current) => ({ ...current, auth: { ...current.auth, requireMfaAdmins: e.target.checked } }))} />MFA obligatorio admins</label>
+          <label className="flex min-h-11 items-center gap-2 text-xs"><input type="checkbox" checked={state.auth.requireMfaAdmins} onChange={(e) => setState((current) => ({ ...current, auth: { ...current.auth, requireMfaAdmins: e.target.checked } }))} />MFA obligatorio admins</label>
         </article>
       )}
 
@@ -1270,7 +1271,7 @@ ${context}`,
           )}
           <div className="flex items-center justify-between">
             <p className="text-xs font-black uppercase tracking-widest text-slate-500">Historial</p>
-            <button onClick={() => void loadHistory()} disabled={loadingHistory} className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100 disabled:opacity-50">
+            <button onClick={() => void loadHistory()} disabled={loadingHistory} className="min-h-11 px-3 py-2 rounded-lg border border-slate-200 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100 disabled:opacity-50">
               {loadingHistory ? 'Cargando...' : 'Refrescar'}
             </button>
           </div>
@@ -1312,8 +1313,8 @@ ${context}`,
             )}
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => void applySelectedChangeset()} disabled={!selectedChangesetId || executing} className="px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-black uppercase tracking-widest disabled:opacity-50 flex items-center gap-2"><Play className="w-3.5 h-3.5" />Aplicar</button>
-            <button onClick={() => void revertSelectedChangeset()} disabled={!selectedChangesetId || executing} className="px-3 py-2 rounded-xl bg-amber-600 text-white text-xs font-black uppercase tracking-widest disabled:opacity-50 flex items-center gap-2"><RotateCcw className="w-3.5 h-3.5" />Revertir</button>
+            <button onClick={() => void applySelectedChangeset()} disabled={!selectedChangesetId || executing} className="min-h-11 px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-black uppercase tracking-widest disabled:opacity-50 inline-flex items-center gap-2"><Play className="w-3.5 h-3.5" />Aplicar</button>
+            <button onClick={() => void revertSelectedChangeset()} disabled={!selectedChangesetId || executing} className="min-h-11 px-3 py-2 rounded-xl bg-amber-600 text-white text-xs font-black uppercase tracking-widest disabled:opacity-50 inline-flex items-center gap-2"><RotateCcw className="w-3.5 h-3.5" />Revertir</button>
           </div>
         </div>
       )}

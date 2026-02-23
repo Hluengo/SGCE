@@ -111,7 +111,7 @@ const BrandingThemeFields: React.FC<{
   <>
     <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
       <h3 className="text-sm font-semibold text-slate-300 mb-4">Paleta de Colores</h3>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {[
           { key: 'color_primario' as const, label: 'Color Primario' },
           { key: 'color_secundario' as const, label: 'Color Secundario' },
@@ -143,7 +143,7 @@ const BrandingThemeFields: React.FC<{
 
     <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
       <h3 className="text-sm font-semibold text-slate-300 mb-4">Tipografías</h3>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label htmlFor="branding-tipografia-body" className="block text-xs font-medium text-slate-400 mb-1">
             Tipografía del cuerpo
@@ -545,7 +545,7 @@ const BrandingConfigForm: React.FC<BrandingConfigFormProps> = ({
 
   if (!branding) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
         <div className="bg-slate-800 rounded-xl border border-slate-700 p-8">
           <div className="w-8 h-8 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin mx-auto" />
           <p className="text-slate-300 text-center mt-4">Cargando configuración...</p>
@@ -555,8 +555,8 @@ const BrandingConfigForm: React.FC<BrandingConfigFormProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-2xl max-h-screen overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-2xl max-h-[92dvh] overflow-y-auto">
         <BrandingModalHeader establecimientoNombre={establecimientoNombre} onClose={onClose} />
 
         <BrandingAlerts
@@ -585,4 +585,6 @@ const BrandingConfigForm: React.FC<BrandingConfigFormProps> = ({
 };
 
 export default BrandingConfigForm;
+
+
 

@@ -49,7 +49,7 @@ export const SidebarProfile: React.FC<SidebarProfileProps> = ({ isCollapsed }) =
       <div className="p-3 border-t border-slate-700">
         <button
           onClick={() => void handleSignOut()}
-          className="w-full flex justify-center p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+          className="w-full min-h-11 flex justify-center items-center p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
           title="Cerrar sesion"
         >
           <LogOut className="w-5 h-5" />
@@ -63,7 +63,7 @@ export const SidebarProfile: React.FC<SidebarProfileProps> = ({ isCollapsed }) =
       <div className="relative">
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 transition-colors"
+          className="w-full min-h-11 flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 transition-colors"
           aria-expanded={isMenuOpen}
           aria-haspopup="true"
         >
@@ -96,7 +96,7 @@ export const SidebarProfile: React.FC<SidebarProfileProps> = ({ isCollapsed }) =
                 <button
                   type="submit"
                   disabled={isUpdatingPw}
-                  className="w-full px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="w-full min-h-11 px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {isUpdatingPw ? 'Actualizando...' : 'Actualizar'}
                 </button>
@@ -110,7 +110,7 @@ export const SidebarProfile: React.FC<SidebarProfileProps> = ({ isCollapsed }) =
 
             <button
               onClick={() => void handleSignOut()}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-slate-700 transition-colors"
+              className="w-full min-h-11 flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-slate-700 transition-colors"
               role="menuitem"
             >
               <LogOut className="w-4 h-4" />

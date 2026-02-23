@@ -69,9 +69,10 @@ const getCategoryLabel = (category: NavCategory): string => {
 
 interface SidebarNavProps {
   isCollapsed: boolean;
+  onNavigate?: () => void;
 }
 
-export const SidebarNav: React.FC<SidebarNavProps> = ({ isCollapsed }) => {
+export const SidebarNav: React.FC<SidebarNavProps> = ({ isCollapsed, onNavigate }) => {
   const location = useLocation();
   const { tieneAlgunPermiso, tieneTodosLosPermisos } = useAuth();
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
@@ -164,7 +165,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ isCollapsed }) => {
                       onClick={() => toggleExpand(item.name)}
                       aria-expanded={isExpanded}
                       aria-controls={submenuId}
-                      className={`w-full group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isItemActive || isExpanded
+                      className={`w-full min-h-11 group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isItemActive || isExpanded
                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                         : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                         }`}
@@ -191,8 +192,9 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ isCollapsed }) => {
                             <li key={sub.path}>
                               <NavLink
                                 to={sub.path}
+                                onClick={onNavigate}
                                 aria-label={sub.name}
-                                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-xs ${isSubActive
+                                className={`min-h-11 flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-xs ${isSubActive
                                   ? 'bg-blue-500/20 text-blue-400 font-medium'
                                   : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
                                   }`}
@@ -217,8 +219,9 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ isCollapsed }) => {
                   <li key={item.path}>
                     <NavLink
                       to={item.path}
+                      onClick={onNavigate}
                       aria-label={item.name}
-                      className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isActive
+                      className={`group min-h-11 flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isActive
                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                         : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                         }`}

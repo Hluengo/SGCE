@@ -1,6 +1,5 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { GoogleGenAI } from "@google/genai";
 import { useConvivencia } from '@/shared/context/ConvivenciaContext';
 import { withRetry } from '@/shared/utils/retry';
 import { 
@@ -166,6 +165,7 @@ Contexto actual de la plataforma: ${contextPrompt}`;
         return;
       }
 
+      const { GoogleGenAI } = await import('@google/genai');
       const ai = new GoogleGenAI({ apiKey });
 
       const response = await withRetry(
@@ -226,7 +226,7 @@ Contexto actual de la plataforma: ${contextPrompt}`;
   if (!isAssistantOpen) return <AssistantLauncher modoActivo={modoActivo} onOpen={() => setIsAssistantOpen(true)} />;
 
   return (
-    <div className="fixed bottom-4 right-4 left-4 z-50 flex h-5/6 w-auto flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in slide-in-from-bottom-8 duration-300 md:bottom-6 md:right-6 md:left-auto md:h-3/4 md:w-96">
+    <div className="fixed bottom-4 right-4 left-4 z-50 flex h-[85dvh] w-auto flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in slide-in-from-bottom-8 duration-300 md:bottom-6 md:right-6 md:left-auto md:h-3/4 md:w-96">
       {/* Header */}
       <div className="p-4 bg-slate-900 text-white flex justify-between items-center shrink-0">
         <div className="flex items-center space-x-3">
@@ -355,4 +355,5 @@ Contexto actual de la plataforma: ${contextPrompt}`;
 };
 
 export default LegalAssistant;
+
 

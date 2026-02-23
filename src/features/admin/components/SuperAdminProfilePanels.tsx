@@ -113,7 +113,7 @@ export const ProfilesTablePanel: FC<{
         placeholder="Buscar por id, nombre o rol"
         className={ui.input}
       />
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <select value={roleFilter} onChange={(e) => onRoleFilterChange(e.target.value as RolUsuario | 'ALL')} className={ui.input}>
           <option value="ALL">Todos los roles</option>
           {roleOptions.map((role) => (
@@ -128,7 +128,7 @@ export const ProfilesTablePanel: FC<{
       </div>
     </div>
     <div className="max-h-96 overflow-auto rounded-[0.75rem] border border-slate-200">
-      <table className="w-full text-[11px]">
+      <table className="w-full min-w-[640px] text-xs">
         <thead className={ui.tableHead}>
           <tr>
             <th className="p-2 text-left">Usuario</th>
@@ -167,7 +167,7 @@ export const ProfilesTablePanel: FC<{
       </table>
       {paginatedProfiles.length === 0 && <p className="p-3 text-xs text-slate-500">Sin resultados para los filtros actuales.</p>}
     </div>
-    <div className="flex items-center justify-between text-xs text-slate-600">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-xs text-slate-600">
       <p>Pagina {currentPage} de {totalPages}</p>
       <div className="flex gap-2">
         <button disabled={currentPage <= 1} onClick={onPrevPage} className={ui.buttonSecondary}>Anterior</button>
@@ -231,7 +231,7 @@ export const ProfileAccessFormPanel: FC<{
   <section className={`xl:col-span-3 ${ui.card} p-4 space-y-4`}>
     <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-3">
       <p className="text-[11px] font-black uppercase tracking-widest text-indigo-700">Resumen de autorización</p>
-      <div className="mt-2 grid gap-2 md:grid-cols-4">
+      <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-lg border border-indigo-200 bg-white px-3 py-2">
           <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Quién otorga</p>
           <p className="text-xs font-semibold text-slate-800">{grantorLabel}</p>
@@ -315,7 +315,7 @@ export const ProfileAccessFormPanel: FC<{
         </select>
         <p className="text-[11px] text-slate-500">{ROLE_LABELS[form.rol].help}</p>
       </label>
-      <label className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-xs">
+      <label className="flex min-h-11 items-center justify-between rounded-xl border border-slate-200 px-3 py-3 text-xs">
         <span className="font-black uppercase tracking-widest text-slate-500">Activo</span>
         <input type="checkbox" checked={form.activo} onChange={(e) => onFormPatch({ activo: e.target.checked })} />
       </label>
@@ -326,7 +326,7 @@ export const ProfileAccessFormPanel: FC<{
       <p className="text-[11px] text-slate-600 mb-3">Estado visual: <span className="font-semibold text-emerald-700">Permitido</span> o <span className="font-semibold text-slate-500">No permitido</span>.</p>
       <div className="mb-3 rounded-xl border border-slate-200 bg-white p-2">
         <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-500">Filtro por nivel de acceso</p>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {(['Basico', 'Operativo', 'Critico'] as PermissionLevelFilter[]).map((level) => (
             <button
               key={level}
@@ -360,8 +360,9 @@ export const ProfileAccessFormPanel: FC<{
                 .map((permission) => {
                 const descriptor = PERMISSION_LABELS[permission];
                 const enabled = form.permisos.includes(permission);
+                const permissionInputId = `perm-${permission.replace(/[^a-z0-9_-]/gi, '-')}`;
                 return (
-                  <label
+                  <div
                     key={permission}
                     className={`rounded-[0.75rem] border px-2.5 py-2 text-xs transition-all duration-200 ease-in-out cursor-pointer ${
                       enabled
@@ -370,10 +371,16 @@ export const ProfileAccessFormPanel: FC<{
                     }`}
                   >
                     <div className="flex items-start gap-2">
-                      <input type="checkbox" checked={enabled} onChange={() => onTogglePermission(permission)} className="mt-0.5" />
+                      <input
+                        id={permissionInputId}
+                        type="checkbox"
+                        checked={enabled}
+                        onChange={() => onTogglePermission(permission)}
+                        className="mt-0.5"
+                      />
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-slate-800">{descriptor.label}</span>
+                          <label htmlFor={permissionInputId} className="font-semibold text-slate-800 cursor-pointer">{descriptor.label}</label>
                           <span className={`inline-flex rounded-full border px-1.5 py-0.5 text-[10px] font-bold ${LEVEL_STYLES[descriptor.level]}`}>
                             {descriptor.level}
                           </span>
@@ -385,7 +392,7 @@ export const ProfileAccessFormPanel: FC<{
                         <p className="text-[10px] text-slate-500">{descriptor.example}</p>
                       </div>
                     </div>
-                  </label>
+                  </div>
                 );
               })}
             </div>
@@ -397,7 +404,7 @@ export const ProfileAccessFormPanel: FC<{
       </div>
     </div>
 
-    <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center gap-3">
       <button onClick={onSubmit} disabled={saving} className={ui.buttonPrimary}>{saving ? 'Guardando...' : 'Guardar autorización'}</button>
       <button onClick={onDeactivate} disabled={saving} className={ui.buttonDanger}>Desactivar perfil</button>
       <button
@@ -409,10 +416,10 @@ export const ProfileAccessFormPanel: FC<{
         Borrado fisico
       </button>
       {!profileExistsInPerfiles && trimmedProfileId.length > 0 && (
-        <p className="text-xs text-amber-700">UUID cargado sin fila en `perfiles`; el borrado físico está bloqueado.</p>
+        <p className="w-full text-xs text-amber-700">UUID cargado sin fila en `perfiles`; el borrado físico está bloqueado.</p>
       )}
       {status && (
-        <p className={`inline-flex items-center gap-1 rounded-[0.75rem] px-3 py-2 text-xs ${statusTone === 'error' ? 'bg-rose-50 text-rose-700' : statusTone === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-600'}`}>
+        <p className={`inline-flex w-full items-center gap-1 rounded-[0.75rem] px-3 py-2 text-xs ${statusTone === 'error' ? 'bg-rose-50 text-rose-700' : statusTone === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-600'}`}>
           {status}
         </p>
       )}
@@ -428,7 +435,7 @@ export const ConfirmActionModal: FC<{
 }> = ({ action, ui, onCancel, onConfirm }) => {
   if (!action) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-950/40 px-3 sm:px-4 pt-[var(--safe-area-inset-top)] pb-[var(--safe-area-inset-bottom)]">
       <div className={`${ui.card} w-full max-w-md p-5 space-y-3`}>
         <h3 className={ui.cardTitle}>Confirmar acción crítica</h3>
         <p className="text-sm text-slate-700">

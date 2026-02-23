@@ -5,13 +5,12 @@ Módulo completo para generar documentos oficiales con branding institucional en
 ## 📦 Instalación
 
 Las dependencias ya están configuradas en `package.json`:
-- `html2pdf.js` - Generación de PDF desde HTML
-- `html2canvas` - Rendering de HTML a canvas
 - `dompurify` - Sanitización de HTML
+- `@supabase/supabase-js` - Invocación de Edge Function para render PDF
 
 ## 🚀 Uso Rápido
 
-### Opción 1: Cliente (Recomendado para UI)
+### Opción 1: Cliente (Recomendado)
 
 ```tsx
 import { usePdfGenerator, baseTemplate } from '@/features/documentos';
@@ -59,15 +58,15 @@ function MiComponente() {
 }
 ```
 
-**Nota:** La Edge Function requiere implementación completa. Ver `supabase/functions/generate-pdf/index.ts`.
+**Nota:** La Edge Function `generate-pdf` ya está implementada; requiere configurar secretos `PDF_RENDERER_URL` (y opcional `PDF_RENDERER_TOKEN`).
 
 ### Opción 3: Web Worker (Experimental)
 
 ```tsx
 import { useWorkerPdfGenerator } from '@/features/documentos/hooks/useWorkerPdfGenerator';
 
-// Similar a opción 1, pero en thread separado
-// Limitación: html2pdf.js requiere DOM, necesita adaptación
+// Similar a opción 1, pero actualmente es placeholder
+// El flujo activo usa server-side rendering vía Edge Function
 ```
 
 ## 📄 Plantillas Disponibles
@@ -111,19 +110,9 @@ export function plantillaActa(
 ```tsx
 const opciones = {
   filename: 'documento.pdf',
-  margin: 15, // mm
   jsPDF: {
-    unit: 'mm',
     format: 'a4', // o 'letter'
     orientation: 'portrait', // o 'landscape'
-  },
-  html2canvas: {
-    scale: 2, // Calidad (2 = alta)
-    useCORS: true, // Para imágenes externas
-  },
-  image: {
-    type: 'jpeg',
-    quality: 0.98,
   },
 };
 
@@ -208,14 +197,13 @@ Según el plan original, estos son los documentos a implementar:
 
 ### Fase Futura: Integración
 - [ ] Integrar en vistas existentes (ExpedienteDetail, etc.)
-- [ ] Implementar Edge Function completa (Puppeteer)
 - [ ] Sistema de plantillas guardadas en DB
 - [ ] Generación por lotes
 
 ## 🐛 Problemas Conocidos
 
 1. **HTMLCanvasElement warning en tests**: Normal en jsdom, no afecta producción.
-2. **Web Worker limitado**: `html2pdf.js` requiere DOM, mejor usar Edge Function.
+2. **Web Worker limitado**: No está habilitado aún; usar Edge Function.
 3. **CORS con imágenes**: Si el logo falla, usar proxy o base64.
 
 ## 📞 Soporte

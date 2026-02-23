@@ -479,7 +479,7 @@ const useGestionEvidenciasView = () => {
           aria-label="Cerrar panel de evidencia"
         />
       )}
-      <aside className={`fixed lg:static inset-x-0 bottom-0 h-5\/6 lg:h-auto lg:w-96 bg-white border-t lg:border-t-0 lg:border-l border-slate-200 transition-all duration-500 overflow-y-auto z-50 lg:z-auto ${selectedEvidenciaId ? 'translate-y-0 lg:translate-y-0' : 'translate-y-full lg:translate-y-0 lg:-mr-96'}`}>
+      <aside className={`fixed lg:static inset-x-0 bottom-0 h-[85dvh] lg:h-auto lg:w-96 bg-white border-t lg:border-t-0 lg:border-l border-slate-200 transition-all duration-500 overflow-y-auto z-50 lg:z-auto ${selectedEvidenciaId ? 'translate-y-0 lg:translate-y-0' : 'translate-y-full lg:translate-y-0 lg:-mr-96'}`}>
         {selectedEvidencia ? (
           <div className="p-4 md:p-10 space-y-10 animate-in slide-in-from-right-8 duration-500">
             <header className="flex justify-between items-start">
@@ -492,7 +492,7 @@ const useGestionEvidenciasView = () => {
                  </div>
                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{selectedEvidencia.id}</p>
               </div>
-              <button onClick={() => setSelectedEvidenciaId(null)} className="p-2 text-slate-300 hover:bg-slate-100 rounded-full transition-all">
+              <button onClick={() => setSelectedEvidenciaId(null)} className="min-h-11 min-w-11 inline-flex items-center justify-center p-2 text-slate-300 hover:bg-slate-100 rounded-full transition-all">
                 <X className="w-5 h-5" />
               </button>
             </header>
@@ -570,7 +570,10 @@ const useGestionEvidenciasView = () => {
 
       {/* Floating Action Bar (Visible cuando hay selección) */}
       {evidenciasState.items.some(e => e.seleccionada) && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-4 md:px-10 py-4 md:py-5 rounded-3xl shadow-2xl flex flex-col md:flex-row items-center gap-4 md:gap-10 animate-in slide-in-from-bottom-10 duration-500 z-40 border border-white/10 max-w-full">
+        <div
+          className="fixed left-1/2 -translate-x-1/2 bg-slate-900 text-white px-4 md:px-10 py-4 md:py-5 rounded-3xl shadow-2xl flex flex-col md:flex-row items-center gap-4 md:gap-10 animate-in slide-in-from-bottom-10 duration-500 z-40 border border-white/10 max-w-[calc(100vw-1rem)]"
+          style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
+        >
            <div className="flex items-center space-x-4">
               <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center">
                  <CheckSquare className="w-5 h-5" />
@@ -582,10 +585,10 @@ const useGestionEvidenciasView = () => {
            </div>
            <div className="hidden md:block h-10 w-px bg-white/10"></div>
            <div className="flex items-center space-x-4">
-              <button className="px-6 py-2.5 bg-white text-slate-900 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all active:scale-95">
+              <button className="px-6 py-2.5 min-h-11 bg-white text-slate-900 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all active:scale-95">
                  Incluir en Informe Final
               </button>
-              <button onClick={() => setEvidenciasState((prev) => ({ ...prev, items: prev.items.map((e) => ({ ...e, seleccionada: false })) }))} className="p-2.5 text-slate-400 hover:text-white transition-all">
+              <button onClick={() => setEvidenciasState((prev) => ({ ...prev, items: prev.items.map((e) => ({ ...e, seleccionada: false })) }))} className="min-h-11 min-w-11 inline-flex items-center justify-center p-2.5 text-slate-400 hover:text-white transition-all">
                  <X className="w-5 h-5" />
               </button>
            </div>

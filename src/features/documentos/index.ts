@@ -8,5 +8,5 @@ export { default as useWorkerPdfGenerator } from './hooks/useWorkerPdfGenerator'
 export { default as baseTemplate } from './templates/baseTemplate';
 export { default as DocumentGeneratorExample } from './components/DocumentGeneratorExample';
 
-export type { PdfOptions } from './hooks/usePdfGenerator';
+export type { PdfOptions } from './hooks/pdfShared';
 export type { DocumentBranding } from './templates/baseTemplate';

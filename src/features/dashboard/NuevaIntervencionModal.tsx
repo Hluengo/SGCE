@@ -192,8 +192,16 @@ const NuevaIntervencionModal: React.FC<NuevaIntervencionModalProps> = ({ isOpen,
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in">
-      <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl p-6 max-h-screen overflow-y-auto">
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4 animate-in fade-in"
+      style={{
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
+        paddingRight: 'calc(env(safe-area-inset-right, 0px) + 0.75rem)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)',
+        paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 0.75rem)',
+      }}
+    >
+      <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl p-6 max-h-[92dvh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-4">
@@ -207,7 +215,7 @@ const NuevaIntervencionModal: React.FC<NuevaIntervencionModalProps> = ({ isOpen,
           </div>
           <div className="flex items-center space-x-2">
             <AssistantHeaderButton onClick={() => setIsAssistantOpen(true)} />
-            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl">
+            <button onClick={onClose} className="min-h-11 min-w-11 inline-flex items-center justify-center p-2 hover:bg-slate-100 rounded-xl">
               <X className="w-5 h-5 text-slate-400" />
             </button>
           </div>
@@ -311,7 +319,7 @@ const NuevaIntervencionModal: React.FC<NuevaIntervencionModalProps> = ({ isOpen,
             </label>
 
             {/* Fechas */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <label className="block space-y-2">
                 <span className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center"><Calendar className="w-3 h-3 mr-2" /> Inicio</span>
                 <input required type="date" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold" value={formData.fechaInicio} onChange={e => setFormData({...formData, fechaInicio: e.target.value})} />
@@ -324,8 +332,8 @@ const NuevaIntervencionModal: React.FC<NuevaIntervencionModalProps> = ({ isOpen,
 
             {/* Botones */}
             <div className="flex gap-4 pt-4">
-              <button type="button" onClick={onClose} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200">Cancelar</button>
-              <button type="submit" className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-500 flex items-center justify-center gap-2">
+              <button type="button" onClick={onClose} className="flex-1 min-h-11 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200">Cancelar</button>
+              <button type="submit" className="flex-1 min-h-11 py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-500 flex items-center justify-center gap-2">
                 <Send className="w-4 h-4" /> Registrar
               </button>
             </div>
@@ -337,4 +345,5 @@ const NuevaIntervencionModal: React.FC<NuevaIntervencionModalProps> = ({ isOpen,
 };
 
 export default NuevaIntervencionModal;
+
 

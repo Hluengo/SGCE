@@ -87,7 +87,7 @@ export const TenantSelector: React.FC = () => {
         onClick={() => setIsOpen(!isOpen)}
         disabled={isChanging}
         className={`
-          w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg
+          w-full min-h-11 flex items-center justify-between gap-2 px-3 py-2 rounded-lg
           transition-all duration-200
           ${isOpen 
             ? 'bg-blue-600/20 text-white ring-1 ring-blue-500' 
@@ -125,7 +125,7 @@ export const TenantSelector: React.FC = () => {
                 onClick={() => handleTenantChange(est.id)}
                 disabled={isChanging}
                 className={`
-                  w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm
+                  w-full min-h-11 flex items-center justify-between gap-2 px-3 py-2.5 text-sm
                   transition-colors duration-150
                   ${est.id === tenantId 
                     ? 'bg-blue-600/20 text-blue-400' 

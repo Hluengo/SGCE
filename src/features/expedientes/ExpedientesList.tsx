@@ -86,18 +86,18 @@ const ExpedientesToolbar: React.FC<{
         </p>
       </div>
     </div>
-    <div className="flex items-center space-x-3">
+    <div className="flex w-full flex-wrap items-center gap-3 md:w-auto">
       <button
         onClick={onExport}
         disabled={!hasResultados}
-        className="px-4 py-3 bg-white border-2 border-slate-200 text-slate-600 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="min-h-11 px-4 py-3 bg-white border-2 border-slate-200 text-slate-600 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <Download className="w-4 h-4" />
         <span>Exportar</span>
       </button>
       <button
         onClick={onCreate}
-        className="px-6 py-3 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 shadow-xl shadow-indigo-600/20 transition-all flex items-center space-x-2"
+        className="min-h-11 px-6 py-3 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 shadow-xl shadow-indigo-600/20 transition-all inline-flex items-center gap-2"
       >
         <Plus className="w-4 h-4" />
         <span>Nuevo Expediente</span>
@@ -131,7 +131,7 @@ const ExpedientesFiltersCard: React.FC<{
 
       <button
         onClick={toggleFilters}
-        className={`px-4 py-3 rounded-xl border-2 font-bold text-xs uppercase tracking-widest transition-all flex items-center space-x-2 ${
+        className={`min-h-11 px-4 py-3 rounded-xl border-2 font-bold text-xs uppercase tracking-widest transition-all inline-flex items-center gap-2 ${
           showFilters
             ? 'bg-indigo-50 border-indigo-200 text-indigo-600'
             : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-300'
@@ -224,8 +224,8 @@ const ExpedientesFiltersCard: React.FC<{
       </div>
     )}
 
-    <div className="flex items-center justify-between pt-2">
-      <label className="flex items-center space-x-3 cursor-pointer">
+    <div className="flex flex-col gap-3 pt-2 lg:flex-row lg:items-center lg:justify-between">
+      <label className="flex items-center gap-3 cursor-pointer">
         <input
           type="checkbox"
           checked={filtros.conPlazoProximo}
@@ -235,7 +235,7 @@ const ExpedientesFiltersCard: React.FC<{
         <span className="text-sm font-bold text-slate-700">Solo plazos próximos a vencer</span>
       </label>
 
-      <label className="flex items-center space-x-3 cursor-pointer">
+      <label className="flex items-center gap-3 cursor-pointer">
         <input
           type="checkbox"
           checked={filtros.conContraparte}
@@ -247,7 +247,7 @@ const ExpedientesFiltersCard: React.FC<{
 
       <button
         onClick={limpiarFiltros}
-        className="text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors"
+        className="min-h-11 px-2 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors self-start"
       >
         Limpiar filtros
       </button>
@@ -327,7 +327,7 @@ const ExpedientesTableSection: React.FC<{
           return (
             <div
               key={exp.id}
-              className="group grid grid-cols-1 md:grid-cols-6 gap-4 px-6 py-4 hover:bg-slate-50 transition-colors cursor-pointer"
+              className="group grid grid-cols-1 md:grid-cols-6 gap-4 px-4 sm:px-6 py-4 hover:bg-slate-50 transition-colors cursor-pointer"
               onClick={() => navigate(`/expedientes/${exp.id}`)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -354,7 +354,7 @@ const ExpedientesTableSection: React.FC<{
                 </div>
               </div>
               <div className="flex items-center">
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
                     <Users className="w-4 h-4 text-indigo-600" />
                   </div>
@@ -386,13 +386,13 @@ const ExpedientesTableSection: React.FC<{
                   <span className="text-white text-xs font-black">{plazo.text}</span>
                 </div>
               </div>
-              <div className="flex items-center justify-center space-x-2">
+              <div className="flex items-center justify-start md:justify-center gap-2">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setResumenExpedienteId(exp.dbId ?? exp.id);
                   }}
-                  className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
                   title="Ver Resumen"
                 >
                   <Eye className="w-4 h-4" />
@@ -402,7 +402,7 @@ const ExpedientesTableSection: React.FC<{
                     e.stopPropagation();
                     navigate(`/expedientes/${exp.id}?tab=timeline`);
                   }}
-                  className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
                   title="Ver Timeline"
                 >
                   <History className="w-4 h-4" />
@@ -412,7 +412,7 @@ const ExpedientesTableSection: React.FC<{
                     e.stopPropagation();
                     navigate(`/expedientes/${exp.id}/editar?modo=apertura`);
                   }}
-                  className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                   title="Editar"
                 >
                   <FileText className="w-4 h-4" />
@@ -422,7 +422,7 @@ const ExpedientesTableSection: React.FC<{
                     e.stopPropagation();
                     navigate(`/expedientes/${exp.id}`);
                   }}
-                  className="inline-flex items-center justify-center w-10 h-10 text-blue-600 bg-blue-50 rounded-xl opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-sm md:group-hover:translate-x-1"
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center text-blue-600 bg-blue-50 rounded-xl opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-sm md:group-hover:translate-x-1"
                   title="Ir al expediente"
                 >
                   <ArrowRight className="w-5 h-5" />
@@ -434,15 +434,15 @@ const ExpedientesTableSection: React.FC<{
       )}
     </div>
 
-    <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+    <div className="px-4 sm:px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="text-sm font-medium text-slate-600">
         Mostrando {firstItemIndex} - {lastItemIndex} de {filteredCount}
       </div>
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <button
           onClick={onPrevPage}
           disabled={paginaActualSegura === 1 || totalPaginas === 0}
-          className="p-2 rounded-xl border-2 border-slate-200 text-slate-600 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="min-h-11 min-w-11 rounded-xl border-2 border-slate-200 text-slate-600 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
@@ -461,7 +461,7 @@ const ExpedientesTableSection: React.FC<{
             <button
               key={pageNum}
               onClick={() => onGoToPage(pageNum)}
-              className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${
+              className={`min-h-11 min-w-11 rounded-xl font-bold text-sm transition-all ${
                 paginaActualSegura === pageNum
                   ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
                   : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-indigo-300'
@@ -474,7 +474,7 @@ const ExpedientesTableSection: React.FC<{
         <button
           onClick={onNextPage}
           disabled={totalPaginas === 0 || paginaActualSegura === totalPaginas}
-          className="p-2 rounded-xl border-2 border-slate-200 text-slate-600 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="min-h-11 min-w-11 rounded-xl border-2 border-slate-200 text-slate-600 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
@@ -714,7 +714,7 @@ const ExpedientesList: React.FC = () => {
 
       {/* Alertas de plazos */}
       {alertasPlazo.length > 0 && (
-        <div role="alert" className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-4 flex items-center space-x-4">
+        <div role="alert" className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
           <div className="p-3 bg-orange-500 text-white rounded-2xl">
             <Clock className="w-5 h-5" />
           </div>
@@ -726,7 +726,7 @@ const ExpedientesList: React.FC = () => {
               {alertasPlazo.length} expediente(s) requieren atención inmediata
             </p>
           </div>
-          <button className="px-4 py-2 bg-orange-500 text-white rounded-xl font-bold text-xs uppercase hover:bg-orange-600 transition-all">
+          <button className="min-h-11 px-4 py-2.5 bg-orange-500 text-white rounded-xl font-bold text-xs uppercase hover:bg-orange-600 transition-all">
             Ver Todos
           </button>
         </div>

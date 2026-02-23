@@ -81,7 +81,7 @@ const ToastItem: React.FC<{ toast: Toast; onHide: (id: string) => void }> = ({ t
     <div
       role="alert"
       aria-live="polite"
-      className={`flex items-start gap-3 p-4 rounded-xl border ${styles.bg} ${styles.border} shadow-lg animate-in slide-in-from-right fade-in max-w-sm`}
+      className={`flex items-start gap-3 p-4 rounded-xl border ${styles.bg} ${styles.border} shadow-lg animate-in slide-in-from-right fade-in w-[min(22rem,calc(100vw-1.5rem))]`}
     >
       <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${styles.icon}`} aria-hidden="true" />
       <div className="flex-1 min-w-0">
@@ -93,7 +93,7 @@ const ToastItem: React.FC<{ toast: Toast; onHide: (id: string) => void }> = ({ t
       <button
         onClick={() => onHide(toast.id)}
         aria-label="Cerrar notificación"
-        className={`flex-shrink-0 p-1 rounded-lg hover:bg-black/5 transition-colors ${styles.icon}`}
+        className={`flex-shrink-0 min-h-11 min-w-11 inline-flex items-center justify-center p-1 rounded-lg hover:bg-black/5 transition-colors ${styles.icon}`}
       >
         <X className="w-4 h-4" aria-hidden="true" />
       </button>
@@ -109,7 +109,11 @@ const ToastContainer: React.FC<{ toasts: Toast[]; onHide: (id: string) => void }
     <div
       aria-live="polite"
       aria-atomic="true"
-      className="fixed top-4 right-4 z-50 space-y-3 pointer-events-none"
+      className="fixed z-50 space-y-3 pointer-events-none"
+      style={{
+        top: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
+        right: 'calc(env(safe-area-inset-right, 0px) + 0.75rem)',
+      }}
     >
       {toasts.map(toast => (
         <div key={toast.id} className="pointer-events-auto">

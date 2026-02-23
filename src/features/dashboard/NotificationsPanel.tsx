@@ -207,7 +207,7 @@ const NotificationsPanel: React.FC = () => {
           />
 
           {/* Panel */}
-          <div className="absolute right-0 top-12 w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden animate-in slide-in-from-top-2 duration-200">
+          <div className="absolute right-0 top-12 w-[min(24rem,calc(100vw-1rem))] bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden animate-in slide-in-from-top-2 duration-200">
             {/* Header */}
             <div className="p-4 border-b border-slate-200 flex items-center justify-between">
               <div className="flex items-center space-x-3">

@@ -70,7 +70,7 @@ export function oficioDerivacionTemplate(
 <html>
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Oficio de Derivacion - ${escapeHtml(data.numeroOficio)}</title>
   <style>
     @page { size: A4; margin: 20mm; }

@@ -1,13 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
-
-// Mock html2pdf before importing the module
-vi.mock('html2pdf.js', () => ({
-  default: vi.fn(() => ({
-    set: vi.fn().mockReturnThis(),
-    from: vi.fn().mockReturnThis(),
-    outputPdf: vi.fn().mockResolvedValue(new Blob()),
-  })),
-}));
+import { describe, it, expect } from 'vitest';
 
 import { sanitizeHtml } from './usePdfGenerator';
 

@@ -1,0 +1,47 @@
+name: responsive-mobile
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+jobs:
+  responsive-and-lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Build
+        run: npm run build
+
+      - name: Responsive visual + QA
+        run: npx playwright test --config=playwright.config.responsive.ts
+
+      - name: Lighthouse mobile critical routes
+        run: npm run test:lighthouse:mobile:critical
+
+      - name: Lighthouse mobile secondary routes
+        run: npm run test:lighthouse:mobile:secondary
+
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-mobile-reports
+          path: playwright/lighthouse/*.report.*
+          if-no-files-found: warn

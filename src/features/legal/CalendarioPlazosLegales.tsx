@@ -724,7 +724,7 @@ const CalendarioPlazosLegales: React.FC = () => {
 
       {eventTooltip && (
         <div
-          className="pointer-events-none fixed z-[120] w-80 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-[0_24px_48px_-16px_rgba(15,23,42,0.45)] backdrop-blur-sm animate-in fade-in zoom-in-95 duration-150"
+          className="pointer-events-none fixed z-[120] w-[min(20rem,calc(100vw-1rem))] rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-[0_24px_48px_-16px_rgba(15,23,42,0.45)] backdrop-blur-sm animate-in fade-in zoom-in-95 duration-150"
           style={{
             left: Math.min(eventTooltip.x + 14, window.innerWidth - 340),
             top: Math.max(12, eventTooltip.y - 10),

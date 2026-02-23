@@ -62,8 +62,16 @@ const FormularioNuevaEvidencia: React.FC<Props> = ({ isOpen, archivoNombre, onCl
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-start md:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-white w-full max-w-2xl max-h-screen rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
+    <div
+      className="fixed inset-0 z-[70] flex items-start md:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto"
+      style={{
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
+        paddingRight: 'calc(env(safe-area-inset-right, 0px) + 0.75rem)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)',
+        paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 0.75rem)',
+      }}
+    >
+      <div className="bg-white w-full max-w-2xl max-h-[92dvh] rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
         <header className="p-4 md:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
           <div className="flex items-center space-x-3">
             <div className="p-2.5 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-500/20">
@@ -74,7 +82,7 @@ const FormularioNuevaEvidencia: React.FC<Props> = ({ isOpen, archivoNombre, onCl
               <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Custodia SIE - Registro Formal</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-200 text-slate-400">
+          <button onClick={onClose} className="min-h-11 min-w-11 inline-flex items-center justify-center p-2 rounded-xl hover:bg-slate-200 text-slate-400">
             <X className="w-5 h-5" />
           </button>
         </header>
@@ -200,13 +208,13 @@ const FormularioNuevaEvidencia: React.FC<Props> = ({ isOpen, archivoNombre, onCl
         <footer className="p-4 md:p-6 border-t border-slate-100 bg-slate-50 flex flex-col md:flex-row gap-3 md:justify-end shrink-0">
           <button
             onClick={onClose}
-            className="px-6 py-3 bg-white border border-slate-200 text-slate-500 rounded-2xl text-xs font-black uppercase tracking-widest"
+            className="px-6 py-3 min-h-11 bg-white border border-slate-200 text-slate-500 rounded-2xl text-xs font-black uppercase tracking-widest"
           >
             Cancelar
           </button>
           <button
             onClick={handleSubmit}
-            className="px-6 py-3 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-500/20"
+            className="px-6 py-3 min-h-11 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-500/20"
           >
             Guardar Metadatos
           </button>
@@ -217,5 +225,6 @@ const FormularioNuevaEvidencia: React.FC<Props> = ({ isOpen, archivoNombre, onCl
 };
 
 export default FormularioNuevaEvidencia;
+
 
 

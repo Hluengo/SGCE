@@ -45,11 +45,19 @@ const ResolucionPreviewModal: React.FC<{
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/90 p-4 md:p-10 overflow-y-auto">
-      <div className="relative w-full max-w-4xl min-h-screen bg-white p-6 font-serif text-slate-900 shadow-2xl md:p-24">
+    <div
+      className="fixed inset-0 z-[70] flex items-start md:items-center justify-center bg-slate-950/90 p-4 md:p-10 overflow-y-auto"
+      style={{
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
+        paddingRight: 'calc(env(safe-area-inset-right, 0px) + 0.75rem)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)',
+        paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 0.75rem)',
+      }}
+    >
+      <div className="relative w-full max-w-4xl min-h-[85dvh] bg-white p-6 font-serif text-slate-900 shadow-2xl md:p-24">
         <button
           onClick={onClose}
-          className="absolute -top-12 right-0 flex items-center text-white text-xs font-black uppercase tracking-widest hover:text-blue-400 transition-colors"
+          className="absolute -top-12 right-0 flex min-h-11 items-center text-white text-xs font-black uppercase tracking-widest hover:text-blue-400 transition-colors"
         >
           <X className="w-5 h-5 mr-2" />
           Cerrar Vista Previa
@@ -153,8 +161,16 @@ const GeneradorResolucion: React.FC<GeneradorResolucionProps> = ({ onClose }) =>
   const isValid = sections.resolucion.length > 20 && hasReconsideration;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 overflow-hidden">
-      <div className="flex h-5/6 w-full max-w-7xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+    <div
+      className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 overflow-hidden"
+      style={{
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
+        paddingRight: 'calc(env(safe-area-inset-right, 0px) + 0.75rem)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)',
+        paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 0.75rem)',
+      }}
+    >
+      <div className="flex h-[92dvh] w-full max-w-7xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
         
         {/* Header del Editor */}
         <header className="px-4 md:px-8 py-4 md:py-6 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
@@ -168,16 +184,16 @@ const GeneradorResolucion: React.FC<GeneradorResolucionProps> = ({ onClose }) =>
             </div>
           </div>
           <div className="flex items-center flex-wrap gap-4">
-            <button 
+            <button
               onClick={() => setShowPreview(true)}
-              className="px-6 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center"
+              className="px-6 py-3 min-h-11 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center"
             >
               <Eye className="w-4 h-4 mr-2" />
               Vista Previa
             </button>
-            <button 
+            <button
               onClick={onClose}
-              className="p-4 hover:bg-slate-200 rounded-full transition-colors text-slate-400"
+              className="min-h-11 min-w-11 inline-flex items-center justify-center p-4 hover:bg-slate-200 rounded-full transition-colors text-slate-400"
             >
               <X className="w-6 h-6" />
             </button>
@@ -358,6 +374,7 @@ const GeneradorResolucion: React.FC<GeneradorResolucionProps> = ({ onClose }) =>
 };
 
 export default GeneradorResolucion;
+
 
 
 

@@ -56,6 +56,32 @@ const SuspendedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 const AppRoutes: React.FC = () => {
   const { isWizardOpen } = useConvivencia();
   const { isAuthenticated } = useAuth();
+  const [loadLegalAssistant, setLoadLegalAssistant] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setLoadLegalAssistant(false);
+      return;
+    }
+
+    let timeoutId: number | null = null;
+    let idleId: number | null = null;
+
+    const enableAssistant = () => setLoadLegalAssistant(true);
+
+    if ('requestIdleCallback' in window) {
+      idleId = window.requestIdleCallback(() => {
+        timeoutId = window.setTimeout(enableAssistant, 6000);
+      }, { timeout: 2000 });
+    } else {
+      timeoutId = window.setTimeout(enableAssistant, 7000);
+    }
+
+    return () => {
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
+      if (idleId !== null && 'cancelIdleCallback' in window) window.cancelIdleCallback(idleId);
+    };
+  }, [isAuthenticated]);
 
   return (
     <>
@@ -136,7 +162,7 @@ const AppRoutes: React.FC = () => {
 
       <Suspense fallback={null}>
         {isAuthenticated && isWizardOpen && <ExpedienteWizard />}
-        {isAuthenticated && <LegalAssistant />}
+        {isAuthenticated && loadLegalAssistant && <LegalAssistant />}
       </Suspense>
     </>
   );
@@ -167,11 +193,15 @@ const App: React.FC = () => {
               <ToastProvider>
                 <AuthStateCleanup />
                 {!isOnline && (
-                  <div role="alert" className="fixed top-0 inset-x-0 z-50 bg-amber-500 text-slate-900 text-xs font-black text-center py-2">
+                  <div
+                    role="alert"
+                    className="fixed top-0 inset-x-0 z-50 bg-amber-500 text-slate-900 text-xs font-black text-center py-2"
+                    style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.5rem)' }}
+                  >
                     Modo offline: algunas funciones pueden no estar disponibles.
                   </div>
                 )}
-                <div className={isOnline ? '' : 'pt-8'}>
+                <div className={isOnline ? '' : 'pt-10'}>
                   <AppRoutes />
                 </div>
               </ToastProvider>

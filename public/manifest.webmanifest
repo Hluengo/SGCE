@@ -1,0 +1,19 @@
+{
+  "name": "SGE Convivencia Escolar",
+  "short_name": "SGE",
+  "description": "Sistema de Gestión de Convivencia Escolar",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait-primary",
+  "lang": "es-CL",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

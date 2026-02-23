@@ -103,8 +103,16 @@ export const WizardModal: React.FC<WizardModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-2xl max-h-screen overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4"
+      style={{
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
+        paddingRight: 'calc(env(safe-area-inset-right, 0px) + 0.75rem)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)',
+        paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 0.75rem)',
+      }}
+    >
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-2xl max-h-[92dvh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
         {/* Header */}
         <div className="flex justify-between items-center p-6 md:p-8 border-b border-slate-200 bg-gradient-to-r from-emerald-50 to-blue-50">
           <div>
@@ -117,7 +125,7 @@ export const WizardModal: React.FC<WizardModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 transition-colors"
+            className="min-h-11 min-w-11 inline-flex items-center justify-center p-2 text-slate-400 hover:text-slate-600 transition-colors"
             aria-label="Cerrar asistente"
           >
             <X className="w-6 h-6" />
@@ -130,7 +138,7 @@ export const WizardModal: React.FC<WizardModalProps> = ({
             {steps.map((step, idx) => (
               <React.Fragment key={step.id}>
                 <div
-                  className={`flex-1 py-3 px-4 rounded-xl text-center transition-all ${
+                  className={`flex-1 min-h-11 py-3 px-4 rounded-xl text-center transition-all ${
                     currentStepIndex >= idx
                       ? 'bg-emerald-600 text-white'
                       : 'bg-slate-200 text-slate-400'
@@ -290,7 +298,7 @@ export const WizardModal: React.FC<WizardModalProps> = ({
           <button
             onClick={handlePrev}
             disabled={isFirstStep || isProcessing}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest bg-white border-2 border-slate-200 text-slate-600 hover:border-slate-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-6 py-3 min-h-11 rounded-xl font-black text-xs uppercase tracking-widest bg-white border-2 border-slate-200 text-slate-600 hover:border-slate-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ChevronLeft className="w-4 h-4" />
             Anterior
@@ -300,7 +308,7 @@ export const WizardModal: React.FC<WizardModalProps> = ({
             <button
               onClick={handleNext}
               disabled={isProcessing}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest bg-emerald-600 text-white hover:bg-emerald-700 transition-all disabled:opacity-50 active:scale-95"
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 min-h-11 rounded-xl font-black text-xs uppercase tracking-widest bg-emerald-600 text-white hover:bg-emerald-700 transition-all disabled:opacity-50 active:scale-95"
             >
               Siguiente
               <ChevronRight className="w-4 h-4" />
@@ -309,7 +317,7 @@ export const WizardModal: React.FC<WizardModalProps> = ({
             <button
               onClick={handleComplete}
               disabled={isProcessing}
-              className="flex-1 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest bg-emerald-600 text-white hover:bg-emerald-700 transition-all disabled:opacity-50 active:scale-95"
+              className="flex-1 px-6 py-3 min-h-11 rounded-xl font-black text-xs uppercase tracking-widest bg-emerald-600 text-white hover:bg-emerald-700 transition-all disabled:opacity-50 active:scale-95"
             >
               {isProcessing ? 'Procesando...' : 'Finalizar Cierre'}
             </button>
@@ -321,3 +329,4 @@ export const WizardModal: React.FC<WizardModalProps> = ({
 };
 
 export default React.memo(WizardModal);
+
