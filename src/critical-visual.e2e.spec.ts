@@ -27,9 +27,19 @@ test.describe('@visual Critical Screens', () => {
         Date.now = () => fixedNow;
         Math.random = () => 0.123456789;
       });
+      await page.route('**://fonts.googleapis.com/**', (routeRequest) => routeRequest.abort());
+      await page.route('**://fonts.gstatic.com/**', (routeRequest) => routeRequest.abort());
       await page.route('**/realtime/v1/**', (routeRequest) => routeRequest.abort());
       await ensureAuthenticated(page, route.path);
       await page.goto(route.path);
+      await page.addStyleTag({
+        content: `
+          *, *::before, *::after {
+            font-family: Arial, Helvetica, sans-serif !important;
+            text-rendering: geometricPrecision !important;
+          }
+        `,
+      });
       await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'light' });
       await page.waitForLoadState('domcontentloaded');
       await page.waitForLoadState('networkidle');
