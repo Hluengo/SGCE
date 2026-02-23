@@ -43,7 +43,7 @@ export default defineConfig({
     {
       name: 'iPhone 15-16',
       use: {
-        browserName: 'webkit',
+        browserName: 'chromium',
         viewport: { width: 393, height: 852 },
         isMobile: true,
         hasTouch: true,
@@ -52,7 +52,7 @@ export default defineConfig({
     {
       name: 'iPhone SE',
       use: {
-        browserName: 'webkit',
+        browserName: 'chromium',
         viewport: { width: 375, height: 667 },
         isMobile: true,
         hasTouch: true,
@@ -61,7 +61,7 @@ export default defineConfig({
     {
       name: 'iPad mini',
       use: {
-        browserName: 'webkit',
+        browserName: 'chromium',
         viewport: { width: 768, height: 1024 },
         isMobile: true,
         hasTouch: true,

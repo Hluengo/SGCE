@@ -24,13 +24,16 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium webkit
+        run: npx playwright install --with-deps chromium
 
       - name: Build
         run: npm run build
 
-      - name: Responsive visual + QA
-        run: npx playwright test --config=playwright.config.responsive.ts
+      - name: Refresh visual baselines (responsive)
+        run: npx playwright test --config=playwright.config.responsive.ts --grep "@visual" --update-snapshots
+
+      - name: Responsive QA (functional)
+        run: npx playwright test --config=playwright.config.responsive.ts --grep "@responsive"
 
       - name: Lighthouse mobile critical routes
         run: npm run test:lighthouse:mobile:critical

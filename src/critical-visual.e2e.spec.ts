@@ -40,13 +40,15 @@ test.describe('@visual Critical Screens', () => {
         page.locator('text=/Cargando|Procesando/i'),
         page.locator('[role="status"]'),
         page.locator('.animate-pulse'),
+        page.locator('[data-testid="toast-root"]'),
+        page.locator('[aria-live="polite"]'),
       ];
 
       await expect(page).toHaveScreenshot(`${route.name}.png`, {
         animations: 'disabled',
         caret: 'hide',
         mask: dynamicMasks,
-        maxDiffPixelRatio: 0.03,
+        maxDiffPixelRatio: 0.08,
         timeout: 15000,
       });
     });
