@@ -338,16 +338,10 @@ const ExpedienteWizard: React.FC = () => {
   const isNextDisabled = activeIndex === 0 && (!formData.estudianteId || !formData.gravedad);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300"
-      style={{
-        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
-        paddingRight: 'calc(env(safe-area-inset-right, 0px) + 0.75rem)',
-        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)',
-        paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 0.75rem)',
-      }}
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
     >
-      <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92dvh]">
+      <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-screen">
         <ErrorBoundary>
         <WizardHeader
           stepConfig={activeStepConfig}

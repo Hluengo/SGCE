@@ -777,7 +777,7 @@ const useExpedienteFormView = () => {
             {/* Resumen del expediente */}
             <div className="bg-slate-50 rounded-xl p-6 space-y-4">
               <h4 className="font-black text-slate-900 uppercase">Datos del Estudiante</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-slate-500">Nombre:</span>
                   <p className="font-bold text-slate-800">{formData.estudianteNombre}</p>
@@ -793,7 +793,7 @@ const useExpedienteFormView = () => {
               </div>
 
               <h4 className="font-black text-slate-900 uppercase pt-4">Clasificación del Hecho</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-slate-500">Tipo de Falta:</span>
                   <p className="font-bold text-slate-800">
@@ -1001,4 +1001,3 @@ const useExpedienteFormView = () => {
 const ExpedienteForm: React.FC = () => useExpedienteFormView();
 
 export default ExpedienteForm;
-

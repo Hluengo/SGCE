@@ -25,3 +25,5 @@ dist-ssr
 
 *storybook.log
 storybook-static
+*-output.txt
+test-output.txt

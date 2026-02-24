@@ -13,7 +13,6 @@ import { ArrowRight, Files, Search, FilterX, Eye, History, FileText, LayoutDashb
 import { ExpedienteResumenModal } from '@/features/expedientes/ExpedienteResumenModal';
 import { GccDashboard } from '@/features/mediacion/components';
 import PageTitleHeader from '@/shared/components/PageTitleHeader';
-import useGccMetrics from '@/shared/hooks/useGccMetrics';
 
 const isSeguimientoScc = (etapa?: string | null): boolean => {
   const value = (etapa ?? '').toUpperCase();
@@ -275,7 +274,6 @@ const SeguimientoExpedientesSection: React.FC<{
 const Dashboard: React.FC = () => {
   const { expedientes } = useConvivencia();
   const { filteredExpedientes, searchTerm, setSearchTerm } = useExpedientes(expedientes);
-  const gccBaseMetrics = useGccMetrics({ pollingMs: 60000, autoRefresh: true, enabled: true });
   const navigate = useNavigate();
   const [courseFilter, setCourseFilter] = useState<string | null>(null);
   
@@ -326,7 +324,7 @@ const Dashboard: React.FC = () => {
         <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
           Panel de Gestión Colaborativa de Conflictos
         </h3>
-        <GccDashboard baseMetrics={gccBaseMetrics} />
+        <GccDashboard />
       </section>
 
       <SeguimientoExpedientesSection

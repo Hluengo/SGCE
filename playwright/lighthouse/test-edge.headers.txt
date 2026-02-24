@@ -1,0 +1,24 @@
+HTTP/1.1 200 OK
+Date: Mon, 23 Feb 2026 18:20:41 GMT
+Content-Type: application/pdf
+Content-Length: 24575
+Connection: keep-alive
+Server: cloudflare
+CF-Ray: 9d28bd0cea2eb42f-SCL
+CF-Cache-Status: DYNAMIC
+Access-Control-Allow-Origin: *
+Cache-Control: no-store
+Content-Disposition: attachment; filename="test-edge-curl.pdf"
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+Vary: Accept-Encoding
+access-control-allow-headers: Content-Type, Authorization, apikey, x-client-info
+access-control-allow-methods: POST, OPTIONS
+sb-gateway-version: 1
+sb-project-ref: pfvrgrwlxbqiwatcaoop
+sb-request-id: 019c8bbb-641b-7ce2-8bfe-6b9a99fc23fd
+x-deno-execution-id: b118d8cb-74f8-42a6-b61d-cf752fa6a9b8
+x-sb-edge-region: sa-east-1
+x-served-by: supabase-edge-runtime
+Set-Cookie: __cf_bm=KvLF44S0LIhvHpJAsgIJDxunNBH_ZAMU3uNH3DsMZbk-1771870841-1.0.1.1-2IXynlWPY2o3dDGr7cbK7.2bDv7YJUsZRfcKw8FVmI4yhrn8iZYfAXWMEAlRlNEtJI3siVigSccxWeo3aFbLmeGoGhxbYLD29Gy.Kf.LFQE; path=/; expires=Mon, 23-Feb-26 18:50:41 GMT; domain=.supabase.co; HttpOnly; Secure; SameSite=None
+alt-svc: h3=":443"; ma=86400
+

@@ -1,0 +1,18 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:3002",
+      "localStorage": [
+        {
+          "name": "sgce:e2e-auth-user",
+          "value": "{\"id\":\"7e047a39-87e6-4f09-9a19-33c871f3126c\",\"email\":\"superadmin.e2e@sgce.local\",\"nombre\":\"Super\",\"apellido\":\"Admin E2E\",\"rol\":\"SUPERADMIN\",\"permisos\":[\"expedientes:crear\",\"expedientes:leer\",\"expedientes:editar\",\"expedientes:eliminar\",\"expedientes:archivar\",\"expedientes:asignar\",\"documentos:subir\",\"documentos:eliminar\",\"reportes:generar\",\"reportes:exportar\",\"usuarios:gestionar\",\"usuarios:roles:gestionar\",\"configuracion:editar\",\"configuracion:tenant:editar\",\"bitacora:ver\",\"bitacora:exportar\",\"archivo:sostenedor:ver\",\"sie:ver\",\"tenants:gestionar\",\"dashboard:analitica:ver\",\"monitorizacion:ver\",\"mantenimiento:ejecutar\",\"backend:configurar\",\"system:manage\"],\"establecimientoId\":\"d645e547-054f-4ce4-bff7-7a18ca61db50\",\"tenantIds\":[\"d645e547-054f-4ce4-bff7-7a18ca61db50\"],\"activo\":true}"
+        },
+        {
+          "name": "tenant_id",
+          "value": "d645e547-054f-4ce4-bff7-7a18ca61db50"
+        }
+      ]
+    }
+  ]
+}

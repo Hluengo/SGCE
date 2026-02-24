@@ -4,6 +4,16 @@ on:
   pull_request:
   push:
     branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      update_snapshots:
+        description: 'Update visual baseline snapshots and commit them'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
 
 jobs:
   responsive-and-lighthouse:
@@ -13,6 +23,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -29,8 +42,33 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Responsive visual (baseline refresh)
+      # ── Snapshot update mode (manual dispatch only) ──
+      - name: Update visual baselines
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.update_snapshots == 'true'
         run: npx playwright test --config=playwright.config.responsive.ts --grep "@visual" --update-snapshots
+
+      - name: Commit updated snapshots
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.update_snapshots == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/critical-visual.e2e.spec.ts-snapshots/
+          git diff --cached --quiet && echo "No snapshot changes" || (git commit -m "chore: update visual baseline snapshots [skip ci]" && git push)
+
+      # ── Strict visual comparison (normal CI runs) ──
+      - name: Responsive visual (strict snapshots)
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.update_snapshots != 'true'
+        run: npx playwright test --config=playwright.config.responsive.ts --grep "@visual"
+
+      - name: Upload visual diff artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diff-report
+          path: |
+            test-results/**/
+            src/critical-visual.e2e.spec.ts-snapshots/
+          retention-days: 14
 
       - name: Responsive QA (functional)
         run: npx playwright test --config=playwright.config.responsive.ts --grep "@responsive"
